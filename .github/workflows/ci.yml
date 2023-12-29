@@ -1081,28 +1081,28 @@ jobs:
           # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
           # codedeploy-description: "${{ env.GITHUB_REF }} ${{ env.GITHUB_SHA }}"
 
-      # - name: Generate ECS task-defintion.json (worker)
-      #   env:
-      #     AWSLOGS_REGION: ${{ env.AWS_REGION }}
-      #     HOST: ${{ vars.HOST }}
-      #     TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-      #     EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-      #   run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
+      - name: Generate ECS task-defintion.json (worker)
+        env:
+          AWSLOGS_REGION: ${{ env.AWS_REGION }}
+          HOST: ${{ vars.HOST }}
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+        run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
 
-      # - name: Put new image ID in ECS task definition (worker)
-      #   id: task-def-worker
-      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-      #   with:
-      #     task-definition: ${{ env.TASKDEF_WORKER }}
-      #     container-name: ${{ env.ECS_CONTAINER_WORKER }}
-      #     image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+      - name: Put new image ID in ECS task definition (worker)
+        id: task-def-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.TASKDEF_WORKER }}
+          container-name: ${{ env.ECS_CONTAINER_WORKER }}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
 
-      # - name: Deploy to Amazon ECS (worker)
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      #   with:
-      #     task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
-      #     cluster: ${{ env.ECS_CLUSTER }}
-      #     service: ${{ env.ECS_SERVICE_WORKER }}
+      - name: Deploy to Amazon ECS (worker)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE_WORKER }}
 
       # - name: Run CodeBuild
       #   uses: aws-actions/aws-codebuild-run-build@v1
