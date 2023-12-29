@@ -25,6 +25,7 @@ defmodule PhoenixContainerExample.MixProject do
   defp extra_applications(:test), do: [:tools]
   defp extra_applications(_), do: []
 
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
