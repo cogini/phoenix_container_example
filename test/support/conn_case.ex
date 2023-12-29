@@ -20,14 +20,14 @@ defmodule PhoenixContainerExampleWeb.ConnCase do
   using do
     quote do
       # The default endpoint for testing
-      @endpoint PhoenixContainerExampleWeb.Endpoint
-
       use PhoenixContainerExampleWeb, :verified_routes
 
       # Import conveniences for testing with connections
-      import Plug.Conn
       import Phoenix.ConnTest
       import PhoenixContainerExampleWeb.ConnCase
+      import Plug.Conn
+
+      @endpoint PhoenixContainerExampleWeb.Endpoint
     end
   end
 

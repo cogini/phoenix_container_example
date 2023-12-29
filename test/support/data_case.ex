@@ -18,12 +18,12 @@ defmodule PhoenixContainerExample.DataCase do
 
   using do
     quote do
-      alias PhoenixContainerExample.Repo
-
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
       import PhoenixContainerExample.DataCase
+
+      alias PhoenixContainerExample.Repo
     end
   end
 

@@ -24,9 +24,9 @@ defmodule PhoenixContainerExampleWeb do
       use Phoenix.Router, helpers: false
 
       # Import common connection and controller functions to use in pipelines
-      import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
+      import Plug.Conn
     end
   end
 
@@ -42,8 +42,8 @@ defmodule PhoenixContainerExampleWeb do
         formats: [:html, :json],
         layouts: [html: PhoenixContainerExampleWeb.Layouts]
 
-      import Plug.Conn
       import PhoenixContainerExampleWeb.Gettext
+      import Plug.Conn
 
       unquote(verified_routes())
     end
