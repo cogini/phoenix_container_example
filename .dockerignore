@@ -1,0 +1,31 @@
+# Ignore everything by default
+*
+
+# Elixir dirs
+!apps
+!assets
+!bin
+!config
+!lib
+!priv
+!rel
+!test
+!otel
+
+# Build files
+!mix.exs
+!mix.lock
+
+# Build environment
+!.env.*
+
+!.credo.exs
+!.formatter.exs
+!coveralls.json
+!dialyzer-ignore
+!trivy.yaml
+
+!deploy/chisel/release
+
+# Add files
+!LICENSE

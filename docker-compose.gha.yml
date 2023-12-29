@@ -1,0 +1,335 @@
+---
+version: "3.9"
+services:
+  # Image used to run tests
+  test:
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${VAR}${IMAGE_VER:-latest}"
+    build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
+      target: test-image
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
+    environment:
+      - DATABASE_DB
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+    volumes:
+      - "./.cache:/var/cache"
+      - "./junit-reports:/app/_build/test/junit-reports"
+      - "./sarif-reports:/sarif-reports"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Final deploy image
+  prod:
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER:-latest}"
+    build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
+      target: prod
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY:-docker.io/}
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
+      context: .
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
+      - PORT=4000
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+      # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
+      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
+      # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+    ports:
+      - '4000:4000'
+    # healthcheck:
+    #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:${PORT}/healthz"]
+    #   start_period: 2s
+    #   interval: 1s
+    #   timeout: 1s
+    #   retries: 20
+    healthcheck:
+      test: ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
+      start_period: 2s
+      interval: 1s
+      timeout: 2s
+      retries: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # otel-collector:
+      #   condition: service_started
+      # aws-otel-collector:
+      #   condition: service_healthy
+
+  # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
+  aws-otel-collector:
+    image: public.ecr.aws/aws-observability/aws-otel-collector:latest
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+    ports:
+      - "4317:4317"     # OTLP over gRPC
+      - "4318:4318"     # OTLP over HTTP
+      - "55680:55680"   # OTLP over gRPC (legacy)
+      - "55681:55681"   # OTLP over HTTP (legacy)
+      - "8888:8888"     # Prometheus metrics exposed by the collector
+      - "8889:8889"     # Prometheus exporter metrics
+      - "13133:13133"   # health_check extension
+      - "55679:55679"   # zpages extension
+    # command: ["--config=/etc/otel-collector-config.yml"]
+    healthcheck:
+      test: ["CMD", "/healthcheck"]
+      start_period: 1s
+      interval: 5s
+      timeout: 6s
+      retries: 5
+    volumes:
+      - ./otel/aws-collector-config.yml:/etc/otel-collector-config.yml
+      - ./otel/extraconfig.txt:/opt/aws/aws-otel-collector/etc/extracfg.txt
+
+  # https://opentelemetry.io/docs/collector/getting-started/#docker-compose
+  otel-collector:
+    image: "${PUBLIC_REGISTRY:-docker.io/}otel/opentelemetry-collector-contrib:latest"
+    # command: ["--config=/etc/otel-collector-config.yml"]
+    # volumes:
+    #   - ./otel/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317"     # OTLP over gRPC
+      - "4318:4318"     # OTLP over HTTP
+      # - "55680:55680"   # OTLP over gRPC (legacy)
+      - "55681:55681"   # OTLP over HTTP (legacy)
+      # - "9411:9411"   # Zipkin/HTTP
+      - "1888:1888"     # pprof extension
+      - "8888:8888"     # Prometheus metrics exposed by the collector
+      - "8889:8889"     # Prometheus exporter metrics
+      - "13133:13133"   # health_check extension
+      - "55679:55679"   # zpages extension
+    # depends_on:
+    #   - jaeger
+
+  # https://docs.datadoghq.com/getting_started/agent/
+  # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
+  datadog:
+    image: "${PUBLIC_REGISTRY:-docker.io/}datadog/agent:latest"
+    # image: public.ecr.aws/datadog/agent:7
+    # image: gcr.io/datadoghq/agent:7
+    # volumes:
+    #   # Main Datadog config
+    #   - ./datadog.yml:/etc/datadog-agent/datadog.yaml
+    #   # Log config for service for app
+    #   - ./datadog-conf.yml:/etc/datadog-agent/conf.d/app.d/conf.yml
+    ports:
+      - "4317:4317"       # OTLP over gRPC
+      - "4318:4318"       # OTLP over HTTP
+      - "8125:8125/udp"   # Datadog DogStatsD metrics receiver
+      - "8126:8126"       # Datadog trace receiver
+      - "5002:5002"       # web ui
+      - "10518:10518"     # Datadog log receiver
+    healthcheck:
+      test: ["CMD", "/probe.sh"]
+      start_period: 1s
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    environment:
+      - DD_API_KEY
+      - DD_SITE
+      - DD_HOSTNAME="${DD_HOSTNAME:-none}"
+      - DD_TAGS=${DD_TAGS:-environment:ci}"
+      - DD_ENV="${DD_ENV:-ci}"
+      - DD_INSIDE_CI="true"
+      - DD_CHECKS_TAG_CARDINALITY=high
+      - DD_CLOUD_PROVIDER_METADATA=aws
+      - DD_GUI_PORT=5002
+      - DD_LOG_LEVEL
+      - DD_LOGS_ENABLED=true
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_DOGSTATSD_TAG_CARDINALITY=high
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    restart: always
+
+  grype:
+    image: "${PUBLIC_REGISTRY:-docker.io/}anchore/grype"
+    volumes:
+      - "./.cache:/var/cache"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      # - "16685:16685" # gRPC serve frontend
+      - "16686:16686" # HTTP UI
+      - "5778:5778"   # HTTP serve configs
+      - "14250:14250" # Accept Jaeger/gRPC model.proto
+      # - "14268:14268 " Jaeger/HTTP accept jaeger.thrift directly from clients
+      # - "6831:6831/udp" # Accept Jaeger/Compact thrift protocol
+
+  kafka:
+    image: 'bitnami/kafka:2'
+    ports:
+      - '9092'
+    volumes:
+      - 'kafka_data:/bitnami'
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "9092"]
+      start_period: 1s
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    # healthcheck:
+    #   test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --topic <TOPIC_NAME> --describe"]
+    #   interval: 2s
+    #   timeout: 2s
+    #   retries: 15
+    depends_on:
+      - zookeeper
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: some!Password
+    ports:
+      - '1433'
+
+  mysql:
+    # https://hub.docker.com/_/mysql
+    image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=test
+      - MYSQL_ROOT_PASSWORD=
+    # command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+      # test: ["CMD", "mysql" ,"-h", "mysql", "-P", "3306", "-u", "root", "-e", "SELECT 1", "cache"]
+      start_period: 1s
+      interval: 1s
+      timeout: 1s
+      retries: 10
+
+  newman:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
+    build:
+      dockerfile: deploy/newman.Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+    volumes:
+      # Mount Postman files into default location
+      - "./postman:/etc/newman"
+      - "./junit-reports:/junit-reports"
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
+  postgres:
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
+    # build:
+    #   context: .
+    #   dockerfile: deploy/postgres.Dockerfile
+    #   args:
+    #     REGISTRY: ${REGISTRY:-docker.io/}
+    ports:
+      - '5432'
+    user: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    restart: always
+    healthcheck:
+      # test: ["CMD", "pg_isready -U postgres -d app_test"]
+      # test: ["psql", "-w", "-U", "postgres", "-d", "app_test", "-c", "SELECT 1"]
+      test: ["CMD", "pg_isready"]
+      start_period: 2s
+      interval: 1s
+      timeout: 1s
+      retries: 10
+
+  redis:
+    image: "${PUBLIC_REGISTRY:-docker.io/}redis:4"
+    ports:
+      - '6379'
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - '5672:5672'
+      - '8080:15672'
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      timeout: 5s
+      interval: 5s
+      retries: 5
+
+  trivy:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}aquasec/trivy"
+    image: ghcr.io/aquasecurity/trivy
+    volumes:
+      - "./.cache:/var/cache"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  zookeeper:
+    image: 'bitnami/zookeeper:3'
+    ports:
+      - '2181:2181'
+    volumes:
+      - 'zookeeper_data:/bitnami'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "2181"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+volumes:
+  kafka_data:
+    driver: local
+  mysql_data:
+    driver: local
+  postgres_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+
+# Secrets for builds
+# secrets:
+#   oban_license_key:
+#     file: ./.dev_secrets/oban_license_key.txt
+#   oban_key_fingerprint:
+#     file: ./.dev_secrets/oban_fingerprint.txt
+#   # GitHub Personal Access Token
+#   access_token:
+#     file: ./.access_token
