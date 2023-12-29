@@ -1,0 +1,1192 @@
+---
+name: CI
+# Build and run tests in containers
+# Store test and prod images to GitHub Container Registry (GHCR)
+# Build prod image and push to AWS ECR
+# Run tests and quality checks on test image
+# Run security scans on code and prod images
+# Use matrix for multiple versions of Elixir, OTP, and OS
+on: push
+# on:
+#   push:
+#     branches:
+#       - main
+#       - qa
+#     tags: [prod]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.vscode'
+#       - '.gitignore'
+#   pull_request:
+#     # branches: [main]
+#     types: [opened,synchronize,reopened,labeled,unlabeled]
+env:
+  # Name of image
+  IMAGE_NAME: foo-app
+  # Name of org in GHCR Docker repository (must be lowercase)
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  # ECR Docker repository org name, may be blank
+  ECR_IMAGE_OWNER: cogini/
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
+  # Variant if test matrix is not used
+  VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
+  # Variant that is deployed
+  PROD_VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
+  RELEASE_ELIXIR: 1.15.7
+  RELEASE_OTP: 26.1.2
+  RELEASE_BUILD_OS_VER: bullseye-20230612-slim
+  RELEASE_PROD_OS_VER: bullseye-slim
+  RELEASE_SNAPSHOT_VER: ""
+  RELEASE_OS: debian
+  # Registry for test images
+  REGISTRY: ghcr.io/
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ''
+  # Give GitHub Actions access to AWS
+  AWS_ENABLED: 1
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
+  AWS_REGION: us-east-1
+  S3_BUCKET_ASSETS: foo-app-dev-app-assets
+  # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
+  # Health check port for app
+  APP_PORT: 4000
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  ELIXIR_MODULE: PhoenixContainerExample
+  ECS_CLUSTER: foo
+  ECS_SERVICE: foo-app
+  ECS_CONTAINER: foo-app
+  ECS_SERVICE_WORKER: foo-worker
+  ECS_CONTAINER_WORKER: foo-worker
+  CODEDEPLOY_APPLICATION: foo-app
+  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  TASKDEF: ecs/task-definition.json
+  TASKDEF_WORKER: ecs/task-definition.worker.json
+  APPSPEC: ecs/appspec.yml
+  # AWS SSM Parameter Store name prefix
+  AWS_PS_PREFIX: cogini/foo/dev
+  # Name of environment for resources created by Terraform
+  # TERRAFORM_ENV: dev
+  # GitHub Advanced Security, free for open source, otherwise a paid feature
+  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+  GITHUB_ADVANCED_SECURITY: 1
+  DEPLOY_DOCKER_HUB: 0
+  # Docker
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
+jobs:
+  build-test:
+    name: Build test image
+    # needs: setup
+    permissions:
+      contents: read
+      # Push to ghcr.io repository
+      packages: write
+      # Cancel previous runs
+      actions: write
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Specify versions of Erlang, Elixir, and base OS
+        # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
+
+      - name: Cancel previous runs in progress
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Get branch name for main
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get branch name for pull_request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        # https://github.com/marketplace/actions/docker-login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # Configure machine key or deploy keys to access private repos from build
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set env vars for builds
+        run: |
+          echo 'DATABASE_HOST=postgres' >> ./.env.test
+
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
+
+      # - name: Display available platforms
+      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Build test image and push to GHCR
+        uses: docker/build-push-action@v5
+        # https://github.com/docker/build-push-action
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: test-image
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }},mode=max
+          # ssh: default
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.VAR }}${{ env.IMAGE_VER }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  test:
+    name: Run tests
+    # permissions: write-all
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: read
+    needs: [build-test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+      # ci_node_total: [2]
+      # ci_node_index: [1, 2]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet --include-deps test
+          docker images --no-trunc
+
+      - name: Start services
+        run: docker compose up --detach test
+
+      - name: Show docker logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps postgres
+          docker compose logs --timestamps test
+          docker compose ps --format json | jq .
+
+      - name: Display health check results
+        if: failure()
+        run: |
+          echo postgres
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo redis
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q redis) | jq
+
+      - name: Debug env
+        if: failure()
+        run: |
+          docker compose run test env
+          # docker compose run test env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+          # docker compose run test env PGPASSWORD=postgres /usr/lib/postgresql/13/bin/pg_isready -h postgres -p 5432 -d postgres -U postgres
+
+      - name: Initialize test database
+        run: docker compose run test mix do ecto.create, ecto.migrate
+
+      - name: Run tests
+        # run: docker compose run test mix test --cover
+        # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
+        run: docker compose run test mix test
+
+      - name: Run quality checks
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build by docker compose
+          junit_files: junit-reports/*.xml
+
+      # - name: Upload test results to Datadog
+      #   if: always()
+      #   continue-on-error: true
+      #   run: |
+      #     npm install -g @datadog/datadog-ci
+      #     datadog-ci junit upload --service api-graphql junit-reports/
+
+  test-dialyzer:
+    name: Run dialyzer
+    needs: [build-test]
+    permissions:
+      contents: read
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet test
+          # docker images --no-trunc
+
+      - name: Run dialyzer
+        run: docker compose run test mix dialyzer --no-check --quiet-with-result --format github
+
+  test-scan:
+    name: Security scan code
+    needs: [build-test]
+    permissions:
+      contents: read
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history for all branches and tags
+          fetch-depth: 0
+
+      - name: Scan code with trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/marketplace/actions/aqua-security-trivy
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          # ignore-unfixed: true
+          # severity: 'CRITICAL'
+          # trivy-config: trivy.yaml
+          # format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Display scan results
+        run: cat trivy-results.sarif | jq .
+
+      - name: Upload trivy scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy
+
+      - name: Scan code with grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          path: .
+          # output-format: table
+          output-format: 'sarif'
+          fail-build: false
+          # severity-cutoff: critical
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
+
+      - name: Upload grype scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+      - name: Scan with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+          # upload sarif artifact when secrets are detected
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
+
+  build-prod:
+    name: Build prod image
+    # needs: setup
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Cancel previous runs
+      actions: write
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Dump event
+        run: cat "$GITHUB_EVENT_PATH"
+
+      - name: Cancel previous runs in progress
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Debug environment
+        run: |
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "environment: ${{ github.event.deployment.environment }}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get branch name for pull_request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Build prod image and push
+        uses: docker/build-push-action@v5
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
+          build-args: |
+            ELIXIR_VER=${{ env.RELEASE_ELIXIR }}
+            OTP_VER=${{ env.RELEASE_OTP }}
+            BUILD_OS_VER=${{ env.RELEASE_BUILD_OS_VER }}
+            PROD_OS_VER=${{ env.RELEASE_PROD_OS_VER }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
+          # ssh: default
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+
+          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  build-otel:
+    name: Build otel image
+    permissions:
+      # Cancel previous runs
+      actions: write
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      # Pull public images without rate limits
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Build final prod image and push to AWS ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: docker/build-push-action@v5
+        env:
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
+        with:
+          file: deploy/aws-otel-collector.Dockerfile
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-otel
+          cache-to: type=gha,scope=${{ github.workflow }}-otel,mode=max
+          tags: |
+            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}aws-otel-collector:latest
+
+  test-prod:
+    name: Run external API tests
+    # needs: [build-prod, build-newman]
+    needs: [build-prod]
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Pull repos
+        # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
+        # docker compose pull --quiet newman
+        # docker images --no-trunc
+        run: |
+          docker compose pull --quiet --include-deps prod
+
+      - name: Start services
+        run: docker compose up --wait prod
+
+      - name: Display logs
+        if: failure()
+        run: |
+          echo "postgres logs"
+          docker compose logs --timestamps postgres
+          echo "postgres health"
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo "prod health"
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          echo "prod logs"
+          docker compose logs --timestamps prod
+          echo "ps"
+          docker compose ps --format json | jq .
+
+      # - name: Debug env
+      #   if: failure()
+      #   run: |
+      #     docker compose run --entrypoint /bin/bash prod env
+      #     docker compose run --entrypoint /bin/bash prod env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+      #     # docker compose run --entrypoint /bin/bash prod pg_isready -h postgres -p 5432 -d postgres -U postgres
+
+      # - name: Initialize database
+      #   run: |
+      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
+      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
+      #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
+
+      - name: Run health check
+        # run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
+        run: for i in 1 2 3 4 5 6 7 8 9 10; do curl -v http://localhost:${{ env.APP_PORT }}/healthz && break || sleep 1; done
+
+      - name: Display logs
+        if: failure()
+        run: |
+          echo "postgres logs"
+          docker compose logs --timestamps postgres
+          echo "postgres health"
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo "prod logs"
+          docker compose logs --timestamps prod
+          echo "prod health"
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          echo "ps"
+          docker compose ps --format json | jq .
+
+      # - name: Run API tests
+      #   env:
+      #     NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
+      #     # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
+      #   # https://hub.docker.com/r/postman/newman/
+      #   run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: ./junit-reports/*.xml
+          check_name: "External API Tests"
+
+  scan:
+    name: Security scan prod image
+    needs: [build-prod]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/aquasecurity/trivy-action
+        # https://github.com/marketplace/actions/aqua-security-trivy#inputs
+        with:
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # exit-code: '1' # fail build
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          # severity: 'CRITICAL,HIGH'
+          # cache-dir: /var/cache
+          format: 'sarif'
+          output: 'trivy.sarif'
+
+      - name: Display scan results
+        run: cat trivy.sarif | jq .
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        # Requires GitHub Advanced Security
+        # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+        with:
+          sarif_file: 'trivy.sarif'
+          category: trivy
+
+      - name: Scan image with Grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # severity-cutoff: critical
+          fail-build: false
+          output-format: 'sarif'
+          # output-format: table
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
+
+      - name: Upload Grype scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+      # - name: Scan image with snyk
+      #   # if: github.event_name != 'pull_request'
+      #   uses: snyk/actions/docker@master
+      #   continue-on-error: true
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     command: test
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
+
+  # upload-assets:
+  #   name: Upload assets to CDN
+  #   if: github.event_name != 'pull_request'
+  #   # if: contains(github.ref, 'refs/heads/main')
+  #   # needs: [build-prod, test-prod, test]
+  #   # needs: [test-prod, test, test-dialyzer]
+  #   needs: [build-prod]
+  #   permissions:
+  #     # Interact with GitHub OIDC Token endpoint for AWS
+  #     id-token: write
+  #     contents: read
+
+  #     # Push to ghcr.io repository
+  #     packages: write
+
+  #     # Upload JUnit report files
+  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+  #     checks: write
+  #     pull-requests: write
+  #     issues: read
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - elixir: 1.15.7
+  #           otp: 26.1.2
+  #           build_os_ver: bullseye-20230612-slim
+  #           prod_os_ver: bullseye-slim
+  #           snapshot_ver: 20230612
+  #           os: debian
+  #   steps:
+  #     - name: Debug environment
+  #       run: |
+  #         echo "ref_name: ${{ github.ref_name }}"
+  #         echo "environment: ${{ github.event.deployment.environment }}"
+
+  #     - name: Log in to GHCR
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Configure AWS credentials
+  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ env.AWS_REGION }}
+
+  #     - name: Check out source
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Docker buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v3
+  #       with:
+  #         driver-opts: network=host
+
+  #     - name: Get build artifacts on host
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         file: ${{ env.DOCKER_FILE }}
+  #         target: artifacts
+  #         build-args: |
+  #           ELIXIR_VER=${{ matrix.elixir }}
+  #           OTP_VER=${{ matrix.otp }}
+  #           BUILD_OS_VER=${{ matrix.build_os_ver }}
+  #           PROD_OS_VER=${{ matrix.prod_os_ver }}
+  #         context: .
+  #         builder: ${{ steps.buildx.outputs.name }}
+  #         push: false
+  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
+  #         outputs: type=local,dest=output
+
+  #     - name: List output dir
+  #       run: find output/static -print
+
+  #     - name: Sync to S3
+  #       run: aws s3 sync output/static/ s3://${{ vars.S3_BUCKET_ASSETS }}
+
+  #     - name: Create CloudFront invalidation
+  #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+
+  deploy:
+    name: Deploy to AWS ECS
+    # if: ${{ env.AWS_ENABLED == 1 }}
+    needs: [test-prod, test, test-dialyzer]
+    # needs: [upload-assets]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
+      # - name: Generate CodeDeploy appspec.yml
+      #   env:
+      #     CONTAINER_NAME: "iot-app"
+      #     PORT: "4000"
+      #   run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
+
+      - name: Generate ECS task-defintion.json
+        env:
+          AWSLOGS_REGION: ${{ env.AWS_REGION }}
+          HOST: ${{ vars.HOST }}
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+        run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
+
+      - name: Put new image ID in ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.TASKDEF }}
+          container-name: ${{ env.ECS_CONTAINER }}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          # wait-for-service-stability: true
+          # codedeploy-appspec: ${{ env.APPSPEC }}
+          # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          # codedeploy-description: "${{ env.GITHUB_REF }} ${{ env.GITHUB_SHA }}"
+
+      # - name: Generate ECS task-defintion.json (worker)
+      #   env:
+      #     AWSLOGS_REGION: ${{ env.AWS_REGION }}
+      #     HOST: ${{ vars.HOST }}
+      #     TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+      #     EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+      #   run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
+
+      # - name: Put new image ID in ECS task definition (worker)
+      #   id: task-def-worker
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   with:
+      #     task-definition: ${{ env.TASKDEF_WORKER }}
+      #     container-name: ${{ env.ECS_CONTAINER_WORKER }}
+      #     image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+
+      # - name: Deploy to Amazon ECS (worker)
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
+      #     cluster: ${{ env.ECS_CLUSTER }}
+      #     service: ${{ env.ECS_SERVICE_WORKER }}
+
+      # - name: Run CodeBuild
+      #   uses: aws-actions/aws-codebuild-run-build@v1
+      #   with:
+      #     project-name: "foo-app"
+      #     # buildspec-override: ecs/buildspec-docker.yml
+      #     env-vars-for-codebuild: |
+      #       custom,
+      #       requester,
+      #       event-name
+      #   env:
+      #     custom: my environment variable
+      #     requester: ${{ github.actor }}
+      #     event-name: ${{ github.event_name }}
+
+
+  tag:
+    name: Tag prod images as latest
+    if: github.event_name != 'pull_request'
+    # if: contains(github.ref, 'refs/heads/main')
+    needs: [deploy]
+    # needs: [test-prod, test, test-dialyzer]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Check out source
+      #   uses: actions/checkout@v4
+
+      - name: Tag ECR release as latest
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: |
+          export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
+            --image-ids imageTag=${{ env.VAR }}${{ env.IMAGE_VER }} \
+            --output json | jq --raw-output --join-output '.images[0].imageManifest')
+          aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
+            --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
+          # Requires higher permissions
+          # aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}"
+
+      - name: Tag GHCR release as latest
+        run: |
+          skopeo copy \
+            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+          # skopeo copy --multi-arch=index-only \
+          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
+      # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
