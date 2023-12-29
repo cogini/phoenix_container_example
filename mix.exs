@@ -25,13 +25,9 @@ defmodule PhoenixContainerExample.MixProject do
   defp extra_applications(:test), do: [:tools]
   defp extra_applications(_), do: []
 
-  # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  # Specifies your project dependencies.
-  #
-  # Type `mix help deps` for examples and options.
   defp deps do
     [
       {:dns_cluster, "~> 0.1.1"},
