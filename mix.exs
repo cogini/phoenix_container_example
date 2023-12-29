@@ -52,6 +52,17 @@ defmodule PhoenixContainerExample.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  defp releases do
+    [
+      prod: [
+        reboot_system_after_config: true,
+        include_executables_for: [:unix]
+        # Don't need to tar if we are just going to copy it
+        # steps: [:assemble, :tar]
+      ]
+    ]
+  end
+
   defp deps do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
