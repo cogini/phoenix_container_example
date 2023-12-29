@@ -35,3 +35,17 @@ phoenix_container_example-*.tar
 npm-debug.log
 /assets/node_modules/
 
+/.elixir_ls
+/.env
+/.envrc
+
+# Editor temp files
+*.swp
+
+# OS files when mounting dev container
+/.bash_history
+/.dotnet
+/.ssh
+
+# macOS junk
+.DS_Store
