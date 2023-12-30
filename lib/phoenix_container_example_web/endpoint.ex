@@ -13,7 +13,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
 
   @app :phoenix_container_example
 
-  plug PhoenixContainerExample.HealthPlug
+  plug PhoenixContainerExampleWeb.HealthPlug
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
