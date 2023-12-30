@@ -3,9 +3,22 @@ defmodule PhoenixContainerExample.Application do
 
   use Application
 
+  require Logger
+
+  @app :phoenix_container_example
+
   @impl true
   def start(_type, _args) do
-    children = [
+    OpentelemetryEcto.setup([@app, :repo])
+    :opentelemetry_cowboy.setup()
+    OpentelemetryPhoenix.setup(adapter: :cowboy2)
+    OpentelemetryLiveView.setup()
+
+    roles = Application.get_env(@app, :roles, [:app])
+    Logger.info("Starting with roles: #{inspect(roles)}")
+
+    children = 
+      List.flatten([
       PhoenixContainerExampleWeb.Telemetry,
       PhoenixContainerExample.Repo,
       {DNSCluster, query: Application.get_env(:phoenix_container_example, :dns_cluster_query) || :ignore},
@@ -15,13 +28,22 @@ defmodule PhoenixContainerExample.Application do
       # Start a worker by calling: PhoenixContainerExample.Worker.start_link(arg)
       # {PhoenixContainerExample.Worker, arg},
       # Start to serve requests, typically the last entry
-      PhoenixContainerExampleWeb.Endpoint
-    ]
+      PhoenixContainerExampleWeb.Endpoint,
+      cluster_supervisor()
+    ])
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: PhoenixContainerExample.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp cluster_supervisor do
+    topologies = Application.get_env(:libcluster, :topologies, [])
+
+    if length(topologies) > 0 do
+      [{Cluster.Supervisor, [topologies, [name: PhoenixContainerExample.ClusterSupervisor]]}]
+    else
+      []
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
