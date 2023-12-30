@@ -39,7 +39,7 @@ defmodule PhoenixContainerExample.MixProject do
     [
       mod: {PhoenixContainerExample.Application, []},
       extra_applications:
-        [:logger, :runtime_tools] ++
+        [:logger, :runtime_tools, :eex] ++
           extra_applications(Mix.env())
     ]
   end
@@ -56,15 +56,19 @@ defmodule PhoenixContainerExample.MixProject do
     [
       prod: [
         reboot_system_after_config: true,
-        include_executables_for: [:unix]
+        include_executables_for: [:unix],
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
+        applications: [opentelemetry_exporter: :permanent, opentelemetry: :temporary]
       ]
     ]
   end
 
   defp deps do
     [
+      {:ex_aws, "~> 2.5"},
+      {:aws_rds_castore, "~> 1.1"},
+      {:castore, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
       {:dns_cluster, "~> 0.1.1"},
@@ -73,12 +77,30 @@ defmodule PhoenixContainerExample.MixProject do
       {:excoveralls, "~> 0.18.0", only: [:dev, :test], runtime: false},
       {:finch, "~> 0.13"},
       {:floki, ">= 0.30.0", only: :test},
+      {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 0.20"},
+      {:hackney, "~> 1.9"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
-      {:logger_formatter_json, "~> 0.7.0"},
+      {:libcluster_ecs, github: "pro-football-focus/libcluster_ecs"},
+      # {:logger_formatter_json, "~> 0.7.0"},
+      {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
+      # tls_certificate_check needs to be started before opentelemetry_exporter
+      {:tls_certificate_check, "~> 1.13"},
+      # opentelemetry_exporter needs to be started before the other opentelemetry modules
+      {:opentelemetry_exporter, "~> 1.1"},
+      {:opentelemetry, "~> 1.1"},
+      {:opentelemetry_api, "~> 1.1"},
+      {:opentelemetry_ecto, "~> 1.0"},
+      # {:opentelemetry_logger_metadata, "~> 0.1.0"},
+      {:opentelemetry_cowboy, "~> 0.2.1"},
+      {:opentelemetry_liveview, "~> 1.0.0-rc.4"},
+      {:opentelemetry_phoenix, "~> 1.0"},
+      {:opentelemetry_xray, github: "cogini/opentelemetry_xray"},
+      # {:opentelemetry_xray, "~> 0.7.0"},
+      # {:opentelemetry_xray, path: "../../opentelemetry_xray", override: true},
       {:phoenix, "~> 1.7.10"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 3.3"},
@@ -90,10 +112,15 @@ defmodule PhoenixContainerExample.MixProject do
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:recon, "~> 2.5"},
       {:styler, "~> 0.10.0", only: [:dev, :test], runtime: false},
+      {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.3"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
-      {:telemetry_poller, "~> 1.0"}
+      {:telemetry_metrics_prometheus, "~> 1.1"},
+      # {:telemetry_metrics_statsd, "~> 0.6.2"},
+      {:telemetry_poller, "~> 1.0"},
+      # {:uinta, "~> 0.11.0"},
+      {:uinta, github: "cogini/uinta", branch: "format-map"},
     ]
   end
 
