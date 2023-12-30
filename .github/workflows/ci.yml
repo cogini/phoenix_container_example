@@ -1076,10 +1076,10 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}
           # wait-for-service-stability: true
-          codedeploy-appspec: ${{ env.APPSPEC }}
-          codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
-          codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
-          codedeploy-description: "${{ env.GITHUB_REF }} ${{ env.GITHUB_SHA }}"
+          # codedeploy-appspec: ${{ env.APPSPEC }}
+          # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          # codedeploy-description: "${{ env.GITHUB_REF }} ${{ env.GITHUB_SHA }}"
 
       - name: Generate ECS task-defintion.json (worker)
         env:
