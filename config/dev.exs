@@ -2,13 +2,13 @@ import Config
 
 # Configure your database
 config :phoenix_container_example, PhoenixContainerExample.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "phoenix_container_example_dev",
+  username: System.get_env("DATABASE_USER") || "postgres",
+  password: System.get_env("DATABASE_PASS") || "postgres",
+  hostname: System.get_env("DATABASE_HOST") || "localhost",
+  database: System.get_env("DATABASE_DB") || "phoenix_container_example_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -19,7 +19,8 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  # http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [port: String.to_integer(System.get_env("PORT") || "4000")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
