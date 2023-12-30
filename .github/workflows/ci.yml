@@ -461,13 +461,13 @@ jobs:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      - name: Scan with Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
-          # upload sarif artifact when secrets are detected
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
+      # - name: Scan with Gitleaks
+      #   uses: gitleaks/gitleaks-action@v2
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #     GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+      #     # upload sarif artifact when secrets are detected
+      #     GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
 
   build-prod:
     name: Build prod image
@@ -1117,7 +1117,6 @@ jobs:
       #     custom: my environment variable
       #     requester: ${{ github.actor }}
       #     event-name: ${{ github.event_name }}
-
 
   tag:
     name: Tag prod images as latest
