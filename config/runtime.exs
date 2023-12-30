@@ -1,6 +1,9 @@
 import Config
 
-if System.get_env("PHX_SERVER") do
+roles = (System.get_env("ROLES") || "app") |> String.split(",") |> Enum.map(&String.to_atom/1)
+config :phoenix_container_example, roles: roles
+
+if System.get_env("PHX_SERVER") && :app in roles do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
 end
 
