@@ -11,6 +11,10 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  @app :phoenix_container_example
+
+  plug PhoenixContainerExample.HealthPlug
+
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
@@ -35,6 +39,8 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
   plug Phoenix.LiveDashboard.RequestLogger,
     param_key: "request_logger",
     cookie_key: "request_logger"
+
+  plug Uinta.Plug, Application.compile_env(@app, Uinta.Plug, [])
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
