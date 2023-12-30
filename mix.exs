@@ -82,7 +82,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:hackney, "~> 1.9"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
-      {:libcluster_ecs, github: "pro-football-focus/libcluster_ecs"},
+      # {:libcluster_ecs, github: "pro-football-focus/libcluster_ecs"},
       # {:logger_formatter_json, "~> 0.7.0"},
       {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},

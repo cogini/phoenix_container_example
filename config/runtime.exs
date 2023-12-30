@@ -105,6 +105,8 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
+  config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
+
   config :libcluster, debug: true
 
   # https://dmblake.com/elixir-clustering-with-libcluster-and-aws-ecs-fargate-in-cdk
@@ -133,9 +135,10 @@ if config_env() == :prod do
         ]
 
     "dns" ->
-      # Periodically poll DNS and connect nodes it finds.
+      # Periodically poll DNS to find nodes.
+      # This uses AWS Service Discovery support for ECS.
       # https://hexdocs.pm/libcluster/Cluster.Strategy.DNSPoll.html
-      # Assumes nodes respond to DNS query (A record) and follow node name
+      # Assumes nodes respond to DNS query (A record) and node name
       # pattern of <name>@<ip-address>.
       config :libcluster,
         topologies: [
@@ -162,31 +165,10 @@ if config_env() == :prod do
             ]
           ]
         ]
-
-    "ecs" ->
-      config :libcluster,
-        topologies: [
-          ecs: [
-            # strategy: Cluster.EcsStrategy,
-            strategy: ClusterEcs.Strategy,
-            config: [
-              cluster: "foo",
-              # arn:aws:ecs:us-east-1:1234567890:service/foo/foo-app
-              # service_name: ".*service/foo/foo-app$",
-              service_name: "foo-app",
-              # Name of release in mix.exs or RELEASE_NAME env var, defaults to "app"
-              app_prefix: "prod",
-              # container_port: String.to_integer(System.get_env("DISTRIBUTION_PORT") || "7777"),
-              region: System.get_env("AWS_REGION") || "us-east-1"
-            ]
-          ]
-        ]
   end
 
   config :ex_aws,
     access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
     secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
     region: System.get_env("AWS_REGION") || "us-east-1"
-
-  config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
 end
