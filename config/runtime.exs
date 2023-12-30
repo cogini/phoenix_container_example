@@ -115,5 +115,88 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
+  config :libcluster, debug: true
+
+  # https://dmblake.com/elixir-clustering-with-libcluster-and-aws-ecs-fargate-in-cdk
+  case System.get_env("LIBCLUSTER_STRATEGY", "none") do
+    "none" ->
+      config :libcluster, topologies: []
+
+    "gossip" ->
+      # Local testing with docker compose
+      # Use multicast UDP to form a cluster between nodes gossiping a heartbeat
+      # This does not work inside ECS
+      config :libcluster,
+        topologies: [
+          app: [
+            strategy: Cluster.Strategy.Gossip
+          ]
+        ]
+
+    "local" ->
+      # Use epmd to connect to discovered nodes on the local host
+      config :libcluster,
+        topologies: [
+          app: [
+            strategy: Cluster.Strategy.LocalEPMD
+          ]
+        ]
+
+    "dns" ->
+      # Periodically poll DNS and connect nodes it finds.
+      # https://hexdocs.pm/libcluster/Cluster.Strategy.DNSPoll.html
+      # Assumes nodes respond to DNS query (A record) and follow node name
+      # pattern of <name>@<ip-address>.
+      config :libcluster,
+        topologies: [
+          app: [
+            strategy: Elixir.Cluster.Strategy.DNSPoll,
+            config: [
+              # name of nodes before the IP address (required)
+              node_basename: "prod",
+              # DNS query to find nodes (required)
+              query: "foo-app.foo.internal"
+              # How often to poll in ms
+              # polling_interval: 5_000,
+            ]
+          ],
+          worker: [
+            strategy: Elixir.Cluster.Strategy.DNSPoll,
+            config: [
+              # name of nodes before the IP address (required)
+              node_basename: "prod",
+              # DNS query to find nodes (required)
+              query: "foo-worker.foo.internal"
+              # How often to poll in ms
+              # polling_interval: 5_000,
+            ]
+          ]
+        ]
+
+    "ecs" ->
+      config :libcluster,
+        topologies: [
+          ecs: [
+            # strategy: Cluster.EcsStrategy,
+            strategy: ClusterEcs.Strategy,
+            config: [
+              cluster: "foo",
+              # arn:aws:ecs:us-east-1:1234567890:service/foo/foo-app
+              # service_name: ".*service/foo/foo-app$",
+              service_name: "foo-app",
+              # Name of release in mix.exs or RELEASE_NAME env var, defaults to "app"
+              app_prefix: "prod",
+              # container_port: String.to_integer(System.get_env("DISTRIBUTION_PORT") || "7777"),
+              region: System.get_env("AWS_REGION") || "us-east-1"
+            ]
+          ]
+        ]
+  end
+
+  config :ex_aws,
+    access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+    secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
+    region: System.get_env("AWS_REGION") || "us-east-1"
+
   config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
 end
