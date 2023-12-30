@@ -47,12 +47,33 @@ config :tailwind,
     cd: Path.expand("../assets", __DIR__)
   ]
 
-# Configures Elixir's Logger
-config :logger, :console,
+config :logger,
+  level: :info
+
+config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  # metadata: [:file, :line, :request_id, :otel_trace_id, :otel_span_id, :xray_trace_id]
+  metadata: [:file, :line, :request_id]
+
+config :opentelemetry,
+  id_generator: :opentelemetry_xray_id_generator,
+  propagators: [:opentelemetry_xray_propagator, :baggage]
+
+# resource_detectors: [:otel_resource_env_var, :otel_resource_app_env]
+
+# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
+config :opentelemetry, :resource, [
+  # In production, set from OTEL_SERVICE_NAME or Erlang release name OS env var
+  {"service.name", to_string(Mix.Project.config()[:app])},
+  # {"service.namespace", "MyNamespace"},
+  {"service.version", Mix.Project.config()[:version]}
+]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Disable normal Phoenix.Logger, as we are using uinta
+# https://github.com/podium/uinta
+config :phoenix, logger: false
 
 import_config "#{config_env()}.exs"
