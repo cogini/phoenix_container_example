@@ -120,7 +120,7 @@ defmodule PhoenixContainerExample.MixProject do
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"},
       # {:uinta, "~> 0.11.0"},
-      {:uinta, github: "cogini/uinta", branch: "format-map"},
+      {:uinta, github: "cogini/uinta", branch: "format-map"}
     ]
   end
 
