@@ -26,8 +26,22 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoo
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 
-# Print only warnings and errors during test
-config :logger, level: :warning
+config :logger,
+  level: :warning,
+  always_evaluate_messages: true
+
+config :logger, :default_formatter,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:file, :line]
+
+if System.get_env("OTEL_DEBUG") == "true" do
+  config :opentelemetry, :processors,
+    otel_batch_processor: %{
+      exporter: {:otel_exporter_stdout, []}
+    }
+else
+  config :opentelemetry, traces_exporter: :none
+end
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
