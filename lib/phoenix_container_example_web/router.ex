@@ -8,6 +8,10 @@ defmodule PhoenixContainerExampleWeb.Router do
     plug :put_root_layout, html: {PhoenixContainerExampleWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers, %{"content-security-policy" => "default-src 'self'"}
+    # plug :put_secure_browser_headers, %{
+    #   "content-security-policy" =>
+    #     "default-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data: https:; style-src 'self' https: 'unsafe-inline'; script-src 'self' https: 'unsafe-eval';"
+    # }
   end
 
   pipeline :api do
