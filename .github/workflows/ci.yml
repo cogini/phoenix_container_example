@@ -51,7 +51,7 @@ env:
   # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
   # AWS_REGION: us-east-1
-  # S3_BUCKET_ASSETS: foo-app-dev-app-assets
+  # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
   # Health check port for app
   APP_PORT: 4000
@@ -932,91 +932,91 @@ jobs:
       #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
-  upload-assets:
-    name: Upload assets to CDN
-    if: github.event_name != 'pull_request'
-    # if: contains(github.ref, 'refs/heads/main')
-    # needs: [build-prod, test-prod, test]
-    # needs: [test-prod, test, test-dialyzer]
-    needs: [build-prod]
-    permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
-      id-token: write
-      contents: read
-
-      # Push to ghcr.io repository
-      packages: write
-
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
-    runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.15.7
-            otp: 26.1.2
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
-    steps:
-      - name: Debug environment
-        run: |
-          echo "ref_name: ${{ github.ref_name }}"
-          echo "environment: ${{ github.event.deployment.environment }}"
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Docker buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-
-      - name: Get build artifacts on host
-        uses: docker/build-push-action@v5
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: artifacts
-          build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: false
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
-          outputs: type=local,dest=output
-
-      - name: List output dir
-        run: find output/static -print
-
-      - name: Sync to S3
-        run: aws s3 sync output/static/ s3://${{ vars.S3_BUCKET_ASSETS }}
-
-      - name: Create CloudFront invalidation
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+  # upload-assets:
+  #   name: Upload assets to CDN
+  #   if: github.event_name != 'pull_request'
+  #   # if: contains(github.ref, 'refs/heads/main')
+  #   # needs: [build-prod, test-prod, test]
+  #   # needs: [test-prod, test, test-dialyzer]
+  #   needs: [build-prod]
+  #   permissions:
+  #     # Interact with GitHub OIDC Token endpoint for AWS
+  #     id-token: write
+  #     contents: read
+  #
+  #     # Push to ghcr.io repository
+  #     packages: write
+  #
+  #     # Upload JUnit report files
+  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+  #     checks: write
+  #     pull-requests: write
+  #     issues: read
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - elixir: 1.15.7
+  #           otp: 26.1.2
+  #           build_os_ver: bullseye-20230612-slim
+  #           prod_os_ver: bullseye-slim
+  #           snapshot_ver: 20230612
+  #           os: debian
+  #   steps:
+  #     - name: Debug environment
+  #       run: |
+  #         echo "ref_name: ${{ github.ref_name }}"
+  #         echo "environment: ${{ github.event.deployment.environment }}"
+  #
+  #     - name: Log in to GHCR
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: Configure AWS credentials
+  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ vars.AWS_REGION }}
+  #
+  #     - name: Check out source
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up Docker buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v3
+  #       with:
+  #         driver-opts: network=host
+  #
+  #     - name: Get build artifacts on host
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         file: ${{ env.DOCKER_FILE }}
+  #         target: artifacts
+  #         build-args: |
+  #           ELIXIR_VER=${{ matrix.elixir }}
+  #           OTP_VER=${{ matrix.otp }}
+  #           BUILD_OS_VER=${{ matrix.build_os_ver }}
+  #           PROD_OS_VER=${{ matrix.prod_os_ver }}
+  #         context: .
+  #         builder: ${{ steps.buildx.outputs.name }}
+  #         push: false
+  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
+  #         outputs: type=local,dest=output
+  #
+  #     - name: List output dir
+  #       run: find output/static -print
+  #
+  #     - name: Sync to S3
+  #       run: aws s3 sync output/static/ s3://${{ vars.S3_BUCKET_ASSETS }}
+  #
+  #     - name: Create CloudFront invalidation
+  #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
   deploy:
     name: Deploy to AWS ECS
