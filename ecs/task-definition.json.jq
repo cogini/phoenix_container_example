@@ -52,11 +52,11 @@
             ],
             "essential": true,
             "healthCheck": {
-                "command": [ "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"],
-                "interval": 5,
-                "timeout": 2,
-                "retries": 20,
-                "startPeriod": 2
+                "command": ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 30
             },
             "image": "<IMAGE1_NAME>",
             "logConfiguration": {
