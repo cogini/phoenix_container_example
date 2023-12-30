@@ -29,6 +29,22 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
+# config :logger, :default_formatter,
+#   format: "$time $metadata[$level] $message\n",
+#   metadata: [:file, :line, :request_id, :otel_trace_id, :otel_span_id]
+
+# Do not include metadata nor timestamps in development logs
+# config :logger, :console, format: "[$level] $message\n"
+
+if System.get_env("OTEL_DEBUG") == "true" do
+  config :opentelemetry, :processors,
+    otel_batch_processor: %{
+      exporter: {:otel_exporter_stdout, []}
+    }
+else
+  config :opentelemetry, traces_exporter: :none
+end
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed
@@ -64,9 +80,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 
 # Enable dev routes for dashboard and mailbox
 config :phoenix_container_example, dev_routes: true
-
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
