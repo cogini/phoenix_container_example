@@ -36,8 +36,8 @@ npm-debug.log
 /assets/node_modules/
 
 /.elixir_ls
-/.env
-/.envrc
+.env
+.envrc
 
 # Editor temp files
 *.swp
