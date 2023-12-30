@@ -1059,7 +1059,7 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          HOST: ${{ vars.HOST }}
+          # HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
@@ -1089,7 +1089,7 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          HOST: ${{ vars.HOST }}
+          # HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
         run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
 
