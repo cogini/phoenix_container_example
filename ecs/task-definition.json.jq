@@ -51,6 +51,13 @@
                 }
             ],
             "essential": true,
+            "healthCheck": {
+                "command": [ "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"],
+                "interval": 5,
+                "timeout": 2,
+                "retries": 20,
+                "startPeriod": 2
+            },
             "image": "<IMAGE1_NAME>",
             "logConfiguration": {
                 "logDriver": "awslogs",
