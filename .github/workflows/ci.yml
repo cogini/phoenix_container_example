@@ -48,10 +48,10 @@ env:
   PUBLIC_REGISTRY: ''
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
-  AWS_REGION: us-east-1
-  S3_BUCKET_ASSETS: foo-app-dev-app-assets
+  # AWS_REGION: us-east-1
+  # S3_BUCKET_ASSETS: foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
   # Health check port for app
   APP_PORT: 4000
@@ -71,7 +71,7 @@ env:
   TASKDEF_WORKER: ecs/task-definition.worker.json
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
-  AWS_PS_PREFIX: cogini/foo/dev
+  # AWS_PS_PREFIX: cogini/foo/dev
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
   # GitHub Advanced Security, free for open source, otherwise a paid feature
@@ -543,7 +543,7 @@ jobs:
         # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         if: ${{ env.AWS_ENABLED == 1 }}
@@ -653,7 +653,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         if: ${{ env.AWS_ENABLED == 1 }}
@@ -1034,7 +1034,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: ecr-login
@@ -1055,10 +1055,12 @@ jobs:
 
       - name: Generate ECS task-defintion.json
         env:
-          AWSLOGS_REGION: ${{ env.AWS_REGION }}
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
@@ -1083,10 +1085,12 @@ jobs:
 
       - name: Generate ECS task-defintion.json (worker)
         env:
-          AWSLOGS_REGION: ${{ env.AWS_REGION }}
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
         run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
 
       - name: Put new image ID in ECS task definition (worker)
@@ -1154,7 +1158,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         if: ${{ env.AWS_ENABLED == 1 }}
