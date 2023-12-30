@@ -1,0 +1,60 @@
+---
+# https://opentelemetry.io/docs/collector/configuration/
+# https://docs.datadoghq.com/tracing/setup_overview/open_standards/
+
+# https://github.com/aws-observability/aws-otel-collector/blob/main/config.yaml
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/datadogexporter
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/example/config.yaml
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+        # endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 127.0.0.1:4318
+        # endpoint: 0.0.0.0:4318
+        # endpoint: 0.0.0.0:55681
+  # awsxray:
+  #   endpoint: 127.0.0.1:2000
+  #   endpoint: 0.0.0.0:2000
+  #   transport: udp
+
+processors:
+  batch/traces:
+    timeout: 1s
+    send_batch_size: 50
+  batch/metrics:
+    timeout: 60s
+  resourcedetection:
+    # detectors: [env, cs, ec2, gcp, azure, system]
+    detectors: [env, ecs]
+
+exporters:
+  awsxray:
+  awsemf:
+    namespace: ECS/AWSOTel/Application
+    log_group_name: '/aws/ecs/application/metrics'
+
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md
+extensions:
+  health_check:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch/traces, resourcedetection]
+      # exporters: [datadog/api]
+      exporters: [awsxray]
+    metrics:
+      receivers: [otlp]
+      processors: [batch/metrics]
+      exporters: [awsemf]
+
+  extensions: [health_check]
+
+  telemetry:
+    logs:
+      level: warn

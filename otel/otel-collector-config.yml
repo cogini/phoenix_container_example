@@ -1,0 +1,49 @@
+---
+# https://opentelemetry.io/docs/collector/configuration/
+# https://docs.datadoghq.com/tracing/setup_overview/open_standards/
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/examples/tracing/otel-collector-config.yml
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+    timeout: 10s
+  # resourcedetection:
+  #   detectors: [gce, ecs, ec2, azure, system]
+
+exporters:
+  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/loggingexporter/README.md
+  logging:
+    loglevel: debug
+
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerexporter
+  # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/jaeger.md
+  jaeger:
+    endpoint: jaeger:14250
+    insecure: true
+    # tls:
+    #   cert_file: file.cert
+    #   key_file: file.key
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/datadogexporter
+  # datadog:
+  #   api:
+  #     key: "${DD_API_KEY}"
+  #     traces:
+  #       span_name_as_resource_name: true
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, jaeger]
