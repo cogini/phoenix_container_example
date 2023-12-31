@@ -49,3 +49,9 @@ Includes:
 
 * Uses [docker-compose](https://docs.docker.com/compose/) to test multiple
   containers as a set. You can also run it on your local machine.
+
+
+## Contact
+
+Like what you see? We are happy to help you optimize your build system and
+infrastructure.
