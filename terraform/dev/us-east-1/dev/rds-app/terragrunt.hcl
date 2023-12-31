@@ -1,0 +1,223 @@
+# Create RDS database for app
+
+terraform {
+  source = "${dirname(find_in_parent_folders())}/modules//rds"
+}
+# dependency "kms" {
+#   config_path = "../kms"
+# }
+dependency "sd" {
+  config_path = "../service-discovery-namespace"
+}
+dependency "sg" {
+  config_path = "../sg-db"
+}
+dependency "vpc" {
+  config_path = "../vpc"
+}
+include "root" {
+  path = find_in_parent_folders()
+}
+
+inputs = {
+  comp = "app"
+  # security_group = "db" # legacy
+
+  # Allow major version update
+  # allow_major_version_upgrade = true
+
+  # Settings appropriate for dev db
+  allocated_storage   = 5
+  multi_az            = false
+  deletion_protection = false
+  # disable backups to create DB faster
+  backup_retention_period = 0
+  skip_final_snapshot     = true
+  apply_immediately       = true
+
+  # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html
+  # instance_class    = "db.t3.micro"
+  # Default instance class is micro, but it doesn't support encryption
+  # instance_class    = "db.t3.small"
+  # storage_encrypted = true
+
+  subnet_ids           = dependency.vpc.outputs.subnets["database"]
+  security_group_ids   = [dependency.sg.outputs.security_group_id]
+  db_subnet_group_name = dependency.vpc.outputs.database_subnet_group
+
+  # kms_key_id = dependency.kms.outputs.key_arn
+
+  # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBInstance.html
+  # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
+  engine = "postgres"
+  # aws rds describe-db-engine-versions --engine postgres | jq '.DBEngineVersions[].EngineVersion'
+  # aws rds describe-db-engine-versions --default-only --engine postgres
+  engine_version       = "15.3"
+  major_engine_version = "15"
+  port                 = "5432"
+  # aws rds describe-db-engine-versions --engine postgres | jq '.DBEngineVersions[].DBParameterGroupFamily'
+  family = "postgres15"
+  # DB option group
+  rds_master_user = "postgres"
+
+  # By default, RDS sets the password and stores it in AWS Secrets Manager.
+  # You can access it via the AWS console if you need it.
+  # Set master password via AWS SSM parameter store:
+  # ssm_rds_master_password = "/foo/app/dev/rds/master_password"
+  # Setting the master password via a parameter is possible, but insecure, as
+  # it is stored in the Terraform state. Set OS environment var TF_VAR_rds_master_pass
+
+  # ca_cert_identifier = "rds-ca-2019"
+
+  db_name = "postgres"
+
+  # create_monitoring_role = true
+  # monitoring_interval = 60
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
+
+  parameters = [
+    {
+      # Allow unencrypted connections to the database
+      name  = "rds.force_ssl",
+      value = 0
+    },
+    # {
+    #   name = "shared_preload_libraries",
+    #   value = "pg_stat_statements",
+    #   apply_method = "pending-reboot"
+    # },
+    # {
+    #   name = "pg_stat_statements.track",
+    #   value = "all",
+    #   apply_method = "pending-reboot"
+    # },
+    # {
+    #   name = "track_activity_query_size",
+    #   value = "2048",
+    #   apply_method = "pending-reboot"
+    # },
+    # {
+    #   name = "idle_in_transaction_session_timeout",
+    #   value = "3600000",
+    #   apply_method = "dynamic"
+    # }
+  ]
+
+  # https://github.com/terraform-aws-modules/terraform-aws-vpc#public-access-to-rds-instances
+  # Allow public access to RDS instance
+  # create_database_subnet_group           = true
+  # create_database_subnet_route_table     = true
+  # create_database_internet_gateway_route = true
+  # publicly_accessible = "false"
+
+  # engine = "mysql"
+  # engine_version = "5.7.17"
+  # port = "3306"
+  # family = "mysql5.7"
+  # major_engine_version = "5.7"
+  # parameters = [
+  #   {
+  #     name = "log_bin_trust_function_creators"
+  #     value = "1"
+  #   },
+  #   {
+  #     name = "tx_isolation"
+  #     value = "repeatable-read"
+  #   },
+  #   {
+  #     name = "back_log"
+  #     value = "50"
+  #     apply_method = "pending-reboot"
+  #   },
+  #   {
+  #     name = "query_cache_size"
+  #     value = "134217728"
+  #   },
+  #   {
+  #     name = "slow_query_log"
+  #     value = "1"
+  #   },
+  #   {
+  #     name = "long_query_time"
+  #     value = "2"
+  #   },
+  #   {
+  #     name = "binlog_cache_size"
+  #     value = "1048576"
+  #   },
+  #   //  {
+  #   //    name = "innodb_file_per_table"
+  #   //    value = "1"
+  #   //  },
+  #   {
+  #     name = "innodb_file_format"
+  #     value = "barracuda"
+  #   },
+  #   {
+  #     name = "innodb_large_prefix"
+  #     value = "1"
+  #   },
+  #   {
+  #     name = "innodb_thread_concurrency"
+  #     value = "6"
+  #   },
+  #   {
+  #     name = "innodb_flush_log_at_trx_commit"
+  #     value = "1"
+  #   },
+  #   {
+  #     name = "innodb_log_buffer_size"
+  #     value = "16777216"
+  #     apply_method = "pending-reboot"
+  #   },
+  #   {
+  #     name = "innodb_open_files"
+  #     value = "2000"
+  #     apply_method = "pending-reboot"
+  #   },
+  #   {
+  #     name = "max_allowed_packet"
+  #     value = "67108864"
+  #   },
+  #   {
+  #     name = "character_set_client"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "character_set_connection"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "character_set_database"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "character_set_filesystem"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "character_set_results"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "character_set_server"
+  #     value = "utf8mb4"
+  #   },
+  #   {
+  #     name = "innodb_stats_persistent"
+  #     value = "0"
+  #   },
+  #   {
+  #     name = "innodb_stats_persistent_sample_pages"
+  #     value = "20"
+  #   },
+  #   {
+  #     name = "innodb_stats_auto_recalc"
+  #     value = "0"
+  #   }
+  # ]
+
+  service_discovery_namespace_id = dependency.sd.outputs.id
+  service_discovery_dns_domain   = dependency.sd.outputs.dns_domain
+}

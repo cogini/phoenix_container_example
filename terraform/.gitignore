@@ -1,0 +1,18 @@
+# Terraform/Terragrunt
+terragrunt.iml
+.terraform
+*.tfstate
+*.tfstate.backup
+*.out
+.terragrunt-cache
+.terraform.lock.hcl
+terragrunt
+**/.terraform/*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+.terraformrc
+terraform.rc
+
+.envrc
