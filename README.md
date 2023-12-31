@@ -1,62 +1,51 @@
 # phoenix_container_example
 
-## Installation
+Full-featured production example of building, testing, and deploying containerized Phoenix apps.
 
-Install [direnv](https://direnv.net/)
+Includes:
 
-```console
-brew install direnv
-```
+* Optimized Dockerfiles
+* GitHub Actions for parallelized building, containerized testing, static code
+  analysis, and deployment to AWS ECS
+* Terraform code to set up AWS ECS, etc.
+* Application configuration to support logging and tracing
 
-Create `.direnv` file in project root:
+## Details
 
-```shell
-# Run Phoenix server by default
-export PHX_SERVER=true
+* Supports Debian, Ubuntu, and Alpine using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
+  base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless)
+  and Ubuntu [Chisel](https://github.com/canonical/chisel) to build small distribution images.
 
-# Set default file for docker compose
-export COMPOSE_FILE=docker-compose.gha.yml
+* Uses Erlang releases for the final image, resulting in an image size of less than 20MB.
 
-# Connect to database on local machine
-# export DATABASE_URL=ecto://postgres:postgres@localhost/app
-# Connect to database running in container
-export DATABASE_URL=ecto://postgres:postgres@postgres/app
-# export SECRET_KEY_BASE="XXX"
+* Uses Docker [BuildKit](https://github.com/moby/buildkit)
+  for [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/)
+  and caching of OS files and language packages. Multistage builds compile
+  dependencies separately from app code, speeding rebuilds and reducing final
+  image size. Caching of packages reduces size of container layers and allows
+  sharing of data betwen container targets.
 
-# Override log level
-# export LOG_LEVEL=debug
+* Supports a full-featured CI with Github Actions, running static code analysis
+  and security scanners in parallel.
 
-# Run OpenTelemetry in dev and test
-# export OTEL_DEBUG=true
-# export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
-# export OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
-```
+* Supports external testing of production images using Postman/Newman.
 
-Create `postgres` user in local database with password `postgres`:
+* Supports container-based testing, running tests against the production build
+  using Postman/Newman, with containerized builds of Postgres, MySQL, Redis, etc.
 
-```console
-createuser --createdb --encrypted --pwprompt postgres
-```
+* Support building multiple versions of production images with different configurations,
+  allowing testing of updated base images in response to security vulnerabilities.
 
-Install and set up dependencies:
+* Supports development in a Docker container with Visual Studio Code.
 
-```console
-mix setup
-```
+* Supports building for multiple architectures, e.g. AWS
+  [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
 
-Start Phoenix server:
+* Supports deploying to AWS ECS Blue/Green deployment, and AWS Parameter Store
+  for configuration. Terraform is used to set up the environment.
 
-```console
-iex -S mix phx.server
-```
+* Supports compiling assets such as JS/CSS within the container, then
+  uploading them to CloudFront CDN.
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
-
-## Learn more
-
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
+* Uses [docker-compose](https://docs.docker.com/compose/) to test multiple
+  containers as a set. You can also run it on your local machine.
