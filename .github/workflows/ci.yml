@@ -837,8 +837,8 @@ jobs:
       #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
       #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
+      # Basic smoke test to make sure service came up
       - name: Run health check
-        # run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
         run: for i in 1 2 3 4 5 6 7 8 9 10; do curl -v http://localhost:${{ env.APP_PORT }}/healthz && break || sleep 1; done
 
       - name: Display logs
@@ -1104,7 +1104,7 @@ jobs:
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
       #   env:
-      #     CONTAINER_NAME: "iot-app"
+      #     CONTAINER_NAME: "foo-app"
       #     PORT: "4000"
       #   run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
 
