@@ -111,7 +111,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:recon, "~> 2.5"},
-      {:styler, "~> 0.10.0", only: [:dev, :test], runtime: false},
+      {:styler, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.3"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
