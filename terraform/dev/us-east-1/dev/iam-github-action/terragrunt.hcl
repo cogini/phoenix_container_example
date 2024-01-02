@@ -10,11 +10,20 @@ dependency "cloudfront" {
 dependency "codedeploy-app" {
   config_path = "../codedeploy-app"
 }
-dependency "codedeploy-deployment" {
+dependency "codedeploy-deployment-app" {
   config_path = "../codedeploy-deployment-app"
+}
+dependency "codedeploy-api" {
+  config_path = "../codedeploy-api"
+}
+dependency "codedeploy-deployment-api" {
+  config_path = "../codedeploy-deployment-api"
 }
 dependency "ecr-app" {
   config_path = "../ecr-app"
+}
+dependency "ecr-api" {
+  config_path = "../ecr-api"
 }
 dependency "ecr-otel" {
   config_path = "../ecr-otel"
@@ -24,6 +33,9 @@ dependency "ecs-cluster" {
 }
 dependency "ecs-service-app" {
   config_path = "../ecs-service-app"
+}
+dependency "ecs-service-api" {
+  config_path = "../ecs-service-api"
 }
 dependency "ecs-service-worker" {
   config_path = "../ecs-service-worker"
@@ -44,7 +56,10 @@ include "root" {
 inputs = {
   comp = "app"
 
-  sub = "repo:cogini/phoenix_container_example:*"
+  subs = [
+    "repo:cogini/phoenix_container_example:*",
+    "repo:cogini/absinthe_federation_example:*",
+  ]
 
   s3_buckets = [
     dependency.s3.outputs.buckets["assets"].id
@@ -63,7 +78,14 @@ inputs = {
       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
       codedeploy_application_name      = dependency.codedeploy-app.outputs.app_name
-      codedeploy_deployment_group_name = dependency.codedeploy-deployment.outputs.deployment_group_name
+      codedeploy_deployment_group_name = dependency.codedeploy-deployment-app.outputs.deployment_group_name
+    },
+    {
+      service_arn                      = dependency.ecs-service-api.outputs.id
+      task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
+      execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
+      codedeploy_application_name      = dependency.codedeploy-api.outputs.app_name
+      codedeploy_deployment_group_name = dependency.codedeploy-deployment-api.outputs.deployment_group_name
     },
     {
       service_arn                      = dependency.ecs-service-worker.outputs.id
