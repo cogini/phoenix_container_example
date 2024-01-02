@@ -14,6 +14,14 @@ variable "name" {
 
 variable "sub" {
   description = "GitHub repo allowed access, e.g. repo:cogini/*"
+  type        = string
+  default     = null
+}
+
+variable "subs" {
+  description = "GitHub repo allowed access, e.g. repo:cogini/*"
+  type        = list(string)
+  default     = null
 }
 
 variable "s3_buckets" {

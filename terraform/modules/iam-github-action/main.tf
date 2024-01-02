@@ -89,6 +89,7 @@ locals {
   enable_ecr        = length(var.ecr_arns) > 0
   enable_ecs        = length(var.ecs) > 0
   enable_codebuild  = var.codebuild_project_name != ""
+  subs              = var.subs == null ? [var.sub] : var.subs
 
   ecs_task_roles = [ for r in var.ecs : r.task_role_arn ]
   ecs_execution_roles = [ for r in var.ecs : r.execution_role_arn ]
@@ -104,32 +105,36 @@ locals {
   enable_codedeploy = length(local.ecs_codedeploy_arns) > 0
 }
 
+data "aws_iam_policy_document" "assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type = "Federated"
+      identifiers = [
+        "arn:${var.aws_partition}:iam::${local.aws_account_id}:oidc-provider/token.actions.githubusercontent.com"
+      ]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    # Use subject (sub) condition key for iam
+    # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html#available-keys-for-iam
+    condition {
+      test     = "ForAnyValue:StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = var.subs
+    }
+  }
+}
+
 resource "aws_iam_role" "this" {
   name               = "${local.name}-github-action"
   description        = "Allow GitHub Action to call AWS services"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "",
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:${var.aws_partition}:iam::${local.aws_account_id}:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "${var.sub}"
-        }
-      }
-    }
-  ]
-}
-EOF
+  assume_role_policy = data.aws_iam_policy_document.assume.json
 }
 
 # Give access to S3 buckets
