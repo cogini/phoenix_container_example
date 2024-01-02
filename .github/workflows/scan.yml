@@ -1,0 +1,188 @@
+name: Periodic Security Scan
+# Periodically scan production images for security vulnerabilities
+on:
+  schedule:
+    # Once a day at midnight
+    # - cron: '0 0 * * *'
+    # Once an hour
+    - cron: '0 * * * *'
+env:
+  # Name of image
+  IMAGE_NAME: foo-app
+  # Name of org in GHCR Docker repository (must be lowercase)
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  # ECR Docker repository org name, may be blank
+  ECR_IMAGE_OWNER: cogini/
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
+  # Variant if test matrix is not used
+  VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
+  # Variant that is deployed
+  PROD_VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
+  RELEASE_ELIXIR: 1.15.7
+  RELEASE_OTP: 26.1.2
+  RELEASE_BUILD_OS_VER: bullseye-20230612-slim
+  RELEASE_PROD_OS_VER: bullseye-slim
+  RELEASE_SNAPSHOT_VER: ""
+  RELEASE_OS: debian
+  # Registry for test images
+  REGISTRY: ghcr.io/
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ''
+  # Give GitHub Actions access to AWS
+  AWS_ENABLED: 1
+  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
+  # AWS_REGION: us-east-1
+  # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
+  # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
+  # Health check port for app
+  APP_PORT: 4000
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  ELIXIR_MODULE: PhoenixContainerExample
+  ECS_CLUSTER: foo
+  ECS_SERVICE: foo-app
+  ECS_CONTAINER: foo-app
+  ECS_SERVICE_WORKER: foo-worker
+  ECS_CONTAINER_WORKER: foo-worker
+  CODEDEPLOY_APPLICATION: foo-app
+  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  TASKDEF: ecs/task-definition.json
+  TASKDEF_WORKER: ecs/task-definition.worker.json
+  APPSPEC: ecs/appspec.yml
+  # AWS SSM Parameter Store name prefix
+  # AWS_PS_PREFIX: cogini/foo/dev
+  # Name of environment for resources created by Terraform
+  # TERRAFORM_ENV: dev
+  # GitHub Advanced Security, free for open source, otherwise a paid feature
+  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+  GITHUB_ADVANCED_SECURITY: 1
+  DEPLOY_DOCKER_HUB: 0
+  # Docker
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
+jobs:
+  scan:
+    name: Security scan prod image
+    # needs: [build-prod]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
+          # - elixir: 1.14.1
+          #   otp: 24.3.4
+          #   build_os_ver: bullseye-20210902-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20210902
+          #   os: debian
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/aquasecurity/trivy-action
+        # https://github.com/marketplace/actions/aqua-security-trivy#inputs
+        with:
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # exit-code: '1' # fail build
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          # severity: 'CRITICAL,HIGH'
+          # cache-dir: /var/cache
+          format: 'sarif'
+          output: 'trivy.sarif'
+
+      - name: Display scan results
+        run: cat trivy.sarif | jq .
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        # Requires GitHub Advanced Security
+        # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+        with:
+          sarif_file: 'trivy.sarif'
+          category: trivy
+
+      - name: Scan image with Grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # severity-cutoff: critical
+          fail-build: false
+          output-format: 'sarif'
+          # output-format: table
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
+
+      - name: Upload Grype scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+      # - name: Scan image with snyk
+      #   # if: github.event_name != 'pull_request'
+      #   uses: snyk/actions/docker@master
+      #   continue-on-error: true
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     command: test
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
