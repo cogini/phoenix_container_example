@@ -21,8 +21,8 @@ inputs = {
   comp = "app"
   name = "app-ecs-2"
 
-  # hosts = ["${local.environment_vars.locals.dns_domain}"]
   hosts = ["app.${dependency.zone.outputs.name_nodot}"]
+  # hosts = ["${local.environment_vars.locals.dns_domain}"]
 
   port     = 4000
   protocol = "HTTP"
@@ -42,7 +42,6 @@ inputs = {
   # }
 
   listener_rule = false
-
   listener_arn = dependency.lb.outputs.listener_arn
   vpc_id       = dependency.vpc.outputs.vpc_id
   target_type  = "ip"
