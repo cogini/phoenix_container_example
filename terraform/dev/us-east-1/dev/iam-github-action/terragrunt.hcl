@@ -69,6 +69,7 @@ inputs = {
 
   ecr_arns = [
     dependency.ecr-app.outputs.arn,
+    dependency.ecr-api.outputs.arn,
     dependency.ecr-otel.outputs.arn
   ]
 
