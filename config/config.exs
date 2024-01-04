@@ -19,6 +19,9 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
 
+config :phoenix_container_example,
+  foo: "default"
+
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
