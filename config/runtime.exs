@@ -10,6 +10,7 @@ end
 env_config = [
   {"FOO", :phoenix_container_example, :foo}
 ]
+
 for {env, app, key} <- env_config, value = System.get_env(env) do
   config(app, [{key, value}])
 end
