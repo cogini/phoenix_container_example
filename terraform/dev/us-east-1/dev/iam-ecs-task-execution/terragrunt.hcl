@@ -32,7 +32,7 @@ inputs = {
   # cloudwatch_logs = ["log-group:*:log-stream:*"]
 
   # Give access to SSM Parameter Store params
-  # Default prefix is /org/app/env, e.g. "cogini/foo/dev"
+  # Default prefix is /org/app/env/comp, e.g. "cogini/foo/dev/app"
   # ssm_ps_param_prefix = format("%s/%s/%s", local.org, local.app_name, local.env)
 
   # Give access to parameter names under prefix
