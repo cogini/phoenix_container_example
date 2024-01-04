@@ -83,8 +83,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
       # {:libcluster_ecs, github: "pro-football-focus/libcluster_ecs"},
-      # {:logger_formatter_json, "~> 0.7.0"},
-      {:logger_formatter_json, github: "cogini/logger_formatter_json"},
+      {:logger_formatter_json, "~> 0.8.0"},
+      # {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
       # tls_certificate_check needs to be started before opentelemetry_exporter
