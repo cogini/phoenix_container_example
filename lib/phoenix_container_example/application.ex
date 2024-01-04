@@ -25,9 +25,6 @@ defmodule PhoenixContainerExample.Application do
         {Phoenix.PubSub, name: PhoenixContainerExample.PubSub},
         # Start the Finch HTTP client for sending emails
         {Finch, name: PhoenixContainerExample.Finch},
-        # Start a worker by calling: PhoenixContainerExample.Worker.start_link(arg)
-        # {PhoenixContainerExample.Worker, arg},
-        # Start to serve requests, typically the last entry
         PhoenixContainerExampleWeb.Endpoint,
         cluster_supervisor()
       ])
