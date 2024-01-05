@@ -1,6 +1,7 @@
 # phoenix_container_example
 
-Full-featured production example of building, testing, and deploying containerized Phoenix apps.
+Full-featured production example of building, testing, and deploying
+containerized Phoenix apps.
 
 Includes:
 
@@ -12,8 +13,9 @@ Includes:
 
 ## Details
 
-* Supports Debian, Ubuntu, and Alpine using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
-  base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless)
+* Supports Debian, Ubuntu, and Alpine using
+  [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir) base images.
+  Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless)
   and Ubuntu [Chisel](https://github.com/canonical/chisel) to build small distribution images.
 
 * Uses Erlang releases for the final image, resulting in an image size of less than 20MB.
@@ -25,31 +27,29 @@ Includes:
   image size. Caching of packages reduces size of container layers and allows
   sharing of data betwen container targets.
 
-* Supports a full-featured CI with Github Actions, running static code analysis
-  and security scanners in parallel.
+* Supports a full-featured CI with Github Actions, building and testing
+  components in parallel.
 
-* Supports external testing of production images using Postman/Newman.
+* Supports container-based testing, running tests against the production image
+  using Postman/Newman, with containerized Postgres, MySQL, Redis, etc.
 
-* Supports container-based testing, running tests against the production build
-  using Postman/Newman, with containerized builds of Postgres, MySQL, Redis, etc.
-
-* Support building multiple versions of production images with different configurations,
-  allowing testing of updated base images in response to security vulnerabilities.
+* Supports building multiple versions of images with different
+  configurations, allowing testing of updated base images in response to
+  security vulnerabilities.
 
 * Supports development in a Docker container with Visual Studio Code.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
 
-* Supports deploying to AWS ECS Blue/Green deployment, and AWS Parameter Store
-  for configuration. Terraform is used to set up the environment.
+* Supports deploying to AWS ECS with Blue/Green deployment and AWS Parameter
+  Store for configuration. Terraform is used to set up the environment.
 
 * Supports compiling assets such as JS/CSS within the container, then
   uploading them to CloudFront CDN.
 
 * Uses [docker-compose](https://docs.docker.com/compose/) to test multiple
   containers as a set. You can also run it on your local machine.
-
 
 ## Contact
 
