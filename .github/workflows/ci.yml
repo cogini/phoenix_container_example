@@ -864,16 +864,18 @@ jobs:
       #     NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
       #     # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
       #   # https://hub.docker.com/r/postman/newman/
-      #   run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+      #   run: | 
+      #     mkdir -p junit-reports
+      #     docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
 
-      - name: Publish unit test results to GitHub
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        # Run even if tests fail
-        if: always()
-        with:
-          # Volume mounted from local filesystem into build
-          junit_files: ./junit-reports/*.xml
-          check_name: "External API Tests"
+      # - name: Publish unit test results to GitHub
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   # Run even if tests fail
+      #   if: always()
+      #   with:
+      #     # Volume mounted from local filesystem into build
+      #     junit_files: ./junit-reports/*.xml
+      #     check_name: "External API Tests"
 
   scan:
     name: Security scan prod image
