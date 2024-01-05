@@ -27,7 +27,7 @@ Includes:
   image size. Caching of packages reduces size of container layers and allows
   sharing of data betwen container targets.
 
-* Supports a full-featured CI with Github Actions, building and testing
+* Supports full-featured CI with Github Actions, building and testing
   components in parallel.
 
 * Supports container-based testing, running tests against the production image
@@ -39,8 +39,9 @@ Includes:
 
 * Supports development in a Docker container with Visual Studio Code.
 
-* Supports building for multiple architectures, e.g. AWS
-  [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
+* Supports building for
+  [multiple architectures](https://docs.docker.com/build/ci/github-actions/multi-platform/),
+  e.g., AWS [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
 
 * Supports deploying to AWS ECS with Blue/Green deployment and AWS Parameter
   Store for configuration. Terraform is used to set up the environment.
