@@ -46,6 +46,9 @@ npm-debug.log
 /.bash_history
 /.dotnet
 /.ssh
+/.gitconfig
+/.gnupg/
+/.vscode-server/
 
 # macOS junk
 .DS_Store
