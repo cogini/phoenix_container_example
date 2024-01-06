@@ -71,6 +71,41 @@ services:
       # aws-otel-collector:
       #   condition: service_healthy
 
+  # Development image
+  dev:
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev"
+    build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
+      target: dev
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+        PUBLIC_REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
+    # VSCode devcontainer needs something running
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    environment:
+      - DATABASE_DB
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_URL
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+    ports:
+      - '4000:4000'
+    stdin_open: true
+    tty: true
+    cap_add:
+      - CAP_SYS_ADMIN
+    volumes:
+      - ".:/app:delegated"
+      # - 'nfsmount:/app'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
   aws-otel-collector:
     image: public.ecr.aws/aws-observability/aws-otel-collector:latest
