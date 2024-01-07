@@ -23,6 +23,7 @@
 !.formatter.exs
 !coveralls.json
 !dialyzer-ignore
+!.gitleaks.toml
 !trivy.yaml
 
 !deploy/chisel/release

@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "global allow list"
+paths = ['''deploy''', '''.*\/deploy\/.*''']
