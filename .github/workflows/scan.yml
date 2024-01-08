@@ -101,6 +101,11 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
+          # - elixir: 1.15.7
+          #   otp: 26.1.2
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   os: distroless
           # - elixir: 1.14.5
           #   otp: 26.1.1
           #   build_os_ver: bullseye-20230612-slim
