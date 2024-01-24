@@ -29,7 +29,7 @@ env:
   IMAGE_NAME: foo-app
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # ECR Docker repository org name, may be blank
+  # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
@@ -1022,7 +1022,6 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          # HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
@@ -1052,7 +1051,6 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          # HOST: ${{ vars.HOST }}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
         run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
 
