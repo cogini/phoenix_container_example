@@ -61,6 +61,7 @@ if config_env() == :prod do
 
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    # static_url: [host: "assets." <> host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
