@@ -36,6 +36,7 @@ env:
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
   # Variant if test matrix is not used
+  # See https://hub.docker.com/r/hexpm/elixir/tags
   VAR: '1.16.1-erlang-26.2.1-debian-bullseye-20231009-slim'
   # Variant that is deployed
   PROD_VAR: '1.16.1-erlang-26.2.1-debian-bullseye-20231009-slim'
