@@ -3,9 +3,9 @@ name: Periodic Security Scan
 on:
   schedule:
     # Once a day at midnight
-    # - cron: '0 0 * * *'
+    - cron: '0 0 * * *'
     # Once an hour
-    - cron: '0 * * * *'
+    # - cron: '0 * * * *'
 env:
   # Name of image
   IMAGE_NAME: foo-app
