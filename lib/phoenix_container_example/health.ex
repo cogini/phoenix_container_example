@@ -1,11 +1,30 @@
 defmodule PhoenixContainerExample.Health do
   @moduledoc """
-  Collect app status for Kubernetes health checks.
+  Health check with Kubernetes semantics.
+
+  This module is called by `KubernetesHealthCheck.Plug` to perform
+  application-specific logic.
   """
   alias PhoenixContainerExample.Repo
 
   @app :phoenix_container_example
   @repos Application.compile_env(@app, :ecto_repos) || []
+
+  @type check_return ::
+          :ok
+          | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
+          | {:error, reason :: binary()}
+
+  @doc """
+  Basic health check.
+
+  This is a sanity check that the app is running and responding to requests.
+  It should always succeed.
+  """
+  @spec basic :: check_return()
+  def basic do
+    :ok
+  end
 
   @doc """
   Check if the app has finished booting up.
@@ -20,10 +39,7 @@ defmodule PhoenixContainerExample.Health do
   web-server, connected to a DB, connected to external services, and performed
   initial setup tasks such as loading a large cache.
   """
-  @spec startup ::
-          :ok
-          | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
-          | {:error, reason :: binary()}
+  @spec startup :: check_return()
   def startup do
     # Return error if there are available migrations which have not been executed.
     # This supports deployment to AWS ECS using the following strategy:
@@ -54,10 +70,7 @@ defmodule PhoenixContainerExample.Health do
   This check should be lightweight, only determining if the server is
   responding to requests and can connect to the DB.
   """
-  @spec liveness ::
-          :ok
-          | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
-          | {:error, reason :: binary()}
+  @spec liveness :: check_return()
   def liveness do
     case Ecto.Adapters.SQL.query(Repo, "SELECT 1") do
       {:ok, %{num_rows: 1, rows: [[1]]}} ->
@@ -88,19 +101,8 @@ defmodule PhoenixContainerExample.Health do
   Similarly, the app might return an error if it is overloaded, shedding
   traffic until it has caught up.
   """
-  @spec readiness ::
-          :ok
-          | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
-          | {:error, reason :: binary()}
+  @spec readiness :: check_return()
   def readiness do
     liveness()
-  end
-
-  @spec basic ::
-          :ok
-  # | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
-  # | {:error, reason :: binary()}
-  def basic do
-    :ok
   end
 end
