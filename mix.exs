@@ -83,6 +83,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
       # {:libcluster_ecs, github: "pro-football-focus/libcluster_ecs"},
+      {:kubernetes_health_check, github: "cogini/kubernetes_health_check"},
+      # {:kubernetes_health_check, "~> 0.7.0"},
       {:logger_formatter_json, "~> 0.8.0"},
       # {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
