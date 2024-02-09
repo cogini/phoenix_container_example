@@ -123,7 +123,13 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
+  # Only configure the production mailer if we have AWS credentials
+  if System.get_env("AWS_ACCESS_KEY_ID") || System.get_env("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI") do
+    config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
+    config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: PhoenixContainerExample.Finch
+    # Disable Swoosh Local Memory Storage
+    config :swoosh, local: false
+  end
 
   config :libcluster, debug: true
 
