@@ -730,8 +730,8 @@ jobs:
 
       # - name: Initialize database
       #   run: |
-      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
-      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
+      #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
+      #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
       #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
       # Basic smoke test to make sure service came up
