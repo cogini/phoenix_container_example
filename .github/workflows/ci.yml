@@ -729,12 +729,11 @@ jobs:
       #     # docker compose run --entrypoint /bin/bash prod pg_isready -h postgres -p 5432 -d postgres -U postgres
 
       # - name: Initialize database
-      #   # These calls assume the entrypoint is the Erlang release script, i.e., bin/<release-name>
-      #   # They conflict with an entrypoint script that runs migrations, e.g., rel/overlays/bin/start-docker
       #   run: |
+      #     # Rundandant with bin/start-docker
       #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
       #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
-      #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
+      #     docker compose run --entrypoint bin/prod prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
       # Basic smoke test to make sure service came up
       - name: Run health check
@@ -762,6 +761,21 @@ jobs:
       #   run: |
       #     mkdir -p junit-reports
       #     docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+
+      # - name: Display logs
+      #   if: failure()
+      #   run: |
+      #     echo "postgres logs"
+      #     docker compose logs --timestamps postgres
+      #     echo "postgres health"
+      #     docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+      #     echo "prod logs"
+      #     docker compose logs --timestamps prod
+      #     echo "prod health"
+      #     docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+      #     echo "ps"
+      #     docker compose ps --format json | jq .
+      #     docker compose logs --timestamps newman
 
       # - name: Publish unit test results to GitHub
       #   uses: EnricoMi/publish-unit-test-result-action@v2
