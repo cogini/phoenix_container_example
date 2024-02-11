@@ -4,7 +4,7 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
   username: System.get_env("DATABASE_USER") || "postgres",
   password: System.get_env("DATABASE_PASS") || "postgres",
   hostname: System.get_env("DATABASE_HOST") || "localhost",
-  database: System.get_env("DATABASE_DB") || "phoenix_container_example_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: System.get_env("DATABASE_DB") || "app_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
