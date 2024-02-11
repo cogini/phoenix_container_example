@@ -607,7 +607,6 @@ FROM prod-base AS prod
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
         MIX_ENV=$MIX_ENV \
@@ -682,16 +681,13 @@ FROM build-os-deps AS dev
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
-    ARG APP_PORT
     ARG APP_USER
 
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
-        HOME=$APP_DIR \
-        PORT=$APP_PORT \
-        PHX_SERVER=true
+        HOME=$APP_DIR
 
     RUN set -exu && \
         # Create app dirs
