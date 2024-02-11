@@ -5,7 +5,7 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
   username: System.get_env("DATABASE_USER") || "postgres",
   password: System.get_env("DATABASE_PASS") || "postgres",
   hostname: System.get_env("DATABASE_HOST") || "localhost",
-  database: System.get_env("DATABASE_DB") || "phoenix_container_example_dev",
+  database: System.get_env("DATABASE_DB") || "app_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
