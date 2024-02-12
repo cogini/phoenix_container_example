@@ -36,10 +36,10 @@ defmodule PhoenixContainerExample.Application do
   defp cluster_supervisor do
     topologies = Application.get_env(:libcluster, :topologies, [])
 
-    if length(topologies) > 0 do
-      [{Cluster.Supervisor, [topologies, [name: PhoenixContainerExample.ClusterSupervisor]]}]
-    else
+    if Enum.empty?(topologies) do
       []
+    else
+      [{Cluster.Supervisor, [topologies, [name: PhoenixContainerExample.ClusterSupervisor]]}]
     end
   end
 
