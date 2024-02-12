@@ -27,8 +27,8 @@ inputs = {
 
   port_mappings = [
     {
-      containerPort = 4000
-      hostPort      = 4000
+      containerPort = 4001
+      hostPort      = 4001
       appProtocol   = "http"
       protocol      = "tcp"
     }
@@ -36,7 +36,7 @@ inputs = {
 
   entrypoint = ["sh", "-c"]
   command = [
-    "/bin/sh -c \"echo '<html><head><title>ECS Api</title></head><h1>ECS Api</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4000'\""
+    "/bin/sh -c \"echo '<html><head><title>ECS Api</title></head><h1>ECS Api</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4001'\""
   ]
 
   environment = []

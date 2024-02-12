@@ -41,7 +41,7 @@ inputs = {
       target_group_arn = dependency.tg.outputs.arn
       container_name   = dependency.task.outputs.container_name
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
-      container_port = 4000
+      container_port = 4001
     }
   ]
 
@@ -78,10 +78,10 @@ inputs = {
 
   service_registries = {
     registry_arn   = dependency.sd-service.outputs.arn
-    # port = 4000
+    # port = 4001
     container_name   = dependency.task.outputs.container_name
     # container_port = dependency.task.outputs.port_mappings[0].hostPort
-    # container_port = 4000
+    # container_port = 4001
   }
 
   enable_ecs_managed_tags = true

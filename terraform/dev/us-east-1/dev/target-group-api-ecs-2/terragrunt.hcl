@@ -24,7 +24,7 @@ inputs = {
   hosts = ["api.${dependency.zone.outputs.name_nodot}"]
   # hosts = ["${local.environment_vars.locals.dns_domain}"]
 
-  port     = 4000
+  port     = 4001
   protocol = "HTTP"
 
   health_check = {
