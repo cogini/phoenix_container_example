@@ -59,8 +59,8 @@ inputs = {
     }
   ]
 
-  deployment_controller_type = "CODE_DEPLOY"
-  # deployment_controller_type = "ECS"
+  # deployment_controller_type = "CODE_DEPLOY"
+  deployment_controller_type = "ECS"
   force_new_deployment       = true
 
   # deployment_maximum_percent = 200
