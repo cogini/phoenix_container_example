@@ -33,11 +33,21 @@ phoenix_container_example-*.tar
 
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
+
+# The directory NPM downloads your dependencies sources to.
 /assets/node_modules/
 
 /.elixir_ls
 .env
 .envrc
+/.hex/
+/.mix/
+/.vscode-server/
+/.vscode/
+/dregsy.yml
+
+/junit-reports/
+/sarif-reports/
 
 # Editor temp files
 *.swp
@@ -45,7 +55,7 @@ npm-debug.log
 # OS files when mounting dev container
 /.bash_history
 /.dotnet
-/.ssh
+/.ssh/
 /.gitconfig
 /.gnupg/
 /.vscode-server/
