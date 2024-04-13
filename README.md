@@ -1,7 +1,7 @@
 # phoenix_container_example
 
 Full-featured production example of building, testing, and deploying
-containerized Phoenix apps.
+containerized Elixir/Phoenix apps.
 
 Includes:
 
@@ -10,6 +10,10 @@ Includes:
   analysis, and deployment to AWS ECS
 * Terraform code to set up AWS ECS, etc.
 * Application configuration to support logging and tracing
+
+See the blog post
+"[Breaking up the monolith: building, testing, and deploying microservices](https://www.cogini.com/blog/breaking-up-the-monolith-building-testing-and-deploying-microservices/)"
+for background.
 
 ## Details
 
@@ -33,26 +37,26 @@ Includes:
 * Supports container-based testing, running tests against the production image
   using Postman/Newman, with containerized Postgres, MySQL, Redis, etc.
 
+* Uses [docker-compose](https://docs.docker.com/compose/) to test multiple
+  containers as a set. You can also run it on your local machine.
+
 * Supports building multiple versions of images with different
   configurations, allowing testing of updated base images in response to
   security vulnerabilities.
 
 * Supports development in a Docker container with Visual Studio Code.
 
+* Supports compiling assets such as JS/CSS within the container, then
+  uploading them to CloudFront CDN.
+
 * Supports building for
   [multiple architectures](https://docs.docker.com/build/ci/github-actions/multi-platform/),
-  e.g., AWS [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
+  e.g., AWS [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm CPU.
 
 * Supports deploying to AWS ECS with Blue/Green deployment and AWS Parameter
   Store for configuration. Terraform is used to set up the environment.
 
-* Supports compiling assets such as JS/CSS within the container, then
-  uploading them to CloudFront CDN.
-
-* Uses [docker-compose](https://docs.docker.com/compose/) to test multiple
-  containers as a set. You can also run it on your local machine.
-
 ## Contact
 
 Like what you see? We are happy to help you optimize your build system and
-infrastructure.
+infrastructure. Contact `jakemorrison` on the Elixir Slack or `sales@cogini.com`.
