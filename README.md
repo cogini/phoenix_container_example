@@ -11,8 +11,7 @@ Includes:
 * Terraform code to set up AWS ECS, etc.
 * Application configuration to support logging and tracing
 
-See the blog post
-"[Breaking up the monolith: building, testing, and deploying microservices](https://www.cogini.com/blog/breaking-up-the-monolith-building-testing-and-deploying-microservices/)"
+See [Breaking up the monolith: building, testing, and deploying microservices](https://www.cogini.com/blog/breaking-up-the-monolith-building-testing-and-deploying-microservices/)
 for background.
 
 ## Details
