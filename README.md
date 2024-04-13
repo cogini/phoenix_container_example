@@ -58,4 +58,5 @@ for background.
 ## Contact
 
 Like what you see? We are happy to help you optimize your build system and
-infrastructure. Contact `jakemorrison` on the Elixir Slack or `sales@cogini.com`.
+infrastructure. Contact `jakemorrison` on the [Elixir Slack](https://elixir-lang.slack.com)
+or email `sales@cogini.com`.
