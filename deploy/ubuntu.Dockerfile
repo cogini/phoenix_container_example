@@ -607,7 +607,6 @@ FROM prod-base AS prod
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        PHX_SERVER=true \
         RELEASE=$RELEASE \
         MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
