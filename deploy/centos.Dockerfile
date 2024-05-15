@@ -142,7 +142,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # https://github.com/asdf-vm/asdf-erlang/issues/206
         # rpm --eval '%{_arch}' && \
         # Install nodejs from nodesource.com
-        curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | sudo bash - && \
+        curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
         corepack enable && \
         yum install -y -q \
             # autoconf \
