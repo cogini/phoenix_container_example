@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# pre_build task
+
+set -e
+
+if [ -n "$BUILD_DIR" ]; then
+    cd "$BUILD_DIR" || exit 1
+fi
+
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Running pre_build task"
+
+if [ -f "$HOME/.asdf/asdf.sh" ]; then
+    source "$HOME/.asdf/asdf.sh"
+fi
+
+echo "===> Installing build deps with ASDF"
+asdf install
+# There may be problem with plugin return codes so run it twice
+asdf install
+
+asdf reshim
+
+echo "===> Installing hex, rebar"
+mix local.hex --if-missing --force
+mix local.rebar --if-missing --force
+
+exit 0

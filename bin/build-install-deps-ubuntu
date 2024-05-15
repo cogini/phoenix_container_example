@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Install Erlang, Elixir and Node.js from packages on Ubuntu
+
+set -e
+
+# Environment vars
+
+# In order to make things more predictable, install specific versions of
+# Erlang and Elixir rather than just taking the latest available
+ERL_VERSION="${ERL_VERSION:-21.3.8.2-1}"
+ELIXIR_VERSION="${ELIXIR_VERSION:-1.8.2}"
+
+# Make sure we have a good LANG
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Initialize package manager and install basic utilities"
+
+export DEBIAN_FRONTEND=noninteractive
+# echo 'Dpkg::Use-Pty "0";' > /etc/apt/apt.conf.d/00usepty
+
+echo "===> Updating package repos"
+apt-get update -qq
+
+echo "===> Installing locale $LANG"
+LANG=C apt-get -qq install locales
+locale-gen "$LANG"
+
+echo "===> Updating system packages"
+apt-get -qq upgrade
+
+echo "===> Installing apt deps"
+apt-get -qq install dialog apt-utils
+
+echo "===> Installing utilities"
+apt-get -qq install wget curl unzip make git
+
+
+echo "==> Install Erlang, Elixir and Node.js from packages"
+
+# Get UBUNTU_CODENAME
+source /etc/os-release
+
+echo "===> Installing Erlang package deps"
+apt-get -qq install procps libc6 libncurses5 libssl1.0 libgcc1 libstdc++6 libsctp1 libwxbase3.0-0v5 libwxgtk3.0-0v5
+apt-get -f install
+
+echo "===> Installing Erlang"
+wget --no-verbose -P /tmp/ "https://packages.erlang-solutions.com/erlang/debian/pool/esl-erlang_${ERL_VERSION}~ubuntu~${UBUNTU_CODENAME}_amd64.deb"
+dpkg -i "/tmp/esl-erlang_${ERL_VERSION}~ubuntu~${UBUNTU_CODENAME}_amd64.deb"
+
+echo "===> Installing Elixir ${ELIXIR_VERSION}"
+wget --no-verbose -P /tmp/ "https://github.com/elixir-lang/elixir/releases/download/v${ELIXIR_VERSION}/Precompiled.zip"
+unzip -q /tmp/Precompiled.zip -d /usr/local -o
+
+echo "===> Installing Node.js"
+apt-get -qq install nodejs npm
+
+apt-get -f install

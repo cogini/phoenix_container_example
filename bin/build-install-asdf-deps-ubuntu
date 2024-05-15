@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# Install dependencies for ASDF on Ubuntu
+
+set -e
+
+# Environment vars
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Initialize package manager and install basic utilities"
+
+export DEBIAN_FRONTEND=noninteractive
+# echo 'Dpkg::Use-Pty "0";' > /etc/apt/apt.conf.d/00usepty
+
+echo "===> Updating package repos"
+apt-get update -qq
+
+echo "===> Installing locale $LANG"
+LANG=C apt-get -qq install locales
+locale-gen "$LANG"
+
+echo "===> Updating system packages"
+apt-get -qq upgrade
+
+echo "===> Installing apt deps"
+apt-get -qq install dialog apt-utils
+
+echo "===> Installing utilities"
+apt-get -qq install wget curl unzip make git
+
+# http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
+# https://github.com/asdf-vm/asdf-erlang
+
+echo "==> Install ASDF plugin dependencies"
+
+echo "===> Installing ASDF common plugin deps"
+apt-get -qq install automake autoconf libreadline-dev libncurses-dev libssl-dev \
+    libyaml-dev libxslt-dev libffi-dev libtool unixodbc-dev
+
+echo "===> Installing ASDF Erlang plugin deps"
+apt-get -qq install build-essential libncurses5-dev libwxgtk3.0-dev libgl1-mesa-dev \
+    libglu1-mesa-dev libpng-dev libssh-dev unixodbc-dev xsltproc fop
+
+# https://medium.com/asolvi/going-functional-part-iii-using-elixir-and-ecto-with-azure-sql-4e66b677f998
+## Install Microsoft ODBC Driver for SQL Server
+# curl -sS https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+# curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+# export ACCEPT_EULA=Y
+# apt-get update && apt-get install -y \ msodbcsql17 \
+
+echo "===> Installing ASDF Node.js plugin deps"
+apt-get -qq install dirmngr gpg

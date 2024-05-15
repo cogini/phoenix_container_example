@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Install dependencies for ASDF on CentOS
+
+set -e
+
+# Environment vars
+# export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Initialize package manager and install basic utilities"
+
+echo "===> Installing EPEL repository"
+# wget --no-verbose -P /tmp https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+# yum install -q -y /tmp/epel-release-latest-7.noarch.rpm
+yum install -y epel-release
+
+echo "===> Updating package repos"
+yum update -y -q
+
+echo "===> Updating system packages"
+yum upgrade -y -q --enablerepo=epel
+
+echo "===> Installing utilities"
+yum install -y -q wget curl unzip make git
+
+# http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
+# https://github.com/asdf-vm/asdf-erlang
+
+echo "==> Install ASDF plugin dependencies"
+
+echo "===> Installing common ASDF plugin deps"
+yum install -y -q automake autoconf readline-devel ncurses-devel openssl-devel \
+    libyaml-devel libxslt-devel libffi-devel libtool unixODBC-devel
+
+echo "===> Installing ASDF Erlang plugin deps"
+# yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries'
+yum groupinstall -y 'Development Tools'
+yum install -y -q wxGTK3-devel wxBase3 libxslt \
+    java-1.8.0-openjdk-devel libiodbc unixODBC
+# erlang-odbc
+
+echo "===> Installing ASDF Node.js plugin deps"
+yum install -y -q install gpg perl perl-Digest-SHA

@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# Install Erlang, Elixir and Node.js from ASDF on macOS
+
+set -e
+
+# Environment vars
+export LANG="${LANG:-en_US.UTF-8}"
+
+# Optional ASDF_RELEASE
+
+echo "==> Initialize package manager and install basic utilities"
+
+# http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
+# https://github.com/asdf-vm/asdf-erlang
+
+echo "==> Install ASDF plugin dependencies"
+
+echo "===> Installing common ASDF plugin deps"
+brew install coreutils automake autoconf openssl libyaml readline libxslt libtool
+
+echo "===> Installing ASDF Erlang plugin deps"
+brew install unixodbc wxmac
+
+# Install Java. It's optional, but installing it avoids popup prompts.
+# If you already have Java installed, you don't need to do this
+brew cask install java
+
+echo "===> Installing ASDF Node.js plugin deps"
+brew install gpg
+
+echo "==> Install ASDF and plugins"
+
+# Install via git to be more consistent with Linux
+# if [ ! -d "$HOME/.asdf" ]; then
+#     echo "===> Installing ASDF"
+#     if [ -z ${ASDF_RELEASE+x} ]; then
+#         git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf"
+#     else
+#         git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch "$ASDF_RELEASE"
+#     fi
+#     echo -e '\n. $HOME/.asdf/asdf.sh' >> ~/.bash_profile
+#     echo -e '\n. $HOME/.asdf/completions/asdf.bash' >> ~/.bash_profile
+# fi
+
+# Install via Homebrew
+brew install asdf
+echo -e '\n. $(brew --prefix asdf)/asdf.sh' >> ~/.bash_profile
+echo -e '\n. $(brew --prefix asdf)/etc/bash_completion.d/asdf.bash' >> ~/.bash_profile
+
+source "$HOME/.asdf/asdf.sh"
+
+if [ ! -d "$ASDF_DIR/plugins/erlang" ]; then
+    echo "===> Installing ASDF erlang plugin"
+    asdf plugin-add erlang
+fi
+
+if [ ! -d "$ASDF_DIR/plugins/elixir" ]; then
+    echo "===> Installing ASDF elixir plugin"
+    asdf plugin-add elixir
+fi
+
+if [ ! -d "$ASDF_DIR/plugins/nodejs" ]; then
+    echo "===> Installing ASDF nodejs plugin"
+    asdf plugin-add nodejs
+
+    echo "===> Importing Node.js release team OpenPGP keys to main keyring"
+    # This can be flaky
+    bash ~/.asdf/plugins/nodejs/bin/import-release-team-keyring
+fi
+
+echo "===> Installing build deps with ASDF"
+asdf install
+# There may be problem with plugin return codes
+asdf install
+
+exit 0

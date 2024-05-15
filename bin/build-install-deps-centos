@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# Install Erlang, Elixir and Node.js from packages on CentOS
+
+set -e
+
+# Environment vars
+
+# In order to make things more predictable, install specific versions of
+# Erlang and Elixir rather than just taking the latest available
+ERL_VERSION="${ERL_VERSION:-21.3}"
+ELIXIR_VERSION="${ELIXIR_VERSION:-1.8.1}"
+
+# Make sure we have a good LANG
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Initialize package manager and install basic utilities"
+
+echo "===> Installing EPEL repository"
+# wget --no-verbose -P /tmp https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+# yum install -q -y /tmp/epel-release-latest-7.noarch.rpm
+yum install -y epel-release
+
+echo "===> Updating package repos"
+yum update -y -q
+
+echo "===> Updating system packages"
+yum upgrade -y -q --enablerepo=epel
+
+echo "===> Installing utilities"
+yum install -y -q wget curl unzip make git
+
+
+echo "==> Install Erlang, Elixir and Node.js from packages"
+
+echo "===> Installing wxGTK-devel (erlang dep)"
+yum install -y -q wxGTK-devel || exit 1
+
+echo "===> Installing unixODBC-devel (erlang dep)"
+yum install -y -q unixODBC-devel || exit 1
+
+echo "===> Installing Erlang ${ERL_VERSION} from erlang-solutions"
+wget --no-verbose -P /tmp/ "https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_${ERL_VERSION}-1~centos~7_amd64.rpm"
+rpm -Uvh "/tmp/esl-erlang_${ERL_VERSION}-1~centos~7_amd64.rpm"
+
+echo "===> Installing Elixir ${ELIXIR_VERSION} from GitHub binary release"
+wget --no-verbose -P /tmp/ "https://github.com/elixir-lang/elixir/releases/download/v${ELIXIR_VERSION}/Precompiled.zip"
+unzip -q /tmp/Precompiled.zip -d /usr/local
+
+echo "===> Installing Node.js"
+rpm install -y -q nodejs npm
+
+exit 0

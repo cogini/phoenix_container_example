@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# Install Erlang, Elixir and Node.js from ASDF on Ubuntu
+
+set -e
+
+# Environment vars
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "==> Install ASDF and plugins"
+
+if [ ! -d "$HOME/.asdf" ]; then
+    echo "===> Installing ASDF"
+    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.0
+
+    echo -e "\n. $HOME/.asdf/asdf.sh" >> ~/.bashrc
+    echo -e "\n. $HOME/.asdf/completions/asdf.bash" >> ~/.bashrc
+fi
+
+source "$HOME/.asdf/asdf.sh"
+
+if [ -d "$ASDF_DIR/plugins/erlang" ]; then
+    asdf plugin-update erlang
+else
+    echo "===> Installing ASDF erlang plugin"
+    asdf plugin-add erlang
+fi
+
+if [ -d "$ASDF_DIR/plugins/elixir" ]; then
+    asdf plugin-update elixir
+else
+    echo "===> Installing ASDF elixir plugin"
+    asdf plugin-add elixir
+fi
+
+if [ -d "$ASDF_DIR/plugins/nodejs" ]; then
+    asdf plugin-update nodejs
+else
+    echo "===> Installing ASDF nodejs plugin"
+    asdf plugin-add nodejs
+fi
+
+# if [ -d "$ASDF_DIR/plugins/cmake" ]; then
+#     asdf plugin-update cmake
+# else
+#     echo "===> Installing ASDF nodejs plugin"
+#     asdf plugin-add cmake
+# fi
+
+if [ ! -d ~/.gnupg ]; then
+    if [ -f ~/.asdf/plugins/nodejs/bin/import-release-team-keyring ]; then
+        echo "===> Importing Node.js release team OpenPGP keys"
+        # This can be flaky
+        bash ~/.asdf/plugins/nodejs/bin/import-release-team-keyring
+    fi
+fi
+
+# echo "===> Installing build deps with ASDF"
+# asdf install
+# # There may be problem with plugin return codes
+# asdf install
