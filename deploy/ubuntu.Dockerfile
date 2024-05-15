@@ -6,15 +6,15 @@ ARG BASE_OS=ubuntu
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.15.7
-ARG OTP_VER=26.1.2
+ARG ELIXIR_VER=1.16.2
+ARG OTP_VER=26.2.5
 
 # https://hub.docker.com/_/ubuntu
-# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
-# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 ARG BUILD_OS_VER=jammy-20231004
 ARG PROD_OS_VER=jammy-20231004
 
+# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
+# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
@@ -90,7 +90,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-        rm /var/log/lastlog && rm /var/log/faillog; fi
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches,
@@ -281,18 +281,18 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY --link .env.test ./
+    COPY --link .env.tes[t] ./
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
     RUN mix esbuild.install --if-missing
 
-    RUN mix dialyzer --plt
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
     COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+
+    RUN mix dialyzer --plt
 
     # Non-umbrella
     COPY --link lib ./lib
@@ -324,11 +324,11 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS prod-release
     ARG APP_DIR
     ARG RELEASE
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
 
     WORKDIR $APP_DIR
 
-    # COPY --link .env.prod .
+    COPY --link .env.pro[d] .
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
@@ -405,6 +405,8 @@ FROM build-deps-get AS prod-release
 
     # Build release
     COPY --link rel ./rel
+
+    # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
     RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
@@ -510,7 +512,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-        rm /var/log/lastlog && rm /var/log/faillog; fi
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -673,13 +675,12 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG DEV_PACKAGES
-
     ARG LANG
 
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
+    ARG APP_PORT
     ARG APP_USER
 
     ARG DEV_PACKAGES

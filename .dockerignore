@@ -12,12 +12,18 @@
 !test
 !otel
 
+# Erlang dirs
+!src
+!include
+!templates
+
 # Build files
 !mix.exs
 !mix.lock
 
 # Build environment
 !.env.*
+!.tool-versions
 
 !.credo.exs
 !.formatter.exs
@@ -25,6 +31,7 @@
 !dialyzer-ignore
 !.gitleaks.toml
 !trivy.yaml
+!brunch-config.js
 
 !deploy/chisel/release
 
