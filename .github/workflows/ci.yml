@@ -601,11 +601,15 @@ jobs:
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
+          # ELIXIR_VER=${{ env.RELEASE_ELIXIR }}
+          # OTP_VER=${{ env.RELEASE_OTP }}
+          # BUILD_OS_VER=${{ env.RELEASE_BUILD_OS_VER }}
+          # PROD_OS_VER=${{ env.RELEASE_PROD_OS_VER }}
           build-args: |
-            ELIXIR_VER=${{ env.RELEASE_ELIXIR }}
-            OTP_VER=${{ env.RELEASE_OTP }}
-            BUILD_OS_VER=${{ env.RELEASE_BUILD_OS_VER }}
-            PROD_OS_VER=${{ env.RELEASE_PROD_OS_VER }}
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
