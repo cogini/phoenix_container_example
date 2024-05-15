@@ -66,7 +66,6 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp deps do
     [
-      {:ex_aws, "~> 2.5"},
       {:aws_rds_castore, "~> 1.1"},
       {:castore, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -74,8 +73,9 @@ defmodule PhoenixContainerExample.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:ecto_sql, "~> 3.10"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
+      {:ex_aws, "~> 2.5"},
       {:excoveralls, "~> 0.18.0", only: [:dev, :test], runtime: false},
-      {:finch, "~> 0.13"},
+      {:finch, "~> 0.14"},
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 0.20"},
@@ -111,8 +111,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_live_view, "~> 0.20.2"},
       {:plug_cowboy, "~> 2.5"},
       {:postgrex, ">= 0.0.0"},
-      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:recon, "~> 2.5"},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:styler, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
@@ -121,7 +121,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:telemetry_metrics_prometheus, "~> 1.1"},
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"},
-      {:uinta, "~> 0.13.0"}
+      {:uinta, "~> 0.14.0"}
     ]
   end
 
