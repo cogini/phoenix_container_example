@@ -143,7 +143,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # rpm --eval '%{_arch}' && \
         # Install nodejs from nodesource.com
         curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
-        corepack enable && \
+        # corepack enable && \
         yum install -y -q \
             # autoconf \
             # automake \
@@ -158,6 +158,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             libyaml-devel \
             mesa-libGL-devel \
             ncurses-devel \
+            nodejs \
             openssl-devel \
             readline-devel \
             sqlite-devel \
