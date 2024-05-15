@@ -141,6 +141,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # bin/build-install-asdf-deps-centos && \
         # https://github.com/asdf-vm/asdf-erlang/issues/206
         # rpm --eval '%{_arch}' && \
+        # Install nodejs from nodesource.com
+        curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | sudo bash - && \
+        corepack enable && \
         yum install -y -q \
             # autoconf \
             # automake \
@@ -349,6 +352,8 @@ FROM build-deps-get AS prod-release
     COPY --link assets/yarn.loc[k] assets/yarn.lock
 
     RUN set -exu && \
+        env && \
+        ls -l /lib64/* && \
         mkdir -p ./assets && \
         yarn --cwd ./assets install --prod
         # cd assets && yarn install --prod
