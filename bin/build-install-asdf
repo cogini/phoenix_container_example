@@ -17,9 +17,12 @@ if [ -f "$HOME/.asdf/asdf.sh" ]; then
 fi
 
 echo "===> Installing build deps with ASDF"
-asdf install
+asdf install erlang
+asdf install elixir
+asdf install nodejs
+
 # There may be problem with plugin return codes so run it twice
-asdf install
+# asdf install
 
 asdf reshim
 
