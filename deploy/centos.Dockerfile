@@ -87,8 +87,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG APP_USER_ID
 
     # Create OS user and group to run app under
-    # RUN groupadd -g "$APP_GROUP_ID" $APP_GROUP && \
-    #     useradd -u "$APP_USER_ID" -g $APP_GROUP -d "$APP_DIR" $APP_USER
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
@@ -458,9 +456,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_USER_ID
 
     # Create OS user and group to run app under
-    # RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
-    #     useradd -u $APP_USER_ID -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER" && \
-    #     chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
@@ -573,7 +568,6 @@ FROM build-os-deps AS dev
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
-    ARG APP_PORT
     ARG APP_USER
 
     ARG DEV_PACKAGES

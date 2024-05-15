@@ -40,6 +40,13 @@ else
     asdf plugin-add nodejs
 fi
 
+if [ -d "$ASDF_DIR/plugins/yarn" ]; then
+    asdf plugin-update yarn
+else
+    echo "===> Installing ASDF yarn plugin"
+    asdf plugin-add yarn
+fi
+
 # if [ -d "$ASDF_DIR/plugins/cmake" ]; then
 #     asdf plugin-update cmake
 # else

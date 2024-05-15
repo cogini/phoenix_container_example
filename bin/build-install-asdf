@@ -20,6 +20,7 @@ echo "===> Installing build deps with ASDF"
 asdf install erlang
 asdf install elixir
 asdf install nodejs
+asdf install yarn
 
 # There may be problem with plugin return codes so run it twice
 # asdf install
