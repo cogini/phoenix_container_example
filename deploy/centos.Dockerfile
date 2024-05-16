@@ -19,7 +19,7 @@ ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
-ARG NODE_MAJOR=20
+ARG NODE_MAJOR=16
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -142,7 +142,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # https://github.com/asdf-vm/asdf-erlang/issues/206
         # rpm --eval '%{_arch}' && \
         # Install nodejs from nodesource.com
-        curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
+        # curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
         # corepack enable && \
         yum install -y -q \
             # autoconf \
@@ -241,7 +241,7 @@ FROM build-os-deps AS build-deps-get
     COPY --link mix.exs .
     COPY --link mix.lock .
 
-    # COPY --link .env.default ./
+    COPY --link .env.defaul[t] ./
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
@@ -288,7 +288,13 @@ FROM build-deps-get AS test-image
         source /opt/rh/rh-git227/enable && \
         mix deps.compile
 
+    # RUN set -ex && \
+    #     mkdir -p _build && \
+    #     curl -v https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-arm64 -o _build/tailwindcss-linux-arm64 && \
+    #     chmod +x _build/tailwindcss-linux-arm64 
+
     RUN mix esbuild.install --if-missing
+    # RUN mix tailwind.install --if-missing
 
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
@@ -345,35 +351,32 @@ FROM build-deps-get AS prod-release
         source /opt/rh/rh-git227/enable && \
         mix deps.compile
 
+    # RUN set -ex && \
+    #     mkdir -p _build && \
+    #     curl -v https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-arm64 -o _build/tailwindcss-linux-arm64 && \
+    #     chmod +x _build/tailwindcss-linux-arm64 
+
     RUN mix esbuild.install --if-missing
 
-    # Install JavaScript deps using yarn
     COPY --link assets/package.jso[n] assets/package.json
     COPY --link assets/package-lock.jso[n] assets/package-lock.json
     COPY --link assets/yarn.loc[k] assets/yarn.lock
 
-    RUN set -exu && \
-        env && \
-        ls -l /lib64/* && \
-        mkdir -p ./assets && \
-        yarn --cwd ./assets install --prod
-        # cd assets && yarn install --prod
+    # Install JavaScript deps using yarn
+    # RUN set -exu && \
+    #     mkdir -p ./assets && \
+    #     yarn --cwd ./assets install --prod
+    #     # cd assets && yarn install --prod
 
     # Install JavaScript deps using npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY --link assets/package.jso[n] ./
-    # COPY --link assets/package-lock.jso[n] ./
-    # RUN npm install
+    # RUN set -exu && \
+    #     mkdir -p ./assets && \
+    #     cd assets && npm install
 
     # Compile assets the old way
-    # WORKDIR "${APP_DIR}/assets"
-    #
-    # COPY --link assets/package.json ./
-    # COPY --link assets/package-lock.json ./
-    #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-    #
+    #     cd assets && npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+
     # COPY --link assets ./
     #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
@@ -383,8 +386,6 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
-
-    WORKDIR $APP_DIR
 
     # Compile assets with esbuild
     COPY --link assets ./assets
@@ -397,6 +398,7 @@ FROM build-deps-get AS prod-release
     # COPY --link apps ./apps
 
     RUN mix assets.deploy
+
     # RUN esbuild default --minify
     # RUN mix phx.digest
 
