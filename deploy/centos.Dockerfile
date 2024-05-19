@@ -291,7 +291,7 @@ FROM build-deps-get AS test-image
     # RUN set -ex && \
     #     mkdir -p _build && \
     #     curl -v https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-arm64 -o _build/tailwindcss-linux-arm64 && \
-    #     chmod +x _build/tailwindcss-linux-arm64 
+    #     chmod +x _build/tailwindcss-linux-arm64
 
     RUN mix esbuild.install --if-missing
     # RUN mix tailwind.install --if-missing
@@ -354,7 +354,7 @@ FROM build-deps-get AS prod-release
     # RUN set -ex && \
     #     mkdir -p _build && \
     #     curl -v https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-arm64 -o _build/tailwindcss-linux-arm64 && \
-    #     chmod +x _build/tailwindcss-linux-arm64 
+    #     chmod +x _build/tailwindcss-linux-arm64
 
     RUN mix esbuild.install --if-missing
 
