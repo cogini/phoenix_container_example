@@ -414,9 +414,9 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v4
-        with:
-          # Fetch all history for all branches and tags
-          fetch-depth: 0
+        # with:
+        #   # Fetch all history for all branches and tags for Gitleaks
+        #   fetch-depth: 0
 
       - name: Scan code with trivy
         uses: aquasecurity/trivy-action@master
