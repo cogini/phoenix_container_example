@@ -1042,7 +1042,7 @@ jobs:
 
       - name: Cache deps
         id: cache-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-elixir-deps
         with:
@@ -1053,7 +1053,7 @@ jobs:
 
       - name: Cache compiled build
         id: cache-build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-compiled-build
         with:
@@ -1064,7 +1064,7 @@ jobs:
 
       - name: Cache node-modules
         id: node-modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
