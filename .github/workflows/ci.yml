@@ -78,6 +78,8 @@ env:
   # AWS_PS_PREFIX: cogini/foo/dev
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
+  # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  # EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # GitHub Advanced Security, free for open source, otherwise a paid feature
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
