@@ -101,10 +101,6 @@
                 {
                     "name": "AWS_REGION",
                     "value": env.AWSLOGS_REGION
-                },
-                {
-                    "name": "DATABASE_URL",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/db/url"
                 }
             ],
             "essential": true,
