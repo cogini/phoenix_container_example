@@ -1117,8 +1117,7 @@ jobs:
   deploy:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [test-prod, test, test-dialyzer]
-    # needs: [upload-assets]
+    needs: [test-prod, test, test-dialyzer, upload-assets]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
