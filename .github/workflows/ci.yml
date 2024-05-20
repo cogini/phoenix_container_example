@@ -995,6 +995,129 @@ jobs:
   #     - name: Create CloudFront invalidation
   #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
+  upload-assets:
+    name: Build and upload assets to CDN
+    # Build assets in host instead of Docker for better performance.
+    if: github.event_name != 'pull_request'
+    # needs: [build-prod]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Cancel previous runs
+      actions: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'dev-int' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Specify versions of Erlang, Elixir, and base OS
+        # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+        include:
+          - elixir: 1.16.2
+            otp: 26.2.5
+    env:
+      MIX_ENV: prod
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache deps
+        id: cache-deps
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: app/deps
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache compiled build
+        id: cache-build
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-compiled-build
+        with:
+          path: app/_build
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache node-modules
+        id: node-modules
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: app/assets/node_modules
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      # Force full recompile on builds that are retried.
+      - name: Clean deps to avoid flaky incremental builds
+        if: github.run_attempt != '1'
+        run: |
+          mix deps.clean --all
+          mix clean
+        shell: sh
+
+      - name: Install tools
+        working-directory: app
+        run: mix do local.rebar --force, local.hex --force
+
+      - name: Get Elixir deps
+        working-directory: app
+        run: mix deps.get
+
+      - name: Compile
+        working-directory: app
+        run: mix compile
+
+      - name: Run npm install
+        working-directory: app/assets
+        run: npm install && npm run deploy
+
+      - name: Build digested assets
+        working-directory: app
+        run: mix phx.digest
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync to S3
+        working-directory: app
+        run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
+
+      - name: Create CloudFront invalidation
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+
   deploy:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
