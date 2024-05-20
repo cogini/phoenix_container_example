@@ -1101,6 +1101,7 @@ jobs:
         run: mix assets.deploy
 
       - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -1268,6 +1269,7 @@ jobs:
           export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
             --image-ids imageTag=${{ env.VAR }}${{ env.IMAGE_VER }} \
             --output json | jq --raw-output --join-output '.images[0].imageManifest')
+          echo "$MANIFEST"
           aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
             --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
           # Requires higher permissions
