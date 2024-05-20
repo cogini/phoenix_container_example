@@ -13,9 +13,10 @@ defmodule PhoenixContainerExampleWeb.Telemetry do
     children = [
       # Telemetry poller will execute the given period measurements
       # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000},
       # Add reporters as children of your supervision tree.
-      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
+      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()},
+      {TelemetryMetricsPrometheus, [metrics: prometheus_metrics()]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -88,6 +89,21 @@ defmodule PhoenixContainerExampleWeb.Telemetry do
       # A module, function and arguments to be invoked periodically.
       # This function must call :telemetry.execute/3 and a metric must be added above.
       # {PhoenixContainerExampleWeb, :count_users, []}
+    ]
+  end
+
+  def prometheus_metrics do
+    [
+      distribution("phoenix.endpoint.duration.milliseconds",
+        event_name: [:phoenix, :endpoint, :stop],
+        reporter_options: [buckets: [0.05, 0.1, 0.2, 0.5, 1]],
+        measurement: :duration,
+        unit: {:native, :millisecond}
+      ),
+      counter("phoenix.endpoint.requests.counter",
+        event_name: [:phoenix, :endpoint, :stop]
+      ),
+      last_value("vm.memory.total", unit: :byte)
     ]
   end
 end
