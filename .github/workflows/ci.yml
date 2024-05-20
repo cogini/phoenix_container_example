@@ -1103,7 +1103,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Sync to S3
         run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
