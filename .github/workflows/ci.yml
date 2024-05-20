@@ -1091,7 +1091,7 @@ jobs:
         run: mix compile
 
       - name: Install JavaScript libs
-        working-directory: assets
+        # working-directory: assets
         # run: npm install && npm run deploy
         run: yarn --cwd ./assets install --prod
 
