@@ -1030,14 +1030,9 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install yarn
-        run: |
-          curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-          echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-          printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-          apt-get update -qq && \
-          DEBIAN_FRONTEND=noninteractive \
-          apt-get -y install -y -qq --no-install-recommends nodejs yarn
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 10
 
       - name: Install Erlang and Elixir
         uses: erlef/setup-beam@v1
