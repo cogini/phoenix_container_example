@@ -53,7 +53,7 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
   # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
   # AWS_REGION: us-east-1
   # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
@@ -67,11 +67,11 @@ env:
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
   ECS_CONTAINER: foo-app
-  ECS_SERVICE_WORKER: foo-worker
-  ECS_CONTAINER_WORKER: foo-worker
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   TASKDEF: ecs/task-definition.json
+  ECS_SERVICE_WORKER: foo-worker
+  ECS_CONTAINER_WORKER: foo-worker
   TASKDEF_WORKER: ecs/task-definition.worker.json
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
