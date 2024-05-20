@@ -11,8 +11,8 @@ ARG OTP_VER=26.2.5
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=bullseye-20230612-slim
-ARG PROD_OS_VER=bullseye-20230612-slim
+ARG BUILD_OS_VER=bullseye-20240513-slim
+ARG PROD_OS_VER=bullseye-20240513-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
