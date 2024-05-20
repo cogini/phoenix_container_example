@@ -986,7 +986,7 @@ jobs:
   #         context: .
   #         builder: ${{ steps.buildx.outputs.name }}
   #         push: false
-  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
+  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
   #         outputs: type=local,dest=output
   #
   #     - name: List output dir
@@ -1179,7 +1179,7 @@ jobs:
         with:
           task-definition: ${{ env.TASKDEF }}
           container-name: ${{ env.ECS_CONTAINER }}
-          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -1207,7 +1207,7 @@ jobs:
         with:
           task-definition: ${{ env.TASKDEF_WORKER }}
           container-name: ${{ env.ECS_CONTAINER_WORKER }}
-          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS (worker)
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -1309,10 +1309,10 @@ jobs:
       - name: Tag GHCR release as latest
         run: |
           skopeo copy \
-            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}} \
             docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
           # skopeo copy --multi-arch=index-only \
-          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}} \
           #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
