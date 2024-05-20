@@ -1050,7 +1050,7 @@ jobs:
         env:
           cache-name: cache-elixir-deps
         with:
-          path: app/deps
+          path: deps
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
@@ -1061,7 +1061,7 @@ jobs:
         env:
           cache-name: cache-compiled-build
         with:
-          path: app/_build
+          path: _build
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
@@ -1072,7 +1072,7 @@ jobs:
         env:
           cache-name: cache-node-modules
         with:
-          path: app/assets/node_modules
+          path: assets/node_modules
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
@@ -1086,23 +1086,19 @@ jobs:
         shell: sh
 
       - name: Install tools
-        working-directory: app
         run: mix do local.rebar --force, local.hex --force
 
       - name: Get Elixir deps
-        working-directory: app
         run: mix deps.get
 
       - name: Compile
-        working-directory: app
         run: mix compile
 
       - name: Run npm install
-        working-directory: app/assets
+        working-directory: assets
         run: npm install && npm run deploy
 
       - name: Build digested assets
-        working-directory: app
         run: mix phx.digest
 
       - name: Configure AWS credentials
@@ -1113,7 +1109,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Sync to S3
-        working-directory: app
         run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
 
       - name: Create CloudFront invalidation
