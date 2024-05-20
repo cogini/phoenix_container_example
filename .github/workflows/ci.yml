@@ -496,11 +496,11 @@ jobs:
             build_os_ver: bullseye-20240513
             prod_os_ver: bullseye-slim
             os: distroless
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: 7
-            prod_os_ver: 7
-            os: centos
+          # - elixir: 1.16.2
+          #   otp: 26.2.5
+          #   build_os_ver: 7
+          #   prod_os_ver: 7
+          #   os: centos
           # - elixir: 1.14.5
           #   otp: 26.1.1
           #   build_os_ver: bullseye-20230612-slim
@@ -659,11 +659,11 @@ jobs:
             build_os_ver: bullseye-20240513
             prod_os_ver: bullseye-slim
             os: distroless
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: 7
-            prod_os_ver: 7
-            os: centos
+          # - elixir: 1.16.2
+          #   otp: 26.2.5
+          #   build_os_ver: 7
+          #   prod_os_ver: 7
+          #   os: centos
           # - elixir: 1.15.7
           #   otp: 26.1.2
           #   build_os_ver: bullseye-20230612-slim
@@ -819,11 +819,11 @@ jobs:
             build_os_ver: bullseye-20240513
             prod_os_ver: bullseye-slim
             os: distroless
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: 7
-            prod_os_ver: 7
-            os: centos
+          # - elixir: 1.16.2
+          #   otp: 26.2.5
+          #   build_os_ver: 7
+          #   prod_os_ver: 7
+          #   os: centos
           # - elixir: 1.14.5
           #   otp: 26.1.1
           #   build_os_ver: bullseye-20230612-slim
