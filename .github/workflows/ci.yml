@@ -1123,6 +1123,23 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.16.2
+            otp: 26.2.5
+            build_os_ver: bullseye-20240513
+            prod_os_ver: bullseye-slim
+            os: debian
+          # - elixir: 1.16.2
+          #   otp: 26.2.5
+          #   build_os_ver: bullseye-20240513
+          #   prod_os_ver: bullseye-slim
+          #   os: distroless
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -1236,6 +1253,21 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.16.2
+            otp: 26.2.5
+            build_os_ver: bullseye-20240513
+            prod_os_ver: bullseye-slim
+            os: debian
+          # - elixir: 1.16.2
+          #   otp: 26.2.5
+          #   build_os_ver: bullseye-20240513
+          #   prod_os_ver: bullseye-slim
+          #   os: distroless
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -1269,7 +1301,6 @@ jobs:
           export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
             --image-ids imageTag=${{ env.VAR }}${{ env.IMAGE_VER }} \
             --output json | jq --raw-output --join-output '.images[0].imageManifest')
-          echo "$MANIFEST"
           aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
             --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
           # Requires higher permissions
