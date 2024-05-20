@@ -1015,7 +1015,7 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'dev-int' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
       matrix:
@@ -1099,7 +1099,6 @@ jobs:
         run: mix assets.deploy
 
       - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
