@@ -38,8 +38,6 @@ env:
   # Variant if test matrix is not used
   # See https://hub.docker.com/r/hexpm/elixir/tags
   VAR: '1.16.2-erlang-26.2.5-debian-bullseye-20240513-slim'
-  # Variant that is deployed
-  PROD_VAR: '1.16.2-erlang-26.2.5-debian-bullseye-20240513-slim'
   RELEASE_ELIXIR: 1.16.2
   RELEASE_OTP: 26.2.5
   RELEASE_BUILD_OS_VER: bullseye-20240513-slim
