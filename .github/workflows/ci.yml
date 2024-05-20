@@ -1009,9 +1009,6 @@ jobs:
       # Push to ghcr.io repository
       packages: write
 
-      # Cancel previous runs
-      actions: write
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
@@ -1030,13 +1027,17 @@ jobs:
     env:
       MIX_ENV: prod
     steps:
-      - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Install yarn
+        run: |
+          curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+          printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+          apt-get update -qq && \
+          DEBIAN_FRONTEND=noninteractive \
+          apt-get -y install -y -qq --no-install-recommends nodejs yarn
 
       - name: Install Erlang and Elixir
         uses: erlef/setup-beam@v1
@@ -1077,6 +1078,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
+      - name: Install build tools
+        run: mix do local.rebar --force, local.hex --force
+
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
         if: github.run_attempt != '1'
@@ -1085,21 +1089,19 @@ jobs:
           mix clean
         shell: sh
 
-      - name: Install tools
-        run: mix do local.rebar --force, local.hex --force
-
       - name: Get Elixir deps
         run: mix deps.get
 
       - name: Compile
         run: mix compile
 
-      - name: Run npm install
+      - name: Install JavaScript libs
         working-directory: assets
-        run: npm install && npm run deploy
+        # run: npm install && npm run deploy
+        run: yarn --cwd ./assets install --prod
 
-      - name: Build digested assets
-        run: mix phx.digest
+      - name: Deploy assets
+        run: mix assets.deploy
 
       - name: Configure AWS credentials
         if: ${{ env.AWS_ENABLED == 1 }}
