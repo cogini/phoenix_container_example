@@ -749,6 +749,7 @@ FROM scratch AS artifacts
     ARG RELEASE
 
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     COPY --from=prod-release /app/priv/static /static
 
 # Default target
