@@ -912,6 +912,7 @@ jobs:
 
   # upload-assets:
   #   name: Upload assets to CDN
+  #   # Extract assets from container
   #   if: github.event_name != 'pull_request'
   #   # if: contains(github.ref, 'refs/heads/main')
   #   # needs: [build-prod, test-prod, test]
