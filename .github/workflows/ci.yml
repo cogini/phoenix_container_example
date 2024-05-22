@@ -301,6 +301,7 @@ jobs:
 
   test:
     name: Run tests
+    needs: [build-test, setup-matrix]
     # permissions: write-all
     permissions:
       # Read from ghcr.io repository
@@ -312,7 +313,6 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    needs: [build-test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -391,7 +391,7 @@ jobs:
 
   test-dialyzer:
     name: Run dialyzer
-    needs: [build-test]
+    needs: [build-test, setup-matrix]
     permissions:
       contents: read
       # Read from ghcr.io repository
@@ -646,7 +646,7 @@ jobs:
   test-prod:
     name: Run external API tests
     # needs: [build-prod, build-newman]
-    needs: [build-prod]
+    needs: [build-prod, setup-matrix]
     permissions:
       # Read from ghcr.io repository
       packages: read
