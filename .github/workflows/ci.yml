@@ -93,16 +93,19 @@ jobs:
   setup-matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+      test-matrix: ${{ steps.test-matrix.outputs.matrix }}
+      prod-matrix: ${{ steps.prod-matrix.outputs.matrix }}
+      deploy-matrix: ${{ steps.deploy-matrix.outputs.matrix }}
+      assets-matrix: ${{ steps.assets-matrix.outputs.matrix }}
     steps:
-      - id: setup-matrix
+      - id: test-matrix
         uses: druzsan/setup-matrix@v2
         with:
           # Specify versions of Erlang, Elixir, and base OS
           # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
           matrix: |
             include:
-              - elixir: 1.16.2
+              - elixir: 1.16.3
                 otp: 26.2.5
                 build_os_ver: bullseye-20240513
                 prod_os_ver: bullseye-slim
@@ -119,6 +122,70 @@ jobs:
             #   prod_os_ver: bullseye-slim
             #   snapshot_ver: 20210902
             #   os: debian
+
+      - id: prod-matrix
+        uses: druzsan/setup-matrix@v2
+        with:
+          matrix: |
+            include:
+              - elixir: 1.16.3
+                otp: 26.2.5
+                build_os_ver: bullseye-20240513
+                prod_os_ver: bullseye-slim
+                os: debian
+              - elixir: 1.16.3
+                otp: 26.2.5
+                build_os_ver: bullseye-20240513
+                prod_os_ver: bullseye-slim
+                os: distroless
+            # - elixir: 1.16.3
+            #   otp: 26.2.5
+            #   build_os_ver: 7
+            #   prod_os_ver: 7
+            #   os: centos
+            # - elixir: 1.15.7
+            #   otp: 26.1.2
+            #   build_os_ver: bullseye-20230612-slim
+            #   prod_os_ver: bullseye-slim
+            #   snapshot_ver: 20230612
+            #   os: debian
+            # - elixir: 1.14.5
+            #   otp: 26.1.1
+            #   build_os_ver: bullseye-20230612-slim
+            #   prod_os_ver: bullseye-slim
+            #   snapshot_ver: 20230612
+            #   os: debian
+            # - elixir: 1.14.1
+            #   otp: 24.3.4
+            #   build_os_ver: bullseye-20210902-slim
+            #   prod_os_ver: bullseye-slim
+            #   snapshot_ver: 20210902
+            #   os: debian
+      - id: deploy-matrix
+        uses: druzsan/setup-matrix@v2
+        with:
+          matrix: |
+            include:
+              - elixir: 1.16.3
+                otp: 26.2.5
+                build_os_ver: bullseye-20240513
+                prod_os_ver: bullseye-slim
+                os: debian
+              # - elixir: 1.16.3
+              #   otp: 26.2.5
+              #   build_os_ver: bullseye-20240513
+              #   prod_os_ver: bullseye-slim
+              #   os: distroless
+      - id: assets-matrix
+        uses: druzsan/setup-matrix@v2
+        with:
+          matrix: |
+            include:
+              - elixir: 1.16.3
+                otp: 26.2.5
+                build_os_ver: bullseye-20240513
+                prod_os_ver: bullseye-slim
+                os: debian
   build-test:
     name: Build test image
     needs: setup-matrix
@@ -130,16 +197,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-      # matrix:
-      #   # Specify versions of Erlang, Elixir, and base OS
-      #   # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
-      #   include:
-      #     - elixir: 1.16.2
-      #       otp: 26.2.5
-      #       build_os_ver: bullseye-20240513
-      #       prod_os_ver: bullseye-slim
-      #       os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -252,25 +310,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
       # ci_node_total: [2]
       # ci_node_index: [1, 2]
     env:
@@ -359,30 +399,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: 7
-          #   prod_os_ver: 7
-          #   os: centos
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -502,35 +519,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: distroless
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: 7
-          #   prod_os_ver: 7
-          #   os: centos
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -665,41 +654,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: distroless
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: 7
-          #   prod_os_ver: 7
-          #   os: centos
-          # - elixir: 1.15.7
-          #   otp: 26.1.2
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -825,35 +780,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: distroless
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: 7
-          #   prod_os_ver: 7
-          #   os: centos
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -953,13 +880,7 @@ jobs:
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
   #   strategy:
   #     fail-fast: false
-  #     matrix:
-  #       include:
-  #        - elixir: 1.16.2
-  #          otp: 26.2.5
-  #          build_os_ver: bullseye-20240513
-  #          prod_os_ver: bullseye-slim
-  #          os: debian
+  #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
   #   steps:
   #     - name: Debug environment
   #       run: |
@@ -1036,12 +957,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix:
-        # Specify versions of Erlang, Elixir, and base OS
-        # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
     env:
       MIX_ENV: prod
     steps:
@@ -1141,18 +1057,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: bullseye-20240513
-          #   prod_os_ver: bullseye-slim
-          #   os: distroless
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -1269,18 +1174,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.16.2
-            otp: 26.2.5
-            build_os_ver: bullseye-20240513
-            prod_os_ver: bullseye-slim
-            os: debian
-          # - elixir: 1.16.2
-          #   otp: 26.2.5
-          #   build_os_ver: bullseye-20240513
-          #   prod_os_ver: bullseye-slim
-          #   os: distroless
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
