@@ -35,15 +35,6 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Variant if test matrix is not used
-  # See https://hub.docker.com/r/hexpm/elixir/tags
-  VAR: '1.16.2-erlang-26.2.5-debian-bullseye-20240513-slim'
-  RELEASE_ELIXIR: 1.16.2
-  RELEASE_OTP: 26.2.5
-  RELEASE_BUILD_OS_VER: bullseye-20240513-slim
-  RELEASE_PROD_OS_VER: bullseye-slim
-  RELEASE_SNAPSHOT_VER: ""
-  RELEASE_OS: debian
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -56,11 +47,13 @@ env:
   # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
   # Health check port for app
+  # S3_BUCKET_CI: cogini-prod-foo-ci
   APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
   # DD_ENV: ci
   # DD_TAGS: "environment:ci"
+  # MIX_ENV: foo
   ELIXIR_MODULE: PhoenixContainerExample
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
@@ -193,10 +186,13 @@ jobs:
                 build_os_ver: bullseye-20240513
                 prod_os_ver: bullseye-slim
                 os: debian
+
   build-test:
     name: Build test image
     needs: [setup-matrix]
     permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
       contents: read
       # Push to ghcr.io repository
       packages: write
@@ -266,6 +262,25 @@ jobs:
 
       # - name: Display available platforms
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      - name: Create data dirs
+        run: |
+          echo 'DATABASE_HOST=postgres' >> ./.env.test
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # - name: Get test data files
+      #   run: |
+      #     mkdir -p test/bert
+      #     aws s3 cp s3://${{ vars.S3_BUCKET_CI }}/test-data.zip test-data.zip
+      #     unzip -o test-data.zip -d test/bert
 
       - name: Set up Docker buildx
         id: buildx
@@ -428,6 +443,7 @@ jobs:
 
       - name: Run dialyzer
         run: docker compose run test mix dialyzer --no-check --quiet-with-result --format github
+        # run: docker compose run test mix dialyzer --no-check --ignore-exit-status --format github
 
   test-scan:
     name: Security scan code
@@ -615,15 +631,12 @@ jobs:
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
-          # ELIXIR_VER=${{ env.RELEASE_ELIXIR }}
-          # OTP_VER=${{ env.RELEASE_OTP }}
-          # BUILD_OS_VER=${{ env.RELEASE_BUILD_OS_VER }}
-          # PROD_OS_VER=${{ env.RELEASE_PROD_OS_VER }}
           build-args: |
             ELIXIR_VER=${{ matrix.elixir }}
             OTP_VER=${{ matrix.otp }}
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -649,6 +662,8 @@ jobs:
     # needs: [build-prod, build-newman]
     needs: [build-prod, setup-matrix]
     permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
       # Read from ghcr.io repository
       packages: read
       contents: read
@@ -659,6 +674,7 @@ jobs:
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -675,6 +691,21 @@ jobs:
 
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # - name: Get test data files
+      #   run: |
+      #     mkdir -p bounce-data
+      #     aws s3 cp s3://${{ vars.S3_BUCKET_CI }}/test-data.zip test-data.zip
+      #     unzip -o test-data.zip -d bounce-data
 
       - name: Pull repos
         # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
@@ -947,7 +978,6 @@ jobs:
     needs: [setup-matrix]
     # Build assets in host instead of Docker for better performance.
     if: github.event_name != 'pull_request'
-    # needs: [build-prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1053,7 +1083,120 @@ jobs:
       - name: Create CloudFront invalidation
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
-  deploy:
+  deploy-codedeploy:
+    name: Deploy using CodeDeploy
+    # if: ${{ env.AWS_ENABLED == 1 }}
+    # needs: [test-prod, test, test-dialyzer]
+    needs: [test, test-dialyzer]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Get build artifacts on host
+        uses: docker/build-push-action@v5
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: artifacts
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: false
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+          outputs: type=local,dest=output
+
+      # - name: List output dir
+      #   run: find output -print
+
+      - name: Copy files
+        run: |
+          mkdir -p revision
+          cp -v appspec.yml revision
+          cp -v "output/_build/${{env.MIX_ENV}}/${{env.MIX_ENV}}-0.1.0.tar.gz" revision
+          mkdir -p revision/systemd
+          cp -v output/_build/${{env.MIX_ENV}}/systemd/lib/systemd/system/* revision/systemd
+          mkdir -p revision/bin
+          cp -v bin/* revision/bin
+          mkdir -p revision/etc
+
+      - name: List revision dir
+        run: find revision -type f -print
+
+      - name: Set variables
+        run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
+        # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
+
+      - name: Create CodeDeploy revision
+        run: |
+          aws deploy push --application-name ${CODEDEPLOY_APPLICATION} \
+            --description "Bounce revision ${GITHUB_SHA_SHORT}" \
+            --s3-location s3://${{env.CODEDEPLOY_BUCKET}}/${{env.REVISION_FILE}} \
+            --source revision
+
+      - name: Create CodeDeploy deployment
+        run: |
+          aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION}} \
+            --deployment-group-name ${{env.CODEDEPLOY_DEPLOYMENT_GROUP}} \
+            --s3-location bucket=${{env.CODEDEPLOY_BUCKET}},key=${{env.REVISION_FILE}},bundleType=zip \
+            --description "Bounce revision ${{env.GITHUB_SHA_SHORT}}"
+
+      # - name: Set vars
+      #   run: aws deploy create-deployment \
+      #     --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
+      #     --deployment-group-name ${{env.CODEDEPLOY_DEPLOYMENT_GROUP_NAME}}
+
+  deploy-ecs:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
     needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
@@ -1163,7 +1306,7 @@ jobs:
     name: Tag prod images as latest
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
-    needs: [deploy, setup-matrix]
+    needs: [deploy-ecs, setup-matrix]
     # needs: [test-prod, test, test-dialyzer]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
