@@ -766,7 +766,7 @@ jobs:
 
   scan:
     name: Security scan prod image
-    needs: [build-prod]
+    needs: [build-prod, setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1055,7 +1055,7 @@ jobs:
   deploy:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [test-prod, test, test-dialyzer, upload-assets]
+    needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1162,7 +1162,7 @@ jobs:
     name: Tag prod images as latest
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
-    needs: [deploy]
+    needs: [deploy, setup-matrix]
     # needs: [test-prod, test, test-dialyzer]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
