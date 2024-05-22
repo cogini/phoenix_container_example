@@ -98,7 +98,8 @@ jobs:
       deploy-matrix: ${{ steps.deploy-matrix.outputs.matrix }}
       assets-matrix: ${{ steps.assets-matrix.outputs.matrix }}
     steps:
-      - id: test-matrix
+      - name: Define matrix for test containers
+        id: test-matrix
         uses: druzsan/setup-matrix@v2
         with:
           # Specify versions of Erlang, Elixir, and base OS
@@ -123,7 +124,8 @@ jobs:
             #   snapshot_ver: 20210902
             #   os: debian
 
-      - id: prod-matrix
+      - name: Define matrix for prod containers
+        id: prod-matrix
         uses: druzsan/setup-matrix@v2
         with:
           matrix: |
@@ -161,7 +163,9 @@ jobs:
             #   prod_os_ver: bullseye-slim
             #   snapshot_ver: 20210902
             #   os: debian
-      - id: deploy-matrix
+
+      - name: Define matrix for deployed prod containers
+        id: deploy-matrix
         uses: druzsan/setup-matrix@v2
         with:
           matrix: |
@@ -176,7 +180,9 @@ jobs:
               #   build_os_ver: bullseye-20240513
               #   prod_os_ver: bullseye-slim
               #   os: distroless
-      - id: assets-matrix
+
+      - name: Define matrix for building assets
+        id: assets-matrix
         uses: druzsan/setup-matrix@v2
         with:
           matrix: |
@@ -188,7 +194,7 @@ jobs:
                 os: debian
   build-test:
     name: Build test image
-    needs: setup-matrix
+    needs: [setup-matrix]
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -507,7 +513,7 @@ jobs:
 
   build-prod:
     name: Build prod image
-    # needs: setup
+    needs: [setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -937,6 +943,7 @@ jobs:
 
   upload-assets:
     name: Build and upload assets to CDN
+    needs: [setup-matrix]
     # Build assets in host instead of Docker for better performance.
     if: github.event_name != 'pull_request'
     # needs: [build-prod]
