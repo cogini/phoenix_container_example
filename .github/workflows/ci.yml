@@ -91,6 +91,7 @@ env:
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   setup-matrix:
+    name: Set up matrix
     runs-on: ubuntu-latest
     outputs:
       test-matrix: ${{ steps.test-matrix.outputs.matrix }}
@@ -103,7 +104,7 @@ jobs:
         uses: druzsan/setup-matrix@v2
         with:
           # Specify versions of Erlang, Elixir, and base OS
-          # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+          # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
           matrix: |
             include:
               - elixir: 1.16.3
