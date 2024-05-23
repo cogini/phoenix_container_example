@@ -188,6 +188,7 @@ jobs:
   #               os: debian
 
   setup-matrix:
+    name: Set up matrix
     runs-on: ubuntu-latest
     outputs:
       # test-matrix: ${{ steps.test-matrix.outputs.result }}
@@ -195,96 +196,107 @@ jobs:
       # deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
       # assets-matrix: ${{ steps.assets-matrix.outputs.result }}
       test-matrix: ${{ steps.common-matrix.outputs.result }}
-      prod-matrix: ${{ steps.prod-matrix.outputs.result }}
+      prod-matrix: ${{ steps.common-matrix.outputs.result }}
       deploy-matrix: ${{ steps.common-matrix.outputs.result }}
       assets-matrix: ${{ steps.common-matrix.outputs.result }}
     steps:
-    - uses: actions/github-script@v7
-      id: common-matrix
-      with:
-        script: |
-          {
-            include: [
-              {
-                elixir: "1.16.3",
-                otp: "26.2.5",
-                build_os_ver: "bullseye-20240513",
-                prod_os_ver: "bullseye-slim",
-                os: "debian"
-              }
-            ]
-          }
+      - uses: actions/github-script@v7
+        id: set-result
+        with:
+          script: return "Hello!"
+          result-encoding: string
+      - name: Get result
+        run: echo "${{ steps.set-result.outputs.result }}"
 
-    # - uses: actions/github-script@v7
-    #   id: test-matrix
-    #   with:
-    #     script: |
-    #       {
-    #         include: [
-    #           {
-    #             elixir: "1.16.3",
-    #             otp: "26.2.5",
-    #             build_os_ver: "bullseye-20240513",
-    #             prod_os_ver: "bullseye-slim",
-    #             os: "debian"
-    #           }
-    #         ]
-    #       }
+      - uses: actions/github-script@v7
+        id: common-matrix
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                }
+              ]
+            }
 
-    - uses: actions/github-script@v7
-      id: prod-matrix
-      with:
-        script: |
-          {
-            include: [
-              {
-                elixir: "1.16.3",
-                otp: "26.2.5",
-                build_os_ver: "bullseye-20240513",
-                prod_os_ver: "bullseye-slim",
-                os: "debian"
-              },
-              {
-                elixir: "1.16.3",
-                otp: "26.2.5",
-                build_os_ver: "bullseye-20240513",
-                prod_os_ver: "bullseye-slim",
-                os: "distroless"
-              }
-            ]
-          }
+      - name: Get result
+        run: echo "${{ steps.common-matrix.outputs.result }}"
 
-    # - uses: actions/github-script@v7
-    #   id: deploy-matrix
-    #   with:
-    #     script: |
-    #       {
-    #         include: [
-    #           {
-    #             elixir: "1.16.3",
-    #             otp: "26.2.5",
-    #             build_os_ver: "bullseye-20240513",
-    #             prod_os_ver: "bullseye-slim",
-    #             os: "debian"
-    #           }
-    #         ]
-    #       }
+      # - uses: actions/github-script@v7
+      #   id: test-matrix
+      #   with:
+      #     script: |
+      #       {
+      #         include: [
+      #           {
+      #             elixir: "1.16.3",
+      #             otp: "26.2.5",
+      #             build_os_ver: "bullseye-20240513",
+      #             prod_os_ver: "bullseye-slim",
+      #             os: "debian"
+      #           }
+      #         ]
+      #       }
 
-    # - uses: actions/github-script@v7
-    #   id: assets-matrix
-    #   with:
-    #     script: |
-    #       {
-    #         include: [
-    #           {
-    #             elixir: "1.16.3",
-    #             otp: "26.2.5",
-    #             build_os_ver: "bullseye-20240513",
-    #             prod_os_ver: "bullseye-slim",
-    #             os: "debian"
-    #           }
-    #         ]
-    #       }
+      - uses: actions/github-script@v7
+        id: prod-matrix
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                },
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "distroless"
+                }
+              ]
+            }
+
+      # - uses: actions/github-script@v7
+      #   id: deploy-matrix
+      #   with:
+      #     script: |
+      #       {
+      #         include: [
+      #           {
+      #             elixir: "1.16.3",
+      #             otp: "26.2.5",
+      #             build_os_ver: "bullseye-20240513",
+      #             prod_os_ver: "bullseye-slim",
+      #             os: "debian"
+      #           }
+      #         ]
+      #       }
+
+      # - uses: actions/github-script@v7
+      #   id: assets-matrix
+      #   with:
+      #     script: |
+      #       {
+      #         include: [
+      #           {
+      #             elixir: "1.16.3",
+      #             otp: "26.2.5",
+      #             build_os_ver: "bullseye-20240513",
+      #             prod_os_ver: "bullseye-slim",
+      #             os: "debian"
+      #           }
+      #         ]
+      #       }
 
   build-test:
     name: Build test image
@@ -299,8 +311,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix: ${{ needs.setup-matrix.outputs.test-matrix }}
-      # matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -644,8 +655,7 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      # matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
-      matrix: ${{ needs.setup-matrix.outputs.prod-matrix }}
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
