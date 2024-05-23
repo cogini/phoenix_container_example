@@ -187,26 +187,26 @@ jobs:
                 prod_os_ver: bullseye-slim
                 os: debian
 
-    pre-job:
-      runs-on: ubuntu-latest
-      outputs:
-        matrix: ${{ steps.set-matrix.outputs.result }}
-      steps:
-      - uses: actions/github-script@v6
-        id: set-matrix
-        with:
-          script: |
-            {
-              "include": [
-                {
-                  "elixir": "1.16.3",
-                  "otp": "26.2.5",
-                  "build_os_ver": "bullseye-20240513",
-                  "prod_os_ver": "bullseye-slim",
-                  "os": "debian",
-                },
-              ]
-            }
+  pre-job:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.result }}
+    steps:
+    - uses: actions/github-script@v6
+      id: set-matrix
+      with:
+        script: |
+          {
+            "include": [
+              {
+                "elixir": "1.16.3",
+                "otp": "26.2.5",
+                "build_os_ver": "bullseye-20240513",
+                "prod_os_ver": "bullseye-slim",
+                "os": "debian",
+              },
+            ]
+          }
 
   build-test:
     name: Build test image
