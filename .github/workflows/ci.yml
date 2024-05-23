@@ -299,7 +299,8 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      matrix: ${{ needs.setup-matrix.outputs.test-matrix }}
+      # matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -431,7 +432,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      # matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      matrix: ${{ needs.setup-matrix.outputs.test-matrix }}
       # ci_node_total: [2]
       # ci_node_index: [1, 2]
     env:
@@ -520,7 +522,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      # matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
+      matrix: ${{ needs.setup-matrix.outputs.test-matrix }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -641,7 +644,8 @@ jobs:
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
+      # matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
+      matrix: ${{ needs.setup-matrix.outputs.prod-matrix }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
