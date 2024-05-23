@@ -206,10 +206,11 @@ jobs:
                 "otp": "26.2.5",
                 "build_os_ver": "bullseye-20240513",
                 "prod_os_ver": "bullseye-slim",
-                "os": "debian",
-              },
+                "os": "debian"
+              }
             ]
           }
+
     - uses: actions/github-script@v7
       id: prod-matrix
       with:
@@ -221,17 +222,18 @@ jobs:
                 "otp": "26.2.5",
                 "build_os_ver": "bullseye-20240513",
                 "prod_os_ver": "bullseye-slim",
-                "os": "debian",
+                "os": "debian"
               },
               {
                 "elixir": "1.16.3",
                 "otp": "26.2.5",
                 "build_os_ver": "bullseye-20240513",
                 "prod_os_ver": "bullseye-slim",
-                "os": "distroless",
-              },
+                "os": "distroless"
+              }
             ]
           }
+
     - uses: actions/github-script@v7
       id: deploy-matrix
       with:
@@ -243,10 +245,11 @@ jobs:
                 "otp": "26.2.5",
                 "build_os_ver": "bullseye-20240513",
                 "prod_os_ver": "bullseye-slim",
-                "os": "debian",
-              },
+                "os": "debian"
+              }
             ]
           }
+
     - uses: actions/github-script@v7
       id: assets-matrix
       with:
@@ -258,8 +261,8 @@ jobs:
                 "otp": "26.2.5",
                 "build_os_ver": "bullseye-20240513",
                 "prod_os_ver": "bullseye-slim",
-                "os": "debian",
-              },
+                "os": "debian"
+              }
             ]
           }
 
