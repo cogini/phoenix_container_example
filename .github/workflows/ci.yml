@@ -200,13 +200,13 @@ jobs:
       with:
         script: |
           {
-            "include": [
+            include: [
               {
-                "elixir": "1.16.3",
-                "otp": "26.2.5",
-                "build_os_ver": "bullseye-20240513",
-                "prod_os_ver": "bullseye-slim",
-                "os": "debian"
+                elixir: "1.16.3",
+                otp: "26.2.5",
+                build_os_ver: "bullseye-20240513",
+                prod_os_ver: "bullseye-slim",
+                os: "debian"
               }
             ]
           }
@@ -216,20 +216,20 @@ jobs:
       with:
         script: |
           {
-            "include": [
+            include: [
               {
-                "elixir": "1.16.3",
-                "otp": "26.2.5",
-                "build_os_ver": "bullseye-20240513",
-                "prod_os_ver": "bullseye-slim",
-                "os": "debian"
+                elixir: "1.16.3",
+                otp: "26.2.5",
+                build_os_ver: "bullseye-20240513",
+                prod_os_ver: "bullseye-slim",
+                os: "debian"
               },
               {
-                "elixir": "1.16.3",
-                "otp": "26.2.5",
-                "build_os_ver": "bullseye-20240513",
-                "prod_os_ver": "bullseye-slim",
-                "os": "distroless"
+                elixir: "1.16.3",
+                otp: "26.2.5",
+                build_os_ver: "bullseye-20240513",
+                prod_os_ver: "bullseye-slim",
+                os: "distroless"
               }
             ]
           }
@@ -239,13 +239,13 @@ jobs:
       with:
         script: |
           {
-            "include": [
+            include: [
               {
-                "elixir": "1.16.3",
-                "otp": "26.2.5",
-                "build_os_ver": "bullseye-20240513",
-                "prod_os_ver": "bullseye-slim",
-                "os": "debian"
+                elixir: "1.16.3",
+                otp: "26.2.5",
+                build_os_ver: "bullseye-20240513",
+                prod_os_ver: "bullseye-slim",
+                os: "debian"
               }
             ]
           }
@@ -255,13 +255,13 @@ jobs:
       with:
         script: |
           {
-            "include": [
+            include: [
               {
-                "elixir": "1.16.3",
-                "otp": "26.2.5",
-                "build_os_ver": "bullseye-20240513",
-                "prod_os_ver": "bullseye-slim",
-                "os": "debian"
+                elixir: "1.16.3",
+                otp: "26.2.5",
+                build_os_ver: "bullseye-20240513",
+                prod_os_ver: "bullseye-slim",
+                os: "debian"
               }
             ]
           }
