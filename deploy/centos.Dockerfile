@@ -99,7 +99,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # echo "multilib_policy=best" >> /etc/yum.conf && \
         # echo "skip_missing_names_on_install=False" >> /etc/yum.conf && \
         # sed -i '/^override_install_langs=/d' /etc/yum.conf && \
-        yum update -y && \
         # yum groupinstall -y 'Development Tools' && \
         yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries' && \
         yum install -y \
@@ -111,6 +110,11 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             make \
             unzip \
             wget && \
+        # yum install -y 'dnf-command(config-manager)' && \
+        # dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
+        mkdir -p /etc/yum.repo.d && \
+        wget -qO- https://cli.github.com/packages/rpm/gh-cli.repo | tee /etc/yum.repo.d/gh-cli.repo && \
+        yum update -y && \
         yum install -y centos-release-scl && \
         # https://www.softwarecollections.org/en/scls/rhscl/devtoolset-8/
         # yum list available devtoolset-10-\* && \
@@ -145,6 +149,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # curl -fsSL https://rpm.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
         # corepack enable && \
         yum install -y -q \
+            gh \
             # autoconf \
             # automake \
             # fop \
