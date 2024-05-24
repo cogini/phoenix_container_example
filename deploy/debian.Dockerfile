@@ -6,7 +6,7 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.2
+ARG ELIXIR_VER=1.16.3
 ARG OTP_VER=26.2.5
 
 # https://docker.debian.net/
