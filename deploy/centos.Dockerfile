@@ -6,8 +6,8 @@ ARG BASE_OS=centos
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.2
-ARG OTP_VER=26.2.4
+ARG ELIXIR_VER=1.16.3
+ARG OTP_VER=26.2.5
 
 # https://hub.docker.com/_/centos
 ARG BUILD_OS_VER=7
