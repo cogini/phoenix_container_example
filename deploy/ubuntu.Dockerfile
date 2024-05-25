@@ -6,12 +6,12 @@ ARG BASE_OS=ubuntu
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.2
+ARG ELIXIR_VER=1.16.3
 ARG OTP_VER=26.2.5
 
 # https://hub.docker.com/_/ubuntu
-ARG BUILD_OS_VER=jammy-20240405
-ARG PROD_OS_VER=jammy-20240405
+ARG BUILD_OS_VER=jammy-20240427
+ARG PROD_OS_VER=jammy-20240427
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
