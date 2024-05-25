@@ -350,17 +350,19 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
-    # Install JavaScript deps using yarn
+    # Install JavaScript deps
     COPY --link assets/package.jso[n] assets/package.json
     COPY --link assets/package-lock.jso[n] assets/package-lock.json
     COPY --link assets/yarn.loc[k] assets/yarn.lock
+    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
+    # Install JavaScript deps with yarn
     RUN set -exu && \
         mkdir -p ./assets && \
         yarn --cwd ./assets install --prod
         # cd assets && yarn install --prod
 
-    # Install JavaScript deps using npm
+    # Install JavaScript deps with npm
     # WORKDIR "${APP_DIR}/assets"
     # COPY --link assets/package.jso[n] ./
     # COPY --link assets/package-lock.jso[n] ./
