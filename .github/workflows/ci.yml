@@ -109,7 +109,7 @@ jobs:
                 }
               ]
             }
-      # This is slow, taking about 15 seconds to initialize
+      # druzan/setup-matrix is slow, taking about 15 seconds to initialize
       #  - name: Define matrix for test containers
       #    id: test-matrix
       #    uses: druzsan/setup-matrix@v2
