@@ -155,6 +155,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: build-${{ github.run_number }}
     steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
       # Releases require a tag on the repository
       # - name: Tag repository
       #   run: |
