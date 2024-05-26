@@ -152,6 +152,7 @@ jobs:
       release-tag: build-${{ github.run_number }}
       release-info: ${{ steps.release-view.outputs.result }}
     env:
+      GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: build-${{ github.run_number }}
     steps:
       # Releases require a tag on the repository
