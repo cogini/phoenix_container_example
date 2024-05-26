@@ -145,6 +145,29 @@ jobs:
               ]
             }
 
+  create-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: build-${{ github.run_number }}
+      release-info: ${{ steps.release-view.outputs.result }}
+    env:
+      RELEASE_TAG=build-${{ github.run_number }}
+    steps:
+      # Releases require a tag on the repository
+      - name: Tag repository
+        run: |
+          echo "$RELEASE_TAG"
+          git tag "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
+
+      - name: Create release
+        run: gh release create "$RELEASE_TAG" -n "Build $RELEASE_TAG"
+
+      - name: Get release info
+        id: release-info
+        run: gh release view "$RELEASE_TAG"
+
   build-test:
     name: Build test image
     needs: [setup-matrix]
