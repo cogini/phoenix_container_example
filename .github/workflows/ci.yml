@@ -146,11 +146,11 @@ jobs:
             }
 
   create-release:
-    name: Create release
+    name: Create GitHub release
     runs-on: ubuntu-latest
     outputs:
       release-tag: build-${{ github.run_number }}
-      release-info: ${{ steps.release-view.outputs.result }}
+      upload-url: ${{ steps.release-view.outputs.upload-url }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: build-${{ github.run_number }}
@@ -158,7 +158,6 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      # Releases require a tag on the repository
       # - name: Tag repository
       #   run: |
       #     echo "$RELEASE_TAG"
@@ -169,8 +168,10 @@ jobs:
         run: gh release create "$RELEASE_TAG" -n "Build $RELEASE_TAG"
 
       - name: Get release info
-        id: release-info
-        run: gh release view "$RELEASE_TAG"
+        id: release-view
+        run: |
+          UPLOAD_URL=$(gh release view "$RELEASE_TAG" --json uploadUrl --jq .uploadUrl | cut -d'{' -f'1')
+          echo "upload-url=$UPLOAD_URL" >> $GITHUB_OUTPUT
 
   build-test:
     name: Build test image
@@ -248,18 +249,14 @@ jobs:
       # - name: Display available platforms
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
-      - name: Create data dirs
-        run: |
-          echo 'DATABASE_HOST=postgres' >> ./.env.test
-
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        # https://github.com/aws-actions/configure-aws-credentials
-        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
+      # - name: Configure AWS credentials
+      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   # https://github.com/aws-actions/configure-aws-credentials
+      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
 
       # - name: Get test data files
       #   run: |
@@ -397,7 +394,6 @@ jobs:
       contents: read
       # Read from ghcr.io repository
       packages: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
@@ -437,13 +433,11 @@ jobs:
       contents: read
       # Read from ghcr.io repository
       packages: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
-
       # Upload SARIF report files
       security-events: write
     runs-on: ubuntu-latest
@@ -520,7 +514,6 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
       # Push to ghcr.io repository
       packages: write
     runs-on: ubuntu-latest
@@ -556,8 +549,6 @@ jobs:
       - name: Configure AWS credentials
         if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
-        # https://github.com/aws-actions/configure-aws-credentials
-        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -621,7 +612,6 @@ jobs:
             OTP_VER=${{ matrix.otp }}
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -644,7 +634,6 @@ jobs:
 
   test-prod:
     name: Run external API tests
-    # needs: [build-prod, build-newman]
     needs: [build-prod, setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -652,7 +641,6 @@ jobs:
       # Read from ghcr.io repository
       packages: read
       contents: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       issues: read
@@ -677,14 +665,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        # https://github.com/aws-actions/configure-aws-credentials
-        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
+      # - name: Configure AWS credentials
+      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   # https://github.com/aws-actions/configure-aws-credentials
+      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
 
       # - name: Get test data files
       #   run: |
@@ -788,16 +776,13 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
       # Read from ghcr.io repository
       packages: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
-
       # Upload SARIF report files
       security-events: write
     runs-on: ubuntu-latest
@@ -890,10 +875,8 @@ jobs:
   #     # Interact with GitHub OIDC Token endpoint for AWS
   #     id-token: write
   #     contents: read
-  #
   #     # Push to ghcr.io repository
   #     packages: write
-  #
   #     # Upload JUnit report files
   #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
   #     checks: write
@@ -967,10 +950,8 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
       # Push to ghcr.io repository
       packages: write
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
@@ -1067,119 +1048,6 @@ jobs:
 
       - name: Create CloudFront invalidation
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
-
-  # deploy-codedeploy:
-  #   name: Deploy using CodeDeploy
-  #   # if: ${{ env.AWS_ENABLED == 1 }}
-  #   # needs: [test-prod, test, test-dialyzer]
-  #   needs: [test, test-dialyzer, setup-matrix]
-  #   permissions:
-  #     # Interact with GitHub OIDC Token endpoint for AWS
-  #     id-token: write
-  #     contents: read
-  #
-  #     # Push to ghcr.io repository
-  #     packages: write
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
-  #   env:
-  #     DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-  #     VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-  #   steps:
-  #     - name: Log in to GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Log in to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.DOCKERHUB_TOKEN }}
-  #
-  #     - name: Configure AWS credentials
-  #       if: ${{ env.AWS_ENABLED == 1 }}
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       # https://github.com/aws-actions/configure-aws-credentials
-  #       # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-  #         aws-region: ${{ vars.AWS_REGION }}
-  #
-  #     - name: Check out source
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set variables
-  #       id: vars
-  #       run: |
-  #         echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-  #
-  #     - name: Set up Docker buildx
-  #       id: buildx
-  #       uses: docker/setup-buildx-action@v3
-  #       with:
-  #         driver-opts: network=host
-  #
-  #     - name: Get build artifacts on host
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         file: ${{ env.DOCKER_FILE }}
-  #         target: artifacts
-  #         build-args: |
-  #           ELIXIR_VER=${{ matrix.elixir }}
-  #           OTP_VER=${{ matrix.otp }}
-  #           BUILD_OS_VER=${{ matrix.build_os_ver }}
-  #           PROD_OS_VER=${{ matrix.prod_os_ver }}
-  #         context: .
-  #         builder: ${{ steps.buildx.outputs.name }}
-  #         push: false
-  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-  #         outputs: type=local,dest=output
-  #
-  #     # - name: List output dir
-  #     #   run: find output -print
-  #
-  #     - name: Copy files
-  #       run: |
-  #         mkdir -p revision
-  #         cp -v appspec.yml revision
-  #         cp -v "output/_build/${{env.MIX_ENV}}/${{env.MIX_ENV}}-0.1.0.tar.gz" revision
-  #         mkdir -p revision/systemd
-  #         cp -v output/_build/${{env.MIX_ENV}}/systemd/lib/systemd/system/* revision/systemd
-  #         mkdir -p revision/bin
-  #         cp -v bin/* revision/bin
-  #         mkdir -p revision/etc
-  #
-  #     - name: List revision dir
-  #       run: find revision -type f -print
-  #
-  #     - name: Set variables
-  #       run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
-  #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
-  #
-  #     - name: Create CodeDeploy revision
-  #       run: |
-  #         aws deploy push --application-name ${CODEDEPLOY_APPLICATION} \
-  #           --description "Bounce revision ${GITHUB_SHA_SHORT}" \
-  #           --s3-location s3://${{env.CODEDEPLOY_BUCKET}}/${{env.REVISION_FILE}} \
-  #           --source revision
-  #
-  #     - name: Create CodeDeploy deployment
-  #       run: |
-  #         aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION}} \
-  #           --deployment-group-name ${{env.CODEDEPLOY_DEPLOYMENT_GROUP}} \
-  #           --s3-location bucket=${{env.CODEDEPLOY_BUCKET}},key=${{env.REVISION_FILE}},bundleType=zip \
-  #           --description "Bounce revision ${{env.GITHUB_SHA_SHORT}}"
-  #
-  #     # - name: Set vars
-  #     #   run: aws deploy create-deployment \
-  #     #     --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
-  #     #     --deployment-group-name ${{env.CODEDEPLOY_DEPLOYMENT_GROUP_NAME}}
 
   deploy-ecs:
     name: Deploy to AWS ECS
@@ -1360,5 +1228,68 @@ jobs:
           # skopeo copy --multi-arch=index-only \
           #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}} \
           #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
+  # deploy-codedeploy:
+  #   name: Deploy using CodeDeploy
+  #   # if: ${{ env.AWS_ENABLED == 1 }}
+  #   # needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
+  #   needs: [test, test-dialyzer, test-prod, setup-matrix, create-release]
+  #   permissions:
+  #     # Interact with GitHub OIDC Token endpoint for AWS
+  #     id-token: write
+  #     contents: read
+  #     # Push to ghcr.io repository
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
+  #   env:
+  #     DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+  #     VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+  #     GH_TOKEN: ${{ github.token }}
+  #     RELEASE_TAG: ${{ needs.create-release.outputs.release-tag }}
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ vars.AWS_REGION }}
+
+  #     - name: Check out source
+  #       uses: actions/checkout@v4
+
+  #     - name: Set variables
+  #       id: vars
+  #       run: |
+  #         echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+
+  #     - name: Download release files
+  #       run: |
+  #         gh release download "${RELEASE_TAG}" -p "codebuild-revision-${VAR}.zip"
+  #         mkdir -p revision
+  #         unzip -o "codebuild-revision-${VAR}.zip" -d revision
+
+  #     - name: Set variables
+  #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{ github.run_number }}-${{env.VAR}}.zip" >> $GITHUB_ENV
+  #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
+  #       run: |
+  #         echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
+
+  #     - name: Create CodeDeploy revision
+  #       run: |
+  #         aws deploy push --application-name "${CODEDEPLOY_APPLICATION}" \
+  #           --description "Bounce ${RELEASE_TAG} ${GITHUB_SHA_SHORT}" \
+  #           --s3-location s3://${CODEDEPLOY_BUCKET}/${REVISION_FILE} \
+  #           --source revision
+
+  #     - name: Create CodeDeploy deployment
+  #       run: |
+  #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
+  #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}" \
+  #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
+  #           --description "Bounce ${RELEASE_TAG} ${GITHUB_SHA_SHORT}"
 
       # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
