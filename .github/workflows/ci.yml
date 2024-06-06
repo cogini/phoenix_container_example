@@ -84,7 +84,7 @@ env:
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   setup-matrix:
-    name: Set up matrix
+    name: Set up build matrix
     runs-on: ubuntu-latest
     outputs:
       test-matrix: ${{ steps.common-matrix.outputs.result }}
@@ -1067,6 +1067,7 @@ jobs:
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
