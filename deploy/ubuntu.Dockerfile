@@ -131,7 +131,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Enable app to make outbound SSL calls
             ca-certificates \
             curl \
-            wget \
             git \
             gnupg \
             gnupg-agent \
@@ -142,6 +141,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             openssh-client \
             # Support ssl in container, as opposed to load balancer
             openssl \
+            wget \
+            zip \
             # Install default nodejs
             # nodejs \
             # Install default Postgres
@@ -561,8 +562,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             ca-certificates \
             # Run health checks and get ECS metadata
             # curl \
-            wget \
             jq \
+            wget \
             # tini is a minimal init which will reap zombie processes
             # https://github.com/krallin/tini
             # tini \
