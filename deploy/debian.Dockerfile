@@ -552,9 +552,9 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks and get ECS metadata
-            # curl \
-            wget \
+            curl \
             jq \
+            wget \
             # tini is a minimal init which will reap zombie processes
             # https://github.com/krallin/tini
             # tini \
