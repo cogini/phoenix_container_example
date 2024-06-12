@@ -1,19 +1,16 @@
 import Config
 
-# Allow log level to be set at runtime
-if config_env() == :test do
-  config :logger,
-    level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "warning")
-else
-  config :logger,
-    level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
-end
-
 roles = (System.get_env("ROLES") || "app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
 
 if System.get_env("PHX_SERVER") && :app in roles do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
+end
+
+# Allow log level to be set at runtime
+if config_env() != :test and System.get_env("LOG_LEVEL") do
+  config :logger,
+    level: String.to_existing_atom(System.get_env("LOG_LEVEL"))
 end
 
 env_config = [
