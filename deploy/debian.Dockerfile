@@ -351,41 +351,30 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
+    RUN mkdir -p ./assets
+
     # Install JavaScript deps
     COPY --link assets/package.jso[n] assets/package.json
     COPY --link assets/package-lock.jso[n] assets/package-lock.json
     COPY --link assets/yarn.loc[k] assets/yarn.lock
     COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
-    # Install JavaScript deps with yarn
-    RUN set -exu && \
+    WORKDIR ${APP_DIR}/assets
+
+    RUN --mount=type=cache,target=~/.npm,sharing=locked \
+        set -exu && \
         mkdir -p ./assets && \
-        yarn --cwd ./assets install --prod
-        # cd assets && yarn install --prod
+        # yarn --cwd ./assets install --prod
+        yarn install --prod
+        # npm install
+        # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+        # node node_modules/brunch/bin/brunch build
 
-    # Install JavaScript deps with npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY --link assets/package.jso[n] ./
-    # COPY --link assets/package-lock.jso[n] ./
-    # RUN npm install
-
-    # Compile assets the old way
-    # WORKDIR "${APP_DIR}/assets"
-    #
-    # COPY --link assets/package.json ./
-    # COPY --link assets/package-lock.json ./
-    #
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-    #
-    # COPY --link assets ./
-    #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
