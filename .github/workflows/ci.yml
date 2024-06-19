@@ -90,7 +90,7 @@ jobs:
       test-matrix: ${{ steps.common-matrix.outputs.result }}
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
       deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
-      assets-matrix: ${{ steps.common-matrix.outputs.result }}
+      assets-matrix: ${{ steps.assets-matrix.outputs.result }}
     steps:
       - uses: actions/github-script@v7
         id: common-matrix
@@ -154,6 +154,24 @@ jobs:
 
       - uses: actions/github-script@v7
         id: deploy-matrix
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                }
+              ]
+            }
+
+      - uses: actions/github-script@v7
+        id: assets-matrix
+        # Specify versions of Erlang, Elixir, and base OS
+        # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
         with:
           script: |
             return {
