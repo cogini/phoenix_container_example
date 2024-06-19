@@ -89,7 +89,7 @@ jobs:
     outputs:
       test-matrix: ${{ steps.common-matrix.outputs.result }}
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
-      deploy-matrix: ${{ steps.common-matrix.outputs.result }}
+      deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
       assets-matrix: ${{ steps.common-matrix.outputs.result }}
     steps:
       - uses: actions/github-script@v7
