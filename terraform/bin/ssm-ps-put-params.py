@@ -14,7 +14,7 @@
 #   SecureString,endpoint/secret_key_base,SECRET_KEY_BASE,lbMvIWnyI+ZMpA+FcN4HW2iUozEYgaOQcuQZ4yBYevI9QiOBFp0Jtj5FT96Rq3+T
 #   String,endpoint/host,PHX_HOST,example.com
 
-# SECRET_KEY_BASE = mix phx.gen.secret 
+# SECRET_KEY_BASE = mix phx.gen.secret
 # RELEASE_COOKIE = Base.url_encode64(:crypto.strong_rand_bytes(40))
 
 # aws ssm get-parameters-by-path --path /cogini/foo/dev/app --no-paginate --region $AWS_REGION --query "Parameters[].{name:Name,valueFrom:Name}" --output json
