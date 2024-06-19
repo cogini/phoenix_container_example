@@ -20,19 +20,20 @@ env:
   IMAGE_NAME: aws-otel-collector
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # ECR Docker repository org name, may be blank
-  ECR_IMAGE_OWNER: bergey
+  # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
+  ECR_IMAGE_OWNER: cogini/
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
-  # Give GitHub Actions access to AWS
-  AWS_ENABLED: 1
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
-  # AWS_REGION: us-east-1
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ''
+  # Give GitHub Actions access to AWS
+  AWS_ENABLED: 1
+  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
+  # AWS_REGION: us-east-1
   # Docker
   DOCKER_BUILDKIT: '1'
   DOCKER_FILE: deploy/aws-otel-collector.Dockerfile
@@ -43,9 +44,17 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
+      # Push to ghcr.io repository
+      packages: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Configure AWS credentials
         if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
@@ -59,17 +68,11 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Check out source
         uses: actions/checkout@v4
-
-      # Pull public images without rate limits
-      # - name: Log in to Docker Hub
-      #   uses: docker/login-action@v3
-      #   with:
-      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker buildx
         id: buildx
