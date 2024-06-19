@@ -345,7 +345,6 @@ jobs:
     permissions:
       # Read from ghcr.io repository
       packages: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       contents: read
