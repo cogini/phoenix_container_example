@@ -17,17 +17,6 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Variant if test matrix is not used
-  # See https://hub.docker.com/r/hexpm/elixir/tags
-  VAR: '1.16.1-erlang-26.2.1-debian-bullseye-20231009-slim'
-  # Variant that is deployed
-  PROD_VAR: '1.16.1-erlang-26.2.1-debian-bullseye-20231009-slim'
-  RELEASE_ELIXIR: 1.16.1
-  RELEASE_OTP: 26.2.1
-  RELEASE_BUILD_OS_VER: bullseye-20231009-slim
-  RELEASE_PROD_OS_VER: bullseye-slim
-  RELEASE_SNAPSHOT_VER: ""
-  RELEASE_OS: debian
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -35,31 +24,35 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
   # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
   # AWS_REGION: us-east-1
   # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
+  # S3_BUCKET_CI: cogini-prod-foo-ci
   # Health check port for app
   APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
   # DD_ENV: ci
   # DD_TAGS: "environment:ci"
+  # MIX_ENV: foo
   ELIXIR_MODULE: PhoenixContainerExample
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
   ECS_CONTAINER: foo-app
-  ECS_SERVICE_WORKER: foo-worker
-  ECS_CONTAINER_WORKER: foo-worker
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   TASKDEF: ecs/task-definition.json
+  ECS_SERVICE_WORKER: foo-worker
+  ECS_CONTAINER_WORKER: foo-worker
   TASKDEF_WORKER: ecs/task-definition.worker.json
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
+  # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  # EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # GitHub Advanced Security, free for open source, otherwise a paid feature
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
@@ -72,58 +65,129 @@ env:
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
+  setup-matrix:
+    name: Set up build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.common-matrix.outputs.result }}
+      prod-matrix: ${{ steps.prod-matrix.outputs.result }}
+      deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
+      assets-matrix: ${{ steps.assets-matrix.outputs.result }}
+    steps:
+      - uses: actions/github-script@v7
+        id: common-matrix
+        # Specify versions of Erlang, Elixir, and base OS
+        # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.17.0",
+                  otp: "27.0",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                },
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                }
+              ]
+            }
+      # druzan/setup-matrix is slow, taking about 15 seconds to initialize
+      #  - name: Define matrix for test containers
+      #    id: test-matrix
+      #    uses: druzsan/setup-matrix@v2
+      #    with:
+      #      matrix: |
+      #        include:
+      #          - elixir: 1.16.3
+      #            otp: 26.2.5
+      #            build_os_ver: bullseye-20240513
+      #            prod_os_ver: bullseye-slim
+      #            os: debian
+
+      - uses: actions/github-script@v7
+        id: prod-matrix
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                },
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "distroless"
+                }
+              ]
+            }
+
+      - uses: actions/github-script@v7
+        id: deploy-matrix
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                }
+              ]
+            }
+
+      - uses: actions/github-script@v7
+        id: assets-matrix
+        # Specify versions of Erlang, Elixir, and base OS
+        # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+        with:
+          script: |
+            return {
+              include: [
+                {
+                  elixir: "1.16.3",
+                  otp: "26.2.5",
+                  build_os_ver: "bullseye-20240513",
+                  prod_os_ver: "bullseye-slim",
+                  os: "debian"
+                }
+              ]
+            }
+
   scan:
     name: Security scan prod image
-    # needs: [build-prod]
+    needs: [setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
       # Read from ghcr.io repository
       packages: read
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
-
       # Upload SARIF report files
       security-events: write
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - elixir: 1.15.7
-            otp: 26.1.2
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
-          - elixir: 1.16.1
-            otp: 26.2.1
-            build_os_ver: bullseye-20231009-slim
-            prod_os_ver: bullseye-slim
-            os: debian
-          - elixir: 1.16.1
-            otp: 26.2.1
-            build_os_ver: bullseye-20231009-slim
-            prod_os_ver: bullseye-slim
-            os: distroless
-          # - elixir: 1.14.5
-          #   otp: 26.1.1
-          #   build_os_ver: bullseye-20230612-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20230612
-          #   os: debian
-          # - elixir: 1.14.1
-          #   otp: 24.3.4
-          #   build_os_ver: bullseye-20210902-slim
-          #   prod_os_ver: bullseye-slim
-          #   snapshot_ver: 20210902
-          #   os: debian
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
@@ -157,7 +221,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
@@ -182,7 +246,7 @@ jobs:
 
       - name: Upload Grype scan results to GitHub Security tab
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
