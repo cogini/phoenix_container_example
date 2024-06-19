@@ -7,7 +7,7 @@ on:
       - qa
     tags: [prod]
     paths:
-      - 'deploy/otel.Dockerfile'
+      - 'deploy/aws-otel-collector.Dockerfile'
       - 'otel/*'
   pull_request:
     # branches: [main]
