@@ -46,8 +46,8 @@ env:
   # AWS_REGION: us-east-1
   # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
-  # Health check port for app
   # S3_BUCKET_CI: cogini-prod-foo-ci
+  # Health check port for app
   APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
