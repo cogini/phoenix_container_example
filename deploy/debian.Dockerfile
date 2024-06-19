@@ -407,8 +407,21 @@ FROM build-deps-get AS prod-release
     # Build release
     COPY --link rel ./rel
 
+    # Generate systemd and deploy scripts
     # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+
     RUN mix release "$RELEASE"
+
+    # Create revision for CodeDeploy
+    # WORKDIR /revision
+    # COPY appspec.yml ./
+    # RUN set -exu && \
+    #     mkdir -p etc bin systemd && \
+    #     cp /app/bin/* ./bin/ && \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
+    #     zip -r /revision.zip . && \
+    #     rm -rf /revision/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -625,6 +638,10 @@ FROM prod-base AS prod
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+
+    # Copy CodeDeploy revision into prod image for publishing later
+    # This could be put in a separate target, but it's faster to do it from prod test
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
 
     # USER $APP_USER
 
