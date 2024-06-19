@@ -55,8 +55,7 @@ config :logger,
 
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  # metadata: [:file, :line, :request_id, :otel_trace_id, :otel_span_id, :xray_trace_id]
-  metadata: [:file, :line, :request_id]
+  metadata: [:file, :line, :request_id, :otel_trace_id, :otel_span_id, :xray_trace_id]
 
 config :opentelemetry,
   id_generator: :opentelemetry_xray_id_generator,

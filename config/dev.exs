@@ -66,12 +66,13 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :phoenix_container_example, dev_routes: true
 
-# config :logger, :default_formatter,
-#   format: "$time $metadata[$level] $message\n",
-#   metadata: [:file, :line, :request_id, :otel_trace_id, :otel_span_id]
+config :logger,
+  level: :info,
+  always_evaluate_messages: true
 
-# Do not include metadata nor timestamps in development logs
-# config :logger, :console, format: "[$level] $message\n"
+config :logger, :default_formatter,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:file, :line]
 
 if System.get_env("OTEL_DEBUG") == "true" do
   config :opentelemetry, :processors,
