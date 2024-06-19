@@ -35,6 +35,12 @@ variable "xray" {
   default     = false
 }
 
+variable "prometheus" {
+  description = "Allow sending traces to AWS Prometheus"
+  type        = bool
+  default     = false
+}
+
 variable "enable_ssm_management" {
   description = "Allow instance to be managed via SSM"
   default     = false
