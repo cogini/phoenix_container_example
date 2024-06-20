@@ -183,6 +183,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             nodejs \
             # trivy \
             yarn \
+            # yarnpkg \
         && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
@@ -363,7 +364,6 @@ FROM build-deps-get AS prod-release
 
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-        mkdir -p ./assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
