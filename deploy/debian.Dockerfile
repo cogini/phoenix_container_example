@@ -249,8 +249,8 @@ FROM build-os-deps AS build-deps-get
 
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
-    COPY --link mix.exs .
-    COPY --link mix.lock .
+    COPY --link mix.exs ./
+    COPY --link mix.lock ./
 
     # COPY --link .env.default ./
 
@@ -338,7 +338,7 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] .
+    COPY --link .env.pro[d] ./
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
