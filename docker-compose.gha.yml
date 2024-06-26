@@ -1,5 +1,4 @@
 ---
-version: "3.9"
 services:
   # Image used to run tests
   test:
