@@ -328,7 +328,7 @@ jobs:
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}
           cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }},mode=max
-          # no-cache: github.run_attempt != '1'
+          no-cache: ${{ github.run_attempt != '1' }}
           # platforms: linux/amd64,linux/arm64
           # ssh: default
           tags: |
@@ -657,7 +657,7 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
           cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # no-cache: github.run_attempt != '1'
+          no-cache: ${{ github.run_attempt != '1' }}
           # ssh: default
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
