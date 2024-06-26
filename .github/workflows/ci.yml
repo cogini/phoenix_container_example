@@ -101,10 +101,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.0",
+                  elixir: "1.17.1",
                   otp: "27.0",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 },
                 {
@@ -136,17 +136,17 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 },
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "distroless"
                 }
               ]
@@ -159,10 +159,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
               ]
@@ -177,10 +177,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
               ]
