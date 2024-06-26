@@ -7,13 +7,13 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.2
-ARG OTP_VER=26.2.5
+ARG ELIXIR_VER=1.17.1
+ARG OTP_VER=27.0
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=bullseye-20230612-slim
-ARG PROD_OS_VER=bullseye-20230612-slim
+ARG BUILD_OS_VER=bookworm-20240612
+ARG PROD_OS_VER=bookworm-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
@@ -68,7 +68,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-ARG LANG=C.UTF-8
+# ARG LANG=C.UTF-8
+ARG LANG=C.utf8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
@@ -152,6 +153,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             openssh-client \
             # Support ssl in container, as opposed to load balancer
             openssl \
+            wget \
+            zip \
             # Install default nodejs
             # nodejs \
             # Install default Postgres
@@ -160,7 +163,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # $RUNTIME_PACKAGES \
         && \
         locale-gen && \
-        mkdir -p /etc/apt/keyrings && \
+        mkdir -p -m 755 /etc/apt/keyrings && \
         # Install nodejs from nodesource.com
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
         echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
@@ -176,15 +179,21 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
         echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
         printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # Install GitHub CLI
+        # wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+        # chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+        # echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list && \
         # Install Trivy
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # gh \
             nodejs \
             # trivy \
             yarn \
+            # yarnpkg \
         && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
@@ -250,8 +259,8 @@ FROM build-os-deps AS build-deps-get
 
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
-    COPY --link mix.exs .
-    COPY --link mix.lock .
+    COPY --link mix.exs ./
+    COPY --link mix.lock ./
 
     # COPY --link .env.default ./
 
@@ -339,7 +348,7 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] .
+    COPY --link .env.pro[d] ./
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
@@ -353,39 +362,30 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
-    # Install JavaScript deps using yarn
+    RUN mkdir -p ./assets
+
+    # Install JavaScript deps
     COPY --link assets/package.jso[n] assets/package.json
     COPY --link assets/package-lock.jso[n] assets/package-lock.json
     COPY --link assets/yarn.loc[k] assets/yarn.lock
+    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
-    RUN set -exu && \
-        mkdir -p ./assets && \
-        yarn --cwd ./assets install --prod
-        # cd assets && yarn install --prod
+    WORKDIR ${APP_DIR}/assets
 
-    # Install JavaScript deps using npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY --link assets/package.jso[n] ./
-    # COPY --link assets/package-lock.jso[n] ./
-    # RUN npm install
+    RUN --mount=type=cache,target=~/.npm,sharing=locked \
+        set -exu && \
+        corepack enable && \
+        # yarn --cwd ./assets install --prod
+        yarn install --prod
+        # npm install
+        # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+        # node node_modules/brunch/bin/brunch build
 
-    # Compile assets the old way
-    # WORKDIR "${APP_DIR}/assets"
-    #
-    # COPY --link assets/package.json ./
-    # COPY --link assets/package-lock.json ./
-    #
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-    #
-    # COPY --link assets ./
-    #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
@@ -417,8 +417,21 @@ FROM build-deps-get AS prod-release
     # Build release
     COPY --link rel ./rel
 
+    # Generate systemd and deploy scripts
     # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+
     RUN mix release "$RELEASE"
+
+    # Create revision for CodeDeploy
+    # WORKDIR /revision
+    # COPY appspec.yml ./
+    # RUN set -exu && \
+    #     mkdir -p etc bin systemd && \
+    #     cp /app/bin/* ./bin/ && \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
+    #     zip -r /revision.zip . && \
+    #     rm -rf /revision/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -506,6 +519,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN cat /etc/locale.gen
     RUN ls -l "/lib/"
     RUN ls -l "/lib/$(uname -m)-linux-gnu/"
     RUN ls -l "/usr/lib/"
@@ -529,10 +543,15 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     # Copy shared libraries needed at runtime
 
+    # # libtinfo6
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
+    # # libncurses6
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
+
     # libtinfo6
-    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
     # libncurses6
-    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
 
     # Part of distroless/cc image
     # libgcc-s1
@@ -572,6 +591,10 @@ FROM prod-base AS prod
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+
+    # Copy CodeDeploy revision into prod image for publishing later
+    # This could be put in a separate target, but it's faster to do it from prod test
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
 
     # USER $APP_USER
 
