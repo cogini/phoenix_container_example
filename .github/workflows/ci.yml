@@ -506,9 +506,11 @@ jobs:
           # trivy-config: trivy.yaml
           # format: 'table'
           format: 'sarif'
+          # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           output: 'trivy-results.sarif'
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat trivy-results.sarif | jq .
 
       - name: Upload trivy scan results to GitHub Security tab
@@ -526,10 +528,12 @@ jobs:
           path: .
           # output-format: table
           output-format: 'sarif'
+          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           fail-build: false
           # severity-cutoff: critical
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload grype scan results to GitHub Security tab
