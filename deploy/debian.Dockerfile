@@ -6,13 +6,13 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.3
-ARG OTP_VER=26.2.5
+ARG ELIXIR_VER=1.17.1
+ARG OTP_VER=27.0
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=bullseye-20240513-slim
-ARG PROD_OS_VER=bullseye-20240513-slim
+ARG BUILD_OS_VER=bookworm-20240612
+ARG PROD_OS_VER=bookworm-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
@@ -59,7 +59,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-ARG LANG=C.UTF-8
+# ARG LANG=C.UTF-8
+ARG LANG=C.utf8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
