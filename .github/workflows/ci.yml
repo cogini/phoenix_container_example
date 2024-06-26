@@ -75,7 +75,7 @@ env:
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-  GITHUB_ADVANCED_SECURITY: 1
+  GITHUB_ADVANCED_SECURITY: 0
   DEPLOY_DOCKER_HUB: 0
   # Docker
   DOCKER_BUILDKIT: '1'
@@ -505,10 +505,10 @@ jobs:
           # ignore-unfixed: true
           # severity: 'CRITICAL'
           # trivy-config: trivy.yaml
-          # format: 'table'
-          format: 'sarif'
+          format: 'table'
+          # format: 'sarif'
           # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
-          output: 'trivy-results.sarif'
+          # output: 'trivy-results.sarif'
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
@@ -859,8 +859,8 @@ jobs:
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
           # cache-dir: /var/cache
-          format: 'sarif'
-          # format: 'table'
+          # format: 'sarif'
+          format: 'table'
           # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           output: 'trivy.sarif'
 
@@ -887,8 +887,8 @@ jobs:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
-          output-format: 'sarif'
-          # output-format: table
+          # output-format: 'sarif'
+          output-format: table
           # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
 
       - name: Display scan results

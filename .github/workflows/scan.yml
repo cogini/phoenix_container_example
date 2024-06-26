@@ -57,7 +57,7 @@ env:
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-  GITHUB_ADVANCED_SECURITY: 1
+  GITHUB_ADVANCED_SECURITY: 0
   DEPLOY_DOCKER_HUB: 0
   # Docker
   DOCKER_BUILDKIT: '1'
@@ -83,10 +83,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.0",
+                  elixir: "1.17.1",
                   otp: "27.0",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 },
                 {
@@ -118,17 +118,17 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 },
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "distroless"
                 }
               ]
@@ -141,10 +141,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
               ]
@@ -159,10 +159,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
+                  elixir: "1.17.1",
+                  otp: "27.0",
+                  build_os_ver: "bookworm-20240612",
+                  prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
               ]
@@ -213,10 +213,13 @@ jobs:
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
           # cache-dir: /var/cache
-          format: 'sarif'
+          # format: 'sarif'
+          format: 'table'
+          # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           output: 'trivy.sarif'
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat trivy.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
@@ -238,10 +241,12 @@ jobs:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
-          output-format: 'sarif'
-          # output-format: table
+          # output-format: 'sarif'
+          output-format: table
+          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
