@@ -168,10 +168,10 @@ locals {
   configure_cloudwatch_logs = length(local.cloudwatch_logs) > 0
 }
 
-# Configure access to AWS X-Ray and Prometheus
+# Send data to to AWS X-Ray and Prometheus
 locals {
-  xray = var.xray
-  prometheus = var.prometheus
+  write_xray = var.xray
+  write_prometheus = var.prometheus
 }
 
 # Allow writing to CloudWatch metrics
@@ -535,7 +535,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 # Allow uploading segment documents and telemetry to the X-Ray API
 # https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
 resource "aws_iam_role_policy_attachment" "xray" {
-  count      = local.xray ? 1 : 0
+  count      = local.write_xray ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
@@ -543,7 +543,7 @@ resource "aws_iam_role_policy_attachment" "xray" {
 # Grant write only access to AWS Managed Prometheus workspaces
 # https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
 resource "aws_iam_role_policy_attachment" "prometheus" {
-  count      = var.prometheus ? 1 : 0
+  count      = local.write_prometheus ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
@@ -564,7 +564,7 @@ resource "aws_iam_role_policy_attachment" "kms" {
 # }
 
 # Allow listing EC2 instances
-# Needed for Prometheus
+# Needed for Prometheus server
 resource "aws_iam_role_policy_attachment" "ec2-read-only" {
   count      = var.enable_ec2_readonly ? 1 : 0
   role       = aws_iam_role.this.name
@@ -630,7 +630,7 @@ resource "aws_iam_role_policy_attachment" "ec2-describe-tags" {
 }
 
 # Allow readonly access to cloudwatch logs
-# Needed for Prometheus
+# Needed for Prometheus server
 resource "aws_iam_role_policy_attachment" "cwlogs-read-only" {
   count      = var.enable_cwl_readonly ? 1 : 0
   role       = aws_iam_role.this.name
@@ -639,6 +639,7 @@ resource "aws_iam_role_policy_attachment" "cwlogs-read-only" {
 
 # Create instance profile for role
 resource "aws_iam_instance_profile" "this" {
-  name = aws_iam_role.this.name
-  role = aws_iam_role.this.name
+  count = var.create_instance_profile ? 1 : 0
+  name  = aws_iam_role.this.name
+  role  = aws_iam_role.this.name
 }
