@@ -1126,7 +1126,9 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+        run: |
+          echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -1166,19 +1168,19 @@ jobs:
           # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
           # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
-      # - name: Create AppSignal revision
-      #   env:
-      #     APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
-      #     APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
-      #     APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
-      #     REVISION: ${{ env.GITHUB_SHA_SHORT }}
-      #     # REVISION: ${{ env.GITHUB_SHA }}
-      #   run: |
-      #     printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
-      #     export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
-      #     # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
-      #     echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
-      #     curl -g --config curl.txt -d @revision.json
+      - name: Create AppSignal revision
+        env:
+          APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
+          APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
+          APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
+          REVISION: ${{ env.GITHUB_SHA_SHORT }}
+          # REVISION: ${{ env.GITHUB_SHA }}
+        run: |
+          printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
+          export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
+          # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
+          echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
+          curl -g --config curl.txt -d @revision.json
 
       - name: Generate ECS task-defintion.json (worker)
         env:
