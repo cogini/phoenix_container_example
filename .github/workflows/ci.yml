@@ -855,9 +855,12 @@ jobs:
           # severity: 'CRITICAL,HIGH'
           # cache-dir: /var/cache
           format: 'sarif'
+          # format: 'table'
+          # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           output: 'trivy.sarif'
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat trivy.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
@@ -881,8 +884,10 @@ jobs:
           fail-build: false
           output-format: 'sarif'
           # output-format: table
+          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
 
       - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
