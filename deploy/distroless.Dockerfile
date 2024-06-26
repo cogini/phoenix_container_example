@@ -42,7 +42,7 @@ ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_V
 
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian11
+ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian12
 # ARG PROD_BASE_IMAGE_TAG=debug-nonroot
 # ARG PROD_BASE_IMAGE_TAG=latest
 # debug includes busybox, which we need to run Erlang startup scripts
