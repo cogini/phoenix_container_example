@@ -38,7 +38,10 @@ inputs = {
   # Give access to parameter names under prefix
   # "*" gives access to all parameters
   ssm_ps_params = ["*"]
-  # Give acess to params under different components, after settting prefix to org/app 
+  # Specify prefix and params
+  # Give acess to all SSM Parameter Store params under /org/app/env
+  # ssm_ps_param_prefix = format("%s/%s/%s", local.common_vars.locals.org, local.common_vars.locals.app_name, local.environment_vars.locals.env)
+  # Give acess to specific params under prefix
   # ssm_ps_params = ["app/*", "worker/*"]
 
   # Give access to KMS CMK
