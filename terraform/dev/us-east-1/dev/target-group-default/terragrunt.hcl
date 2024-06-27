@@ -9,6 +9,7 @@ include "root" {
 }
 
 inputs = {
+  # comp     = "app"
   port     = 4001
   protocol = "HTTPS"
   # protocol = "HTTP"

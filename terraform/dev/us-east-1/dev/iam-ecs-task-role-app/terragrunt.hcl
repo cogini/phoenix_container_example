@@ -66,6 +66,9 @@ inputs = {
   # Allow sending email via AWS SES
   enable_ses = true
 
+  # enable_transcribe = true
+  # sqs_queues = ["*"]
+
   # Enable ECS service discovery to build Erlang cluster
   enable_ecs_discovery = true
 

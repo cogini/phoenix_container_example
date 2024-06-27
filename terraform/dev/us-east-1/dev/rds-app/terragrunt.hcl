@@ -59,6 +59,7 @@ inputs = {
   family = "postgres15"
   # DB option group
   rds_master_user = "postgres"
+  # Set rds_master_pass via environment TF_VAR_rds_master_pass
 
   # By default, RDS sets the password and stores it in AWS Secrets Manager.
   # You can access it via the AWS console if you need it.

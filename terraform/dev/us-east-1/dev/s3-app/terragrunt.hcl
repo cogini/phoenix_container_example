@@ -35,6 +35,7 @@ inputs = {
     # Data files
     # data = {
     #  encrypt = true
+    #  # versioning = true
     # }
     # SSM log files
     # ssm = {
