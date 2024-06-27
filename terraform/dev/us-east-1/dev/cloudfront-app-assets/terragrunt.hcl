@@ -34,6 +34,7 @@ inputs = {
   host_name = "assets"
 
   # Create DNS records for host_name pointing to CloudFront
+  # Set to true for public static site, false for the app
   create_dns = true
 
   # Add alias for bare domain to CloudFront distribution
