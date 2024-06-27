@@ -549,9 +549,9 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
 
     # libtinfo6
-    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6" "/lib/${LINUX_ARCH}-linux-gnu/"
     # libncurses6
-    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6" "/lib/${LINUX_ARCH}-linux-gnu/"
 
     # Part of distroless/cc image
     # libgcc-s1
