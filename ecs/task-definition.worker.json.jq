@@ -18,6 +18,18 @@
             ],
             "environment": [
                 {
+                    "name": "APP_REVISION",
+                    "value": env.GITHUB_SHA_SHORT
+                },
+                {
+                    "name": "APPSIGNAL_OTP_APP",
+                    "value": "phoenix_container_example"
+                },
+                {
+                    "name": "APPSIGNAL_APP_NAME",
+                    "value": "phoenix_container_example"
+                },
+                {
                     "name": "GITHUB_SHA",
                     "value": env.GITHUB_SHA
                 },
@@ -80,6 +92,14 @@
             "readonlyRootFilesystem": false,
             "entryPoint": ["bin/start-docker"],
             "secrets": [
+                {
+                    "name": "APPSIGNAL_APP_ENV",
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/appsignal_app_env"
+                },
+                {
+                    "name": "APPSIGNAL_PUSH_API_KEY",
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/appsignal_push_api_key"
+                },
                 {
                     "name": "DATABASE_URL",
                     "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/db/url"
