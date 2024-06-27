@@ -862,7 +862,7 @@ jobs:
           # format: 'sarif'
           format: 'table'
           # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
-          output: 'trivy.sarif'
+          # output: 'trivy.sarif'
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
@@ -1173,20 +1173,6 @@ jobs:
           # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
           # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
-      - name: Create AppSignal revision
-        env:
-          APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
-          APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
-          APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
-          REVISION: ${{ env.GITHUB_SHA_SHORT }}
-          # REVISION: ${{ env.GITHUB_SHA }}
-        run: |
-          printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
-          export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
-          # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
-          echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
-          curl -g --config curl.txt -d @revision.json
-
       - name: Generate ECS task-defintion.json (worker)
         env:
           AWSLOGS_REGION: ${{ vars.AWS_REGION }}
@@ -1224,6 +1210,21 @@ jobs:
       #     custom: my environment variable
       #     requester: ${{ github.actor }}
       #     event-name: ${{ github.event_name }}
+
+      - name: Create AppSignal revision
+        env:
+          APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
+          APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
+          APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
+          REVISION: ${{ env.GITHUB_SHA_SHORT }}
+          # REVISION: ${{ env.GITHUB_SHA }}
+        run: |
+          printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
+          export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
+          # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
+          echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
+          curl -g --config curl.txt -d @revision.json
+
 
   tag:
     name: Tag prod images as latest
