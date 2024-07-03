@@ -248,7 +248,7 @@ FROM build-os-deps AS build-deps-get
     COPY --link mix.exs ./
     COPY --link mix.lock ./
 
-    # COPY --link .env.default ./
+    COPY --link .env.defaul[t] ./
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
@@ -380,15 +380,15 @@ FROM build-deps-get AS prod-release
     COPY --link assets ./assets
     COPY --link priv ./priv
 
+    RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
+
     # Non-umbrella
     COPY --link lib ./lib
 
     # Umbrella
     # COPY --link apps ./apps
-
-    RUN mix assets.deploy
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
