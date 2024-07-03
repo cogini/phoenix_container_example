@@ -18,7 +18,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # In test we don't send emails.
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
 
-
 config :logger,
   level: :warning,
   always_evaluate_messages: true
