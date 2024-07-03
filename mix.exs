@@ -66,8 +66,9 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp deps do
     [
+      {:appsignal_phoenix, "~> 2.0"},
+      # {:appsignal, "~> 2.0"},
       {:aws_rds_castore, "~> 1.1"},
-      {:appsignal, "~> 2.0"},
       {:castore, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
@@ -111,9 +112,11 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.20.2"},
       {:plug_cowboy, "~> 2.5"},
+      {:plugsnag, "~> 1.7"},
       {:postgrex, ">= 0.0.0"},
       {:recon, "~> 2.5"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:ssl_verify_fun, "~> 1.1"},
       {:styler, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
