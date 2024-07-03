@@ -5,7 +5,7 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
   password: System.get_env("DATABASE_PASS") || "postgres",
   hostname: System.get_env("DATABASE_HOST") || "localhost",
   database: System.get_env("DATABASE_DB") || "app_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool_size: String.to_integer(System.get_env("POOL_SIZE", "10")),
+  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
   pool: Ecto.Adapters.SQL.Sandbox
 
 # We don't run a server during test. If one is required,
@@ -18,8 +18,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # In test we don't send emails.
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
 
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
 
 config :logger,
   level: :warning,
@@ -40,6 +38,9 @@ end
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false
 
 config :junit_formatter,
   report_dir: "#{Mix.Project.build_path()}/junit-reports",
