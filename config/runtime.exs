@@ -31,6 +31,8 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  maybe_db_ssl = System.get_env("DB_SSL") in ~w(true 1)
+
   config :phoenix_container_example, PhoenixContainerExample.Repo,
     # ssl: true,
     url: database_url,
