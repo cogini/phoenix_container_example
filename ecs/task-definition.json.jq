@@ -30,6 +30,10 @@
                     "value": "phoenix_container_example"
                 },
                 {
+                    "name": "BUGSNAG_APP_VERSION",
+                    "value": env.GITHUB_SHA_SHORT
+                },
+                {
                     "name": "GITHUB_SHA",
                     "value": env.GITHUB_SHA
                 },
