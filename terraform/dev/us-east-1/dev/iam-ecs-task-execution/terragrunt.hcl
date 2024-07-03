@@ -1,5 +1,6 @@
 # Create ECS IAM Task Execution role
-# Used by ECS to pull images from ECR and write logs to CloudWatch
+# This role is used by ECS to start the task. It needs permissions to pull
+# images from ECR, access Parameter Store, set up CloudWatch logs, etc.
 
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-execution"
@@ -32,16 +33,13 @@ inputs = {
   # cloudwatch_logs = ["log-group:*:log-stream:*"]
 
   # Give access to SSM Parameter Store params
-  # Default prefix is /org/app/env/comp, e.g. "cogini/foo/dev/app"
+  # Default prefix is org/app/env/comp, e.g. "cogini/foo/dev/app"
   # ssm_ps_param_prefix = format("%s/%s/%s", local.org, local.app_name, local.env)
 
   # Give access to parameter names under prefix
   # "*" gives access to all parameters
   ssm_ps_params = ["*"]
-  # Specify prefix and params
-  # Give acess to all SSM Parameter Store params under /org/app/env
-  # ssm_ps_param_prefix = format("%s/%s/%s", local.common_vars.locals.org, local.common_vars.locals.app_name, local.environment_vars.locals.env)
-  # Give acess to specific params under prefix
+  # Give acess to params under different components, after settting prefix to org/app
   # ssm_ps_params = ["app/*", "worker/*"]
 
   # Give access to KMS CMK
