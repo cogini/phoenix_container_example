@@ -21,7 +21,7 @@ defmodule PhoenixContainerExample.Application do
       List.flatten([
         PhoenixContainerExampleWeb.Telemetry,
         PhoenixContainerExample.Repo,
-        {DNSCluster, query: Application.get_env(:phoenix_container_example, :dns_cluster_query) || :ignore},
+        {DNSCluster, query: Application.get_env(@app, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: PhoenixContainerExample.PubSub},
         # Start the Finch HTTP client for sending emails
         {Finch, name: PhoenixContainerExample.Finch},
