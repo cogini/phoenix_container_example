@@ -300,15 +300,12 @@ FROM build-deps-get AS test-image
 
     RUN mix dialyzer --plt
 
-    # Non-umbrella
-    COPY --link lib ./lib
-    COPY --link priv ./priv
-    COPY --link test ./test
-    # COPY --link bin ./bin
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
 
-    # Umbrella
-    # COPY --link apps ./apps
-    # COPY --link priv ./priv
+    # COPY --link bi[n] ./bin
+    COPY --link test ./test
+    COPY --link priv ./priv
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -346,7 +343,12 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
+    COPY --link priv ./priv
+
     RUN mix esbuild.install --if-missing
+
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
 
     RUN mkdir -p ./assets
 
@@ -374,21 +376,13 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
-    WORKDIR $APP_DIR
-
-    # Compile assets with esbuild
     COPY --link assets ./assets
-    COPY --link priv ./priv
+
+    WORKDIR $APP_DIR
 
     RUN mix assets.deploy
     # RUN esbuild default --minify
     # RUN mix phx.digest
-
-    # Non-umbrella
-    COPY --link lib ./lib
-
-    # Umbrella
-    # COPY --link apps ./apps
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
