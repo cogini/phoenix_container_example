@@ -167,20 +167,16 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
         echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
         printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-        # Install GitHub CLI
-        # wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
-        # chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
-        # echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list && \
         # Install Trivy
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
-            # gh \
             nodejs \
             # trivy \
             yarn \
+            # yarnpkg \
         && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
@@ -244,14 +240,14 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
+    RUN mix 'do' local.rebar --force, local.hex --force
+
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
-    COPY --link mix.exs .
-    COPY --link mix.lock .
+    COPY --link mix.exs ./
+    COPY --link mix.lock ./
 
-    # COPY --link .env.default ./
-
-    RUN mix 'do' local.rebar --force, local.hex --force
+    COPY --link .env.defaul[t] ./
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -301,15 +297,12 @@ FROM build-deps-get AS test-image
 
     RUN mix dialyzer --plt
 
-    # Non-umbrella
-    COPY --link lib ./lib
-    COPY --link priv ./priv
-    COPY --link test ./test
-    # COPY --link bin ./bin
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
 
-    # Umbrella
-    # COPY --link apps ./apps
-    # COPY --link priv ./priv
+    # COPY --link bi[n] ./bin
+    COPY --link test ./test
+    COPY --link priv ./priv
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -335,7 +328,7 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] .
+    COPY --link .env.pro[d] ./
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
@@ -357,11 +350,10 @@ FROM build-deps-get AS prod-release
     COPY --link assets/yarn.loc[k] assets/yarn.lock
     COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
-    WORKDIR ${APP_DIR}/assets
-
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-        mkdir -p ./assets && \
+	    cd assets && \
+        corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # npm install
@@ -375,19 +367,13 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
-    WORKDIR $APP_DIR
-
-    # Compile assets with esbuild
-    COPY --link assets ./assets
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
     COPY --link priv ./priv
-
-    # Non-umbrella
-    COPY --link lib ./lib
-
-    # Umbrella
-    # COPY --link apps ./apps
+    COPY --link assets ./assets
 
     RUN mix assets.deploy
+
     # RUN esbuild default --minify
     # RUN mix phx.digest
 
@@ -404,8 +390,21 @@ FROM build-deps-get AS prod-release
     # Build release
     COPY --link rel ./rel
 
+    # Generate systemd and deploy scripts
     # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+
     RUN mix release "$RELEASE"
+
+    # Create revision for CodeDeploy
+    # WORKDIR /revision
+    # COPY appspec.yml ./
+    # RUN set -exu && \
+    #     mkdir -p etc bin systemd && \
+    #     cp /app/bin/* ./bin/ && \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
+    #     zip -r /revision.zip . && \
+    #     rm -rf /revision/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -622,6 +621,10 @@ FROM prod-base AS prod
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+
+    # Copy CodeDeploy revision into prod image for publishing later
+    # This could be put in a separate target, but it's faster to do it from prod test
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
 
     # USER $APP_USER
 
