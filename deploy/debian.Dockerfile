@@ -7,7 +7,7 @@ ARG BASE_OS=debian
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.17.1
-ARG OTP_VER=27.0
+ARG OTP_VER=27.0.1
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
