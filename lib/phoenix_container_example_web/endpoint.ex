@@ -23,7 +23,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
   # when deploying your static files in production.
   plug Plug.Static,
     at: "/",
-    from: :phoenix_container_example,
+    from: @app,
     gzip: false,
     only: PhoenixContainerExampleWeb.static_paths()
 
@@ -33,7 +33,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :phoenix_container_example
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: @app
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,
