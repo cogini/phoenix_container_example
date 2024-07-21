@@ -34,7 +34,7 @@ services:
       target: prod
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        MIX_ENV: prod
+        MIX_ENV: ${MIX_ENV:-prod}
         REGISTRY: ${REGISTRY:-docker.io/}
       # secrets:
       #   - oban_license_key
