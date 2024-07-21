@@ -562,6 +562,7 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      MIX_ENV: prod
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
@@ -634,6 +635,98 @@ jobs:
       #     ssh-private-key: |
       #       ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # Build assets on host and copy into container
+      # Doing it outside of the prod image speeds up the build, as we don't
+      # have to copy big static files around.
+      # We do it here instead of a sepaate task, as we need
+      # priv/static/cache_manifest.json in the build.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache deps
+        id: cache-deps
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache compiled build
+        id: cache-build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-compiled-build
+        with:
+          path: _build
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache node-modules
+        id: node-modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: assets/node_modules
+          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Install build tools
+        run: mix do local.rebar --force, local.hex --force
+
+      # Force full recompile on builds that are retried.
+      - name: Clean deps to avoid flaky incremental builds
+        if: github.run_attempt != '1'
+        run: |
+          mix deps.clean --all
+          mix clean
+        shell: sh
+
+      - name: Get Elixir deps
+        run: mix deps.get
+
+      - name: Compile
+        run: mix compile
+
+      - name: npm install
+        run: npm install
+
+      - name: npm run deploy
+        run: npm run deploy
+
+      - name: Build digested assets
+        run: mix phx.digest --no-vsn
+
+      # Copying is faster than syncing. With digested files, multiple versions
+      # can coexist on the server, and the app will choose the right ones.
+      - name: Copy assets to S3
+        run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
+
+      # - name: Sync to S3
+      #   working-directory: app
+      #   run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }} --delete
+
+      # We don't have to invalidate with using digested files.
+      # - name: Create CloudFront invalidation
+      #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+
+      # Build prod image
       - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
