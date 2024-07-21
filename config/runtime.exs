@@ -13,8 +13,12 @@ if config_env() != :test and System.get_env("LOG_LEVEL") do
     level: String.to_existing_atom(System.get_env("LOG_LEVEL"))
 end
 
+# Optionally set values from OS environment vars
 env_config = [
-  {"FOO", :phoenix_container_example, :foo}
+  {"FOO", :phoenix_container_example, :foo},
+  {"BUGSNAG_API_KEY", :bugsnag, :api_key},
+  {"BUGSNAG_APP_VERSION", :bugsnag, :app_version},
+  {"BUGSNAG_RELEASE_STAGE", :bugsnag, :release_stage},
 ]
 
 for {env, app, key} <- env_config, value = System.get_env(env) do
