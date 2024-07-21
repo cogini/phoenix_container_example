@@ -786,6 +786,7 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      # GH_TOKEN: ${{ github.token }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -900,6 +901,16 @@ jobs:
       #     # Volume mounted from local filesystem into build
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
+
+      # - name: Push release files
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="codebuild-revision-${{ env.VAR }}.zip"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
   scan:
     name: Security scan prod image
