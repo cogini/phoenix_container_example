@@ -83,6 +83,7 @@ defmodule PhoenixContainerExampleWeb do
     quote do
       # HTML escaping functionality
       import Phoenix.HTML
+
       # Core UI components and translation
       import PhoenixContainerExampleWeb.CoreComponents
       import PhoenixContainerExampleWeb.Gettext
