@@ -343,12 +343,7 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
-    COPY --link priv ./priv
-
     RUN mix esbuild.install --if-missing
-
-    COPY --link li[b] ./lib
-    COPY --link app[s] ./apps
 
     RUN mkdir -p ./assets
 
@@ -358,10 +353,9 @@ FROM build-deps-get AS prod-release
     COPY --link assets/yarn.loc[k] assets/yarn.lock
     COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
-    WORKDIR ${APP_DIR}/assets
-
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
+	    cd assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
@@ -376,11 +370,13 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
+    COPY --link priv ./priv
     COPY --link assets ./assets
 
-    WORKDIR $APP_DIR
-
     RUN mix assets.deploy
+
     # RUN esbuild default --minify
     # RUN mix phx.digest
 
