@@ -1,6 +1,9 @@
 import Config
 
 config :phoenix_container_example,
+  foo: "default"
+
+config :phoenix_container_example,
   ecto_repos: [PhoenixContainerExample.Repo],
   generators: [timestamp_type: :utc_datetime]
 
@@ -16,9 +19,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   ],
   pubsub_server: PhoenixContainerExample.PubSub,
   live_view: [signing_salt: "Mywi6aA5"]
-
-config :phoenix_container_example,
-  foo: "default"
 
 # Configures the mailer
 #
