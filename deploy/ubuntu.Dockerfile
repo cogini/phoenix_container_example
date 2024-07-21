@@ -6,8 +6,8 @@ ARG BASE_OS=ubuntu
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.16.3
-ARG OTP_VER=26.2.5
+ARG ELIXIR_VER=1.17.1
+ARG OTP_VER=27.0.1
 
 # https://hub.docker.com/_/ubuntu
 ARG BUILD_OS_VER=jammy-20240427
