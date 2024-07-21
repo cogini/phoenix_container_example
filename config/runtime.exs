@@ -25,6 +25,11 @@ for {env, app, key} <- env_config, value = System.get_env(env) do
   config(app, [{key, value}])
 end
 
+config :ex_aws,
+  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
+  region: System.get_env("AWS_REGION") || "us-east-1"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -193,9 +198,4 @@ if config_env() == :prod do
           ]
         ]
   end
-
-  config :ex_aws,
-    access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
-    secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
-    region: System.get_env("AWS_REGION") || "us-east-1"
 end
