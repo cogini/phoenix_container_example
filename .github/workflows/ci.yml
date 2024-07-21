@@ -102,17 +102,10 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  elixir: "1.17.2",
+                  otp: "27.0.1",
+                  build_os_ver: "bookworm-20240701-slim",
                   prod_os_ver: "bookworm-slim",
-                  os: "debian"
-                },
-                {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
                   os: "debian"
                 }
               ]
@@ -137,18 +130,11 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  elixir: "1.17.2",
+                  otp: "27.0.1",
+                  build_os_ver: "bookworm-20240701-slim",
                   prod_os_ver: "bookworm-slim",
                   os: "debian"
-                },
-                {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
-                  prod_os_ver: "bookworm-slim",
-                  os: "distroless"
                 }
               ]
             }
@@ -160,9 +146,9 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  elixir: "1.17.2",
+                  otp: "27.0.1",
+                  build_os_ver: "bookworm-20240701-slim",
                   prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
@@ -178,9 +164,9 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  elixir: "1.17.2",
+                  otp: "27.0.1",
+                  build_os_ver: "bookworm-20240701-slim",
                   prod_os_ver: "bookworm-slim",
                   os: "debian"
                 }
