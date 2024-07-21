@@ -45,7 +45,6 @@ config :logger, :default_handler,
 # Set via environment vars because server name is different in docker compose vs ECS:
 #   OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 #   OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
-#
 # config :opentelemetry, :processors,
 # otel_batch_processor: %{
 #   exporter: {
