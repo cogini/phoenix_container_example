@@ -243,14 +243,14 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
+    RUN mix 'do' local.rebar --force, local.hex --force
+
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
     COPY --link mix.exs ./
     COPY --link mix.lock ./
 
     COPY --link .env.defaul[t] ./
-
-    RUN mix 'do' local.rebar --force, local.hex --force
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
