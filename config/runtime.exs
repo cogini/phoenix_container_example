@@ -38,17 +38,18 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
-
-  maybe_db_ssl = System.get_env("DB_SSL") in ~w(true 1)
+  maybe_ecto_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
+  maybe_ecto_ssl = System.get_env("ECTO_SSL") in ~w(true 1)
+  maybe_ecto_log = System.get_env("ECTO_LOG") in ~w(true 1)
 
   config :phoenix_container_example, PhoenixContainerExample.Repo,
-    # ssl: true,
+    ssl: maybe_ecto_ssl,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    log: maybe_ecto_log,
     # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
     ssl_opts: AwsRdsCAStore.ssl_opts(database_url),
-    socket_options: maybe_ipv6
+    socket_options: maybe_ecto_ipv6
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
