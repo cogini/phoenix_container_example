@@ -355,7 +355,7 @@ FROM build-deps-get AS prod-release
 
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-	    cd assets && \
+        cd assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
