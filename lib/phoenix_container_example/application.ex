@@ -9,10 +9,10 @@ defmodule PhoenixContainerExample.Application do
 
   @impl true
   def start(_type, _args) do
-    OpentelemetryEcto.setup([@app, :repo])
     :opentelemetry_cowboy.setup()
     OpentelemetryPhoenix.setup(adapter: :cowboy2)
     OpentelemetryLiveView.setup()
+    OpentelemetryEcto.setup([@app, :repo])
 
     roles = Application.get_env(@app, :roles, [:app])
     Logger.info("Starting with roles: #{inspect(roles)}")
