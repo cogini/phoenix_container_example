@@ -40,7 +40,7 @@
   "jason": {:hex, :jason, "1.4.3", "d3f984eeb96fe53b85d20e0b049f03e57d075b5acda3ac8d465c969a2536c17b", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "9a90e868927f7c777689baa16d86f4d0e086d968db5c05d917ccff6d443e58a3"},
   "junit_formatter": {:hex, :junit_formatter, "3.4.0", "d0e8db6c34dab6d3c4154c3b46b21540db1109ae709d6cf99ba7e7a2ce4b1ac2", [:mix], [], "hexpm", "bb36e2ae83f1ced6ab931c4ce51dd3dbef1ef61bb4932412e173b0cfa259dacd"},
   "kubernetes_health_check": {:git, "https://github.com/cogini/kubernetes_health_check.git", "d14f2ea232083589dfcb8b024a6f33795dee91e7", []},
-  "logger_formatter_json": {:hex, :logger_formatter_json, "0.8.2", "8b79b490d45109fe538fb14647038aad6dfdbcbbe61f0635fd45cd7b1ff5b42a", [:rebar3], [{:thoas, "~> 1.2.0", [hex: :thoas, repo: "hexpm", optional: false]}], "hexpm", "c1d02da0bbe3acc070c97b2a95c8821d876e9cc2b9a0033b91105dece96bcf50"},
+  "logger_formatter_json": {:git, "https://github.com/cogini/logger_formatter_json.git", "ffa651c19615231750f9b86889c0f65e67b5a88f", []},
   "metrics": {:hex, :metrics, "1.0.1", "25f094dea2cda98213cecc3aeff09e940299d950904393b2a29d191c346a8486", [:rebar3], [], "hexpm", "69b09adddc4f74a40716ae54d140f93beb0fb8978d8636eaded0c31b6f099f16"},
   "mime": {:hex, :mime, "2.0.6", "8f18486773d9b15f95f4f4f1e39b710045fa1de891fada4516559967276e4dc2", [:mix], [], "hexpm", "c9945363a6b26d747389aac3643f8e0e09d30499a138ad64fe8fd1d13d9b153e"},
   "mimerl": {:hex, :mimerl, "1.3.0", "d0cd9fc04b9061f82490f6581e0128379830e78535e017f7780f37fea7545726", [:rebar3], [], "hexpm", "a1e15a50d1887217de95f0b9b0793e32853f7c258a5cd227650889b38839fe9d"},
