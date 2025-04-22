@@ -722,7 +722,36 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         && \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
+        # Install latest Postgres from postgres.org repo
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
+        # Install Microsoft ODBC Driver for SQL Server
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # export ACCEPT_EULA=Y && \
+        # apt-get -qq update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
+        # Install specific version of mysql from MySQL repo
+        # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
+        # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
+        # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
+        # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
+        # export GPGHOME="$(mktemp -d)" && \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
+        # gpgconf --kill all && \
+        # rm -rf "$GPGHOME" && \
+        # rm -rf "${HOME}/.gnupg" && \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
+        # apt-get update -qq && \
+        # DEBIAN_FRONTEND=noninteractive \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
@@ -730,6 +759,8 @@ FROM build-os-deps AS dev
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
         # apt-get purge -y --auto-remove curl && \
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
