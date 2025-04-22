@@ -72,7 +72,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:castore, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
-      {:dns_cluster, "~> 0.1.1"},
+      {:dns_cluster, "~> 0.2.0"},
       {:ecto_sql, "~> 3.10"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:ex_aws, "~> 2.5"},
@@ -94,14 +94,15 @@ defmodule PhoenixContainerExample.MixProject do
       # tls_certificate_check needs to be started before opentelemetry_exporter
       {:tls_certificate_check, "~> 1.13"},
       # opentelemetry_exporter needs to be started before the other opentelemetry modules
-      {:opentelemetry_exporter, "~> 1.7"},
-      {:opentelemetry, "~> 1.4"},
-      {:opentelemetry_api, "~> 1.3"},
+      {:opentelemetry_exporter, "~> 1.8"},
+      {:opentelemetry, "~> 1.5"},
+      {:opentelemetry_api, "~> 1.4"},
       {:opentelemetry_ecto, "~> 1.0"},
       # {:opentelemetry_logger_metadata, "~> 0.1.0"},
-      {:opentelemetry_cowboy, "~> 0.3.0"},
+      {:opentelemetry_cowboy, "~> 1.0"},
       {:opentelemetry_liveview, "~> 1.0.0-rc.4"},
-      {:opentelemetry_phoenix, "~> 1.0"},
+      {:opentelemetry_phoenix, "~> 2.0"},
+      {:opentelemetry_telemetry, "~> 1.1", override: true},
       {:opentelemetry_xray, "~> 0.7.0"},
       # {:opentelemetry_xray, github: "cogini/opentelemetry_xray"},
       # {:opentelemetry_xray, path: "../../opentelemetry_xray", override: true},
@@ -110,14 +111,14 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_html, "~> 4.0"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.20.2"},
+      {:phoenix_live_view, "~> 1.0.0"},
       {:plug_cowboy, "~> 2.5"},
       {:plugsnag, "~> 1.7"},
       {:postgrex, ">= 0.0.0"},
       {:recon, "~> 2.5"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ssl_verify_fun, "~> 1.1"},
-      {:styler, "~> 0.11.0", only: [:dev, :test], runtime: false},
+      {:styler, "~> 1.4.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
       {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
@@ -125,7 +126,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:telemetry_metrics_prometheus, "~> 1.1"},
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"},
-      {:uinta, "~> 0.14.0"}
+      {:uinta, "~> 0.15.0"}
     ]
   end
 
