@@ -62,6 +62,10 @@ services:
       interval: 1s
       timeout: 2s
       retries: 20
+    # volumes:
+    #   - "./etc:/etc/foo"
+    #   - "./foo-data:/var/foo/data:rw"
+    #   - "./log:/var/log/foo:rw"
     depends_on:
       postgres:
         condition: service_healthy
