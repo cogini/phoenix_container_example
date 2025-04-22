@@ -60,12 +60,40 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 config :phoenix_container_example, dev_routes: true
 
 config :logger,
-  level: :info,
+  level: :debug,
   always_evaluate_messages: true
 
-config :logger, :default_formatter,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:file, :line]
+# config :logger, :default_formatter,
+#   format: "$time $metadata[$level] $message\n",
+#   metadata: [:file, :line]
+
+config :logger, :default_handler,
+  filters: [
+    # Elixir default filter
+    remote_gl: {&:logger_filters.remote_gl/2, :stop},
+    # Format trace_id for X-Ray
+    opentelemetry_trace_id: {&:opentelemetry_xray_logger_filter.trace_id/2, %{}}
+  ],
+  formatter: {
+    :logger_formatter_json,
+    %{
+      template: [
+        :msg,
+        # :time,
+        :level,
+        :file,
+        :line,
+        # :mfa,
+        :pid,
+        :request_id,
+        :otel_trace_id,
+        :otel_span_id,
+        :otel_trace_flags,
+        :xray_trace_id,
+        :rest
+      ]
+    }
+  }
 
 if System.get_env("OTEL_DEBUG") == "true" do
   config :opentelemetry, :processors,
