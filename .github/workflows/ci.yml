@@ -86,8 +86,8 @@ env:
 jobs:
   setup-matrix:
     name: Set up build matrix
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     outputs:
       test-matrix: ${{ steps.common-matrix.outputs.result }}
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
@@ -176,8 +176,8 @@ jobs:
 
   create-release:
     name: Create GitHub release
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     outputs:
       release-tag: build-${{ github.run_number }}
       upload-url: ${{ steps.release-view.outputs.upload-url }}
@@ -212,8 +212,8 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -341,8 +341,8 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -432,8 +432,8 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -474,8 +474,8 @@ jobs:
       issues: read
       # Upload SARIF report files
       security-events: write
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -555,8 +555,8 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -779,8 +779,8 @@ jobs:
       issues: read
       checks: write
       pull-requests: write
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -930,8 +930,8 @@ jobs:
       issues: read
       # Upload SARIF report files
       security-events: write
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -1033,8 +1033,8 @@ jobs:
   #     checks: write
   #     pull-requests: write
   #     issues: read
-  #   # runs-on: ubuntu-latest
-  #   runs-on: ubuntu-24-arm
+  #   runs-on: ubuntu-latest
+  #   # runs-on: ubuntu-24-arm
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
   #   strategy:
   #     fail-fast: false
@@ -1109,8 +1109,8 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1213,8 +1213,8 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1349,8 +1349,8 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24-arm
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1416,8 +1416,8 @@ jobs:
   #     contents: read
   #     # Push to ghcr.io repository
   #     packages: write
-  #   # runs-on: ubuntu-latest
-  #   runs-on: ubuntu-24-arm
+  #   runs-on: ubuntu-latest
+  #   # runs-on: ubuntu-24-arm
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
   #   strategy:
   #     fail-fast: false
