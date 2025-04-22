@@ -60,6 +60,7 @@ env:
   ECS_CONTAINER: foo-app
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
   TASKDEF: ecs/task-definition.json
   ECS_SERVICE_WORKER: foo-worker
   ECS_CONTAINER_WORKER: foo-worker
@@ -393,6 +394,7 @@ jobs:
 
       - name: Initialize test database
         run: docker compose run test mix do ecto.create, ecto.migrate
+        # run: docker compose run test mix do ecto.setup
 
       - name: Run tests
         # run: docker compose run test mix test --cover
