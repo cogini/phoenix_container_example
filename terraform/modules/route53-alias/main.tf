@@ -42,7 +42,7 @@
 #
 #   # CloudFront
 #   # target_name = dependency.cloudfront.outputs.domain_name
-#   # target_name = dependency.cloudfront.outputs.hosted_zone_id
+#   # target_zone_id = dependency.cloudfront.outputs.hosted_zone_id
 #
 #   # S3 bucket
 #   target_name = dependency.s3.outputs.buckets["protected_web"].website_endpoint
