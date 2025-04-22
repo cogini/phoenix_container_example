@@ -292,9 +292,9 @@ services:
       - '5432'
     user: postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
