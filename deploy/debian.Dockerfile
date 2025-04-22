@@ -694,6 +694,7 @@ FROM build-os-deps AS dev
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
+    ARG APP_PORT
 
     ARG DEV_PACKAGES
 
