@@ -6,8 +6,8 @@ ARG BASE_OS=ubuntu
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.17.1
-ARG OTP_VER=27.0.1
+ARG ELIXIR_VER=1.18.3
+ARG OTP_VER=27.3.3
 
 # https://hub.docker.com/_/ubuntu
 ARG BUILD_OS_VER=jammy-20240427
@@ -74,10 +74,13 @@ ARG APP_PORT=4000
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
+
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+
+    ARG NODE_VER
     ARG NODE_MAJOR
 
     ARG APP_DIR
@@ -117,7 +120,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         fi
 
     # Install tools and libraries to build binary libraries
-    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -198,7 +200,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
         # export GPGHOME="$(mktemp -d)" && \
         # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
-        # mkdir -p /etc/apt/keyrings && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
         # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
         # gpgconf --kill all && \
         # rm -rf "$GPGHOME" && \
@@ -232,6 +234,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
+
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -352,7 +355,7 @@ FROM build-deps-get AS prod-release
 
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-	    cd assets && \
+        cd assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
@@ -406,6 +409,7 @@ FROM build-deps-get AS prod-release
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
 
+
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
@@ -442,6 +446,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \
@@ -682,20 +687,13 @@ FROM build-os-deps AS dev
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
+    ARG APP_PORT
 
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
-    ENV LANG=$LANG \
-        HOME=$APP_DIR
-
-    RUN set -exu && \
-        # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # Make dirs writable by app
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            # Needed for RELEASE_TMP
-            "/run/${APP_NAME}"
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -709,7 +707,36 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         && \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
+        # Install latest Postgres from postgres.org repo
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
+        # Install Microsoft ODBC Driver for SQL Server
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # export ACCEPT_EULA=Y && \
+        # apt-get -qq update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
+        # Install specific version of mysql from MySQL repo
+        # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
+        # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
+        # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
+        # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
+        # export GPGHOME="$(mktemp -d)" && \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
+        # gpgconf --kill all && \
+        # rm -rf "$GPGHOME" && \
+        # rm -rf "${HOME}/.gnupg" && \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
+        # apt-get update -qq && \
+        # DEBIAN_FRONTEND=noninteractive \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
@@ -717,6 +744,8 @@ FROM build-os-deps AS dev
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
         # apt-get purge -y --auto-remove curl && \
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
@@ -735,13 +764,22 @@ FROM build-os-deps AS dev
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
-    USER $APP_USER
+    RUN set -exu && \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
+
+    USER $APP_USER:$APP_GROUP
 
     WORKDIR $APP_DIR
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
@@ -751,6 +789,7 @@ FROM scratch AS artifacts
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     COPY --from=prod-release /app/priv/static /static
+
 
 # Default target
 FROM prod
