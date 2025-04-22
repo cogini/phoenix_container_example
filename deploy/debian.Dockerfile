@@ -77,10 +77,13 @@ ARG APP_PORT=4000
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
+
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+
+    ARG NODE_VER
     ARG NODE_MAJOR
 
     ARG APP_DIR
@@ -125,7 +128,10 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu && \
+        # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
+        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
         apt-get update -qq && \
+        # apt-get -y build-dep python-pil -y && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -201,7 +207,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
         # export GPGHOME="$(mktemp -d)" && \
         # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
-        # mkdir -p /etc/apt/keyrings && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
         # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
         # gpgconf --kill all && \
         # rm -rf "$GPGHOME" && \
@@ -235,6 +241,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
+
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -409,6 +416,7 @@ FROM build-deps-get AS prod-release
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
 
+
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
@@ -445,6 +453,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \
