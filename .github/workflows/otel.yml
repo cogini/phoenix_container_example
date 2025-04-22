@@ -93,6 +93,6 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}-otel
           cache-to: type=gha,scope=${{ github.workflow }}-otel,mode=max
-          # no-cache: github.run_attempt != '1'
+          no-cache: ${{ github.run_attempt != '1' }}
           tags: |
             ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
