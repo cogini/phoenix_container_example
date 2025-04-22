@@ -49,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     steps:
+      # Pull public images without rate limits
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
