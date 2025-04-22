@@ -67,9 +67,13 @@ locals {
   buckets = {
     for key, bucket in var.buckets :
     key => {
-      name    = lookup(bucket, "name", "${local.bucket_prefix}-${replace(key, "_", "-")}")
+      # name    = lookup(bucket, "name", "${local.bucket_prefix}-${replace(key, "_", "-")}")
+      name    = lookup(bucket, "name", null) == null ? "${local.bucket_prefix}-${replace(key, "_", "-")}" : bucket["name"]
       encrypt = lookup(bucket, "encrypt", false)
-      cors    = lookup(bucket, "cors", false)
+      cors    = lookup(bucket, "cors", {})
+      cors_enabled = lookup(bucket, "cors", null) != null
+      public_access_block    = lookup(bucket, "public_access_block", {})
+      public_access_block_enabled = lookup(bucket, "public_access_block", null) != null
       website = lookup(bucket, "website", false)
       # https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
       # acl = lookup(bucket, "acl", null)
@@ -91,13 +95,13 @@ resource "aws_s3_bucket" "buckets" {
   bucket   = each.value.name
   # acl    = each.value.acl
 
-  dynamic "website" {
-    for_each = each.value.website ? tolist([1]) : []
-    content {
-      index_document = "index.html"
-      error_document = "404.html"
-    }
-  }
+  # dynamic "website" {
+  #   for_each = each.value.website ? tolist([1]) : []
+  #   content {
+  #     index_document = "index.html"
+  #     error_document = "404.html"
+  #   }
+  # }
 
   tags = merge(
     {
@@ -113,17 +117,41 @@ resource "aws_s3_bucket" "buckets" {
   force_destroy = var.force_destroy
 }
 
+resource "aws_s3_bucket_website_configuration" "this" {
+  for_each = { for k, v in local.buckets : k => v if v.website }
+  bucket   = each.value.name
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "404.html"
+  }
+}
+
 resource "aws_s3_bucket_cors_configuration" "this" {
-  for_each = { for k, v in local.buckets : k => v if v.cors }
+  for_each = { for k, v in local.buckets : k => v if v.cors_enabled }
   bucket   = each.value.name
 
   cors_rule {
-    allowed_headers = var.cors_allowed_headers
-    allowed_methods = var.cors_allowed_methods
-    allowed_origins = var.cors_allowed_origins
-    expose_headers  = var.cors_expose_headers
-    max_age_seconds = var.cors_max_age_seconds
+    allowed_headers = lookup(each.value.cors, "allowed_headers", null)
+    allowed_methods = lookup(each.value.cors, "allowed_methods", null)
+    allowed_origins = lookup(each.value.cors, "allowed_origins", null)
+    expose_headers  = lookup(each.value.cors, "expose_headers", null)
+    max_age_seconds = lookup(each.value.cors, "max_age_seconds", null)
   }
+}
+
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block
+resource "aws_s3_bucket_public_access_block" "this" {
+  for_each = { for k, v in local.buckets : k => v if v.public_access_block_enabled }
+  bucket   = each.value.name
+
+  block_public_acls = lookup(each.value.public_access_block, "block_public_acls", null)
+  block_public_policy = lookup(each.value.public_access_block, "block_public_policy", null)
+  ignore_public_acls = lookup(each.value.public_access_block, "ignore_public_acls", null)
+  restrict_public_buckets  = lookup(each.value.public_access_block, "restrict_public_buckets", null)
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {

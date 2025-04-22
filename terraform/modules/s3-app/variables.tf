@@ -9,7 +9,26 @@ variable "bucket_prefix" {
 
 variable "buckets" {
   description = "Buckets to create"
-  type        = map(map(string))
+  type = map(object({
+              name    = optional(string),
+              encrypt = optional(bool, false),
+              cors    = optional(object({
+                          allowed_headers = optional(list(string)),
+                          allowed_methods = optional(list(string)),
+                          allowed_origins = optional(list(string)),
+                          expose_headers  = optional(list(string)),
+                          max_age_seconds = optional(number),
+                          })),
+              public_access_block = optional(object({
+                          block_public_acls = optional(bool),
+                          block_public_policy = optional(bool),
+                          ignore_public_acls = optional(bool),
+                          restrict_public_buckets  = optional(bool),
+                          })),
+              website           = optional(bool, false),
+              object_ownership  = optional(string),
+              versioning        = optional(bool, false)
+              }))
   default     = {}
 }
 
