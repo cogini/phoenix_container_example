@@ -699,16 +699,8 @@ FROM build-os-deps AS dev
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
-    ENV LANG=$LANG \
-        HOME=$APP_DIR
-
-    RUN set -exu && \
-        # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # Make dirs writable by app
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            # Needed for RELEASE_TMP
-            "/run/${APP_NAME}"
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -779,13 +771,22 @@ FROM build-os-deps AS dev
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
-    USER $APP_USER
+    RUN set -exu && \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
+
+    USER $APP_USER:$APP_GROUP
 
     WORKDIR $APP_DIR
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
@@ -795,6 +796,7 @@ FROM scratch AS artifacts
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     COPY --from=prod-release /app/priv/static /static
+
 
 # Default target
 FROM prod
