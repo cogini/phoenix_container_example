@@ -18,6 +18,8 @@ defmodule PhoenixContainerExample.Application do
     roles = Application.get_env(@app, :roles, [:app])
     Logger.info("Starting with roles: #{inspect(roles)}")
 
+    # :recon_trace.calls([{:logger_formatter_json, :_, :_}, {:logger_h_common, :_, :_}, {:thoas, :_, :_}], {50, 1000})
+
     children =
       List.flatten([
         PhoenixContainerExampleWeb.Telemetry,
