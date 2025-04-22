@@ -23,6 +23,10 @@ inputs = {
 
   hosts = ["app.${dependency.zone.outputs.name_nodot}"]
   # hosts = ["${local.environment_vars.locals.dns_domain}"]
+  # hosts = [
+  #   "*.${dependency.zone.outputs.name_nodot}",
+  #   dependency.zone.outputs.name_nodot
+  # ]
 
   port     = 4000
   protocol = "HTTP"
