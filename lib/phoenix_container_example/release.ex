@@ -129,7 +129,7 @@ defmodule PhoenixContainerExample.Release do
   defp ensure_implements(module, behaviour, message) do
     all = Keyword.take(module.__info__(:attributes), [:behaviour])
 
-    unless [behaviour] in Keyword.values(all) do
+    if [behaviour] not in Keyword.values(all) do
       raise "Expected #{inspect(module)} to implement #{inspect(behaviour)} to #{message}"
     end
 

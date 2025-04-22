@@ -1,18 +1,5 @@
 import Config
 
-config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
-  cache_static_manifest: "priv/static/cache_manifest.json"
-
-config :phoenix_container_example, Uinta.Plug, format: :map
-# Include GraphQL variables in log line
-# include_variables: true,
-# ignored_paths: [],
-# filter_variables: [],
-# success_log_sampling_ratio: 1.0,
-# include_datadog_fields: false
-
-config :logger, level: :info, utc_log: true
-
 config :logger, :default_handler,
   filters: [
     # Elixir default filter
@@ -20,12 +7,18 @@ config :logger, :default_handler,
     # Format trace_id for X-Ray
     opentelemetry_trace_id: {&:opentelemetry_xray_logger_filter.trace_id/2, %{}}
   ],
+  # Include GraphQL variables in log line
+  # include_variables: true,
+  # ignored_paths: [],
+  # filter_variables: [],
+  # success_log_sampling_ratio: 1.0,
+  # include_datadog_fields: false
+  # :time,
   formatter: {
     :logger_formatter_json,
     %{
       template: [
         :msg,
-        # :time,
         :level,
         :file,
         :line,
@@ -40,6 +33,19 @@ config :logger, :default_handler,
       ]
     }
   }
+
+config :logger, level: :info, utc_log: true
+
+# Because we are doing containerized testing, default to same settings as test env.
+# Prod settings are handled in runtime.exs if we are actually running in prod.
+config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
+
+config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
+  cache_static_manifest: "priv/static/cache_manifest.json"
+
+config :phoenix_container_example, Uinta.Plug, format: :map
+
+config :swoosh, :api_client, false
 
 # https://hexdocs.pm/opentelemetry_exporter/readme.html
 # Set via environment vars because server name is different in docker compose vs ECS:
@@ -63,11 +69,6 @@ config :logger, :default_handler,
 #     }
 #   }
 # }
-
-# Because we are doing containerized testing, default to same settings as test env.
-# Prod settings are handled in runtime.exs if we are actually running in prod.
-config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
-config :swoosh, :api_client, false
 
 # Configures Swoosh API Client
 # config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: PhoenixContainerExample.Finch

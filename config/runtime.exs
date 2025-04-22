@@ -1,5 +1,7 @@
 import Config
 
+alias Elixir.Cluster.Strategy.DNSPoll
+
 roles = (System.get_env("ROLES") || "app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
 
@@ -42,15 +44,6 @@ if config_env() == :prod do
   maybe_ecto_ssl = System.get_env("ECTO_SSL") in ~w(true 1)
   maybe_ecto_log = System.get_env("ECTO_LOG") in ~w(true 1)
 
-  config :phoenix_container_example, PhoenixContainerExample.Repo,
-    ssl: maybe_ecto_ssl,
-    url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    log: maybe_ecto_log,
-    # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
-    ssl_opts: AwsRdsCAStore.ssl_opts(database_url),
-    socket_options: maybe_ecto_ipv6
-
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
       raise """
@@ -61,7 +54,14 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
-  config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :phoenix_container_example, PhoenixContainerExample.Repo,
+    ssl: maybe_ecto_ssl,
+    url: database_url,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    log: maybe_ecto_log,
+    # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+    ssl_opts: AwsRdsCAStore.ssl_opts(database_url),
+    socket_options: maybe_ecto_ipv6
 
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
@@ -76,6 +76,8 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+  config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   # ## SSL Support
   #
@@ -130,6 +132,7 @@ if config_env() == :prod do
   # Only configure the production mailer if we have AWS credentials
   if System.get_env("AWS_ACCESS_KEY_ID") || System.get_env("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI") do
     config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.ExAwsAmazonSES
+
     config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: PhoenixContainerExample.Finch
     # Disable Swoosh Local Memory Storage
     config :swoosh, local: false
@@ -171,7 +174,7 @@ if config_env() == :prod do
       config :libcluster,
         topologies: [
           app: [
-            strategy: Elixir.Cluster.Strategy.DNSPoll,
+            strategy: DNSPoll,
             config: [
               # name of nodes before the IP address (required)
               node_basename: "prod",
@@ -182,7 +185,7 @@ if config_env() == :prod do
             ]
           ],
           worker: [
-            strategy: Elixir.Cluster.Strategy.DNSPoll,
+            strategy: DNSPoll,
             config: [
               # name of nodes before the IP address (required)
               node_basename: "prod",
