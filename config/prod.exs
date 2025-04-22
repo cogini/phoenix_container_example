@@ -76,6 +76,3 @@ config :swoosh, :api_client, false
 # config :swoosh, local: false
 
 # config :tzdata, :data_dir, "/var/lib/tzdata"
-
-# Runtime production configuration, including reading
-# of environment variables, is done on config/runtime.exs.
