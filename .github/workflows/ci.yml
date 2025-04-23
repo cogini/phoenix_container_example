@@ -728,23 +728,26 @@ jobs:
 
       - name: Setup
         run: |
-          mix esbuild.install --if-missing
           mkdir -p ./assets
+          mix assets.setup
 
-      - name: npm install
-        working-directory: assets
-        run: npm install
+      # - name: npm install
+      #   working-directory: assets
+      #   run: npm install
 
-      - name: npm run deploy
-        working-directory: assets
-        run: npm run deploy
+      # - name: npm run deploy
+      #   working-directory: assets
+      #   run: npm run deploy
 
-      - name: npm install
-        working-directory: assets
-        run: yarn install --prod
+      # - name: yarn install
+      #   working-directory: assets
+      #   run: yarn install --prod
 
-      - name: Build digested assets
-        run: mix phx.digest --no-vsn
+      # - name: Build digested assets
+      #   run: mix phx.digest --no-vsn
+
+      - name: Build and deploy assets
+        run: mix assets.deploy
 
       # Copying is faster than syncing. With digested files, multiple versions
       # can coexist on the server, and the app will choose the right ones.
