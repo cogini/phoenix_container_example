@@ -708,6 +708,7 @@ jobs:
         run: mix compile
 
       - name: npm install
+        working-directory: assets
         run: npm install
 
       - name: npm run deploy
