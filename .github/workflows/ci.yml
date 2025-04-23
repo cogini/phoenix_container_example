@@ -829,16 +829,16 @@ jobs:
       - name: Display logs
         if: failure()
         run: |
+          echo "ps"
+          docker compose ps --format json | jq .
           echo "postgres logs"
           docker compose logs --timestamps postgres
+          echo "prod logs"
+          docker compose logs --timestamps prod
           echo "postgres health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
           echo "prod health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
-          echo "prod logs"
-          docker compose logs --timestamps prod
-          echo "ps"
-          docker compose ps --format json | jq .
 
       # - name: Debug env
       #   if: failure()
