@@ -58,12 +58,16 @@ env:
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
   ECS_CONTAINER: foo-app
+  ECS_CPU: 256
+  ECS_RAM: 2048
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
   TASKDEF: ecs/task-definition.json
   ECS_SERVICE_WORKER: foo-worker
   ECS_CONTAINER_WORKER: foo-worker
+  ECS_CPU_WORKER: 256
+  ECS_RAM_WORKER: 2048
   TASKDEF_WORKER: ecs/task-definition.worker.json
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
@@ -226,6 +230,12 @@ jobs:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
 
+      # - name: Debug environment
+      #   run: |
+      #     echo "ref: ${{ github.ref }}"
+      #     echo "ref_name: ${{ github.ref_name }}"
+      #     echo "environment: ${{ github.event.deployment.environment }}"
+
       - name: Check out source
         uses: actions/checkout@v4
 
@@ -317,8 +327,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           # https://github.com/moby/buildkit#export-cache
-          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
           # platforms: linux/amd64,linux/arm64
           # ssh: default
@@ -556,6 +566,11 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
+  #     # Upload JUnit report files
+  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+  #     checks: write
+  #     pull-requests: write
+  #     issues: read
     runs-on: ubuntu-latest
     # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
@@ -572,6 +587,7 @@ jobs:
 
       - name: Debug environment
         run: |
+          echo "ref: ${{ github.ref }}"
           echo "ref_name: ${{ github.ref_name }}"
           echo "environment: ${{ github.event.deployment.environment }}"
 
@@ -661,7 +677,7 @@ jobs:
         id: cache-deps
         uses: actions/cache@v4
         env:
-          cache-name: cache-elixir-deps
+          cache-name: cache-elixir-deps-${{ github.ref_name }}
         with:
           path: deps
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
@@ -672,7 +688,7 @@ jobs:
         id: cache-build
         uses: actions/cache@v4
         env:
-          cache-name: cache-compiled-build
+          cache-name: cache-compiled-build-${{ github.ref_name }}
         with:
           path: _build
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
@@ -683,7 +699,7 @@ jobs:
         id: node-modules
         uses: actions/cache@v4
         env:
-          cache-name: cache-node-modules
+          cache-name: cache-node-modules-${{ github.ref_name }}
         with:
           path: assets/node_modules
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
@@ -763,8 +779,8 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
           # ssh: default
           tags: |
@@ -1054,6 +1070,8 @@ jobs:
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
+  #   env:
+  #     MIX_ENV: prod
   #   steps:
   #     - name: Debug environment
   #       run: |
@@ -1199,10 +1217,10 @@ jobs:
       - name: Compile
         run: mix compile
 
-      - name: Install JavaScript libs
-        # working-directory: assets
-        # run: npm install && npm run deploy
-        run: yarn --cwd ./assets install --prod
+      # - name: Install JavaScript libs
+      #   # working-directory: assets
+      #   # run: npm install && npm run deploy
+      #   run: yarn --cwd ./assets install --prod
 
       - name: Deploy assets
         run: mix assets.deploy
