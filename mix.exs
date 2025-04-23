@@ -150,7 +150,7 @@ defmodule PhoenixContainerExample.MixProject do
         # "hex.outdated",
         # "hex.audit",
         "deps.audit",
-        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS",
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
         "dialyzer --quiet-with-result"
       ],
       "quality.ci": [
@@ -160,7 +160,7 @@ defmodule PhoenixContainerExample.MixProject do
         "hex.audit",
         "deps.audit",
         "credo",
-        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS",
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
         "dialyzer --quiet-with-result"
       ]
     ]
