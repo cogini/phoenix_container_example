@@ -641,7 +641,7 @@ jobs:
       # Build assets on host and copy into container
       # Doing it outside of the prod image speeds up the build, as we don't
       # have to copy big static files around.
-      # We do it here instead of a sepaate task, as we need
+      # We do it here instead of a separate task, as we need
       # priv/static/cache_manifest.json in the build.
 
       - uses: actions/setup-node@v4
