@@ -1289,6 +1289,8 @@ jobs:
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+          CPU: ${{ env.ECS_CPU }}
+          RAM: ${{ env.ECS_RAM }}
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
@@ -1317,6 +1319,8 @@ jobs:
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+          CPU: ${{ env.ECS_CPU_WORKER }}
+          RAM: ${{ env.ECS_RAM_WORKER }}
         run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
 
       - name: Put new image ID in ECS task definition (worker)
@@ -1449,6 +1453,11 @@ jobs:
   #     contents: read
   #     # Push to ghcr.io repository
   #     packages: write
+  #     # Upload JUnit report files
+  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+  #     checks: write
+  #     pull-requests: write
+  #     issues: read
   #   runs-on: ubuntu-latest
   #   # runs-on: ubuntu-24-arm
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
