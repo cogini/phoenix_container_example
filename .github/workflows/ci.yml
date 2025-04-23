@@ -704,15 +704,28 @@ jobs:
       - name: Get Elixir deps
         run: mix deps.get
 
+      - name: Compile deps
+        run: mix deps.compile
+
       - name: Compile
         run: mix compile
+
+      - name: Setup
+        run: |
+          mix esbuild.install --if-missing
+          mkdir -p ./assets
 
       - name: npm install
         working-directory: assets
         run: npm install
 
       - name: npm run deploy
+        working-directory: assets
         run: npm run deploy
+
+      - name: npm install
+        working-directory: assets
+        run: yarn install --prod
 
       - name: Build digested assets
         run: mix phx.digest --no-vsn
