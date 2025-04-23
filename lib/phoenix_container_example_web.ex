@@ -43,6 +43,7 @@ defmodule PhoenixContainerExampleWeb do
         layouts: [html: PhoenixContainerExampleWeb.Layouts]
 
       use Gettext, backend: PhoenixContainerExampleWeb.Gettext
+
       import Plug.Conn
 
       unquote(verified_routes())
@@ -81,12 +82,12 @@ defmodule PhoenixContainerExampleWeb do
 
   defp html_helpers do
     quote do
+      use Gettext, backend: PhoenixContainerExampleWeb.Gettext
       # HTML escaping functionality
       import Phoenix.HTML
 
       # Core UI components and translation
       import PhoenixContainerExampleWeb.CoreComponents
-      use Gettext, backend: PhoenixContainerExampleWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS

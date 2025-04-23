@@ -15,7 +15,6 @@ defmodule PhoenixContainerExampleWeb.CoreComponents do
   Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
   """
   use Phoenix.Component
-
   use Gettext, backend: PhoenixContainerExampleWeb.Gettext
 
   alias Phoenix.HTML.FormField
