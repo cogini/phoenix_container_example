@@ -16,7 +16,7 @@ defmodule PhoenixContainerExampleWeb.CoreComponents do
   """
   use Phoenix.Component
 
-  import PhoenixContainerExampleWeb.Gettext
+  use Gettext, backend: PhoenixContainerExampleWeb.Gettext
 
   alias Phoenix.HTML.FormField
   alias Phoenix.LiveView.JS

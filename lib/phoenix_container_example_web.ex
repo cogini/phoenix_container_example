@@ -42,7 +42,7 @@ defmodule PhoenixContainerExampleWeb do
         formats: [:html, :json],
         layouts: [html: PhoenixContainerExampleWeb.Layouts]
 
-      import PhoenixContainerExampleWeb.Gettext
+      use Gettext, backend: PhoenixContainerExampleWeb.Gettext
       import Plug.Conn
 
       unquote(verified_routes())
@@ -86,7 +86,7 @@ defmodule PhoenixContainerExampleWeb do
 
       # Core UI components and translation
       import PhoenixContainerExampleWeb.CoreComponents
-      import PhoenixContainerExampleWeb.Gettext
+      use Gettext, backend: PhoenixContainerExampleWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
