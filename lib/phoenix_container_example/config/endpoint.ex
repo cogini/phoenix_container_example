@@ -38,6 +38,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     value
     |> String.replace("\\n", "\n")
     |> :public_key.pem_decode()
+    |> Enum.map(fn {:Certificate, der, :not_encrypted} -> der end)
   end
 
   @doc "Convert PEM-encoded private key to Erlang public_key format."
@@ -46,6 +47,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     value
     |> String.replace("\\n", "\n")
     |> :public_key.pem_decode()
+    |> Enum.map(fn {type, der, :not_encrypted} -> {type, der} end)
     |> Enum.at(0)
   end
 
