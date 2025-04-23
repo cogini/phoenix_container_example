@@ -1,7 +1,7 @@
 import Config
 
 alias Elixir.Cluster.Strategy.DNSPoll
-alias PhoenixContainerExample.Config.Endpoint, as: Config.Endpoint
+alias PhoenixContainerExample.Config.Endpoint, as: EndpointConfig
 
 roles = (System.get_env("ROLES") || "app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
@@ -57,7 +57,7 @@ if config_env() == :dev do
       port: port
     ],
     https:
-      Endpoint.https_opts(
+      EndpointConfig.https_opts(
         System.get_env(),
         %{
           "HTTPS_CACERTS" => :cacerts,
@@ -119,7 +119,7 @@ if config_env() == :prod do
       port: port
     ],
     https:
-      Config.Endpoint.https_opts(
+      EndpointConfig.https_opts(
         System.get_env(),
         %{
           "HTTPS_CACERTS" => :cacerts,
