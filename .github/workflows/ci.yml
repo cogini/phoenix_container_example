@@ -68,6 +68,7 @@ env:
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
+  # APPSIGNAL_APP_NAME: bounce
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
   # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
