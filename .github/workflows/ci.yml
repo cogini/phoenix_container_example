@@ -303,7 +303,7 @@ jobs:
           driver-opts: network=host
 
       - name: Build test image and push to GHCR
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         # https://github.com/docker/build-push-action
         with:
           file: ${{ env.DOCKER_FILE }}
@@ -737,7 +737,7 @@ jobs:
           driver-opts: network=host
 
       - name: Build prod image and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
@@ -1070,7 +1070,7 @@ jobs:
   #         driver-opts: network=host
   #
   #     - name: Get build artifacts on host
-  #       uses: docker/build-push-action@v5
+  #       uses: docker/build-push-action@v6
   #       with:
   #         file: ${{ env.DOCKER_FILE }}
   #         target: artifacts
