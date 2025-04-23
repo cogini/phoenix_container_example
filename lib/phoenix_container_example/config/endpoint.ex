@@ -27,7 +27,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   defp convert_opt(:cacertfile, value), do: value
   defp convert_opt(:cert, value), do: convert_pem_cert(value)
   defp convert_opt(:certfile, value), do: value
-  defp convert_opt(:cipher_suite, value), do: String.to_atom(value)
+  # defp convert_opt(:cipher_suite, value), do: String.to_existing_atom(value)
   defp convert_opt(:key, value), do: convert_pem_pkey(value)
   defp convert_opt(:keyfile, value), do: value
   defp convert_opt(:port, value), do: String.to_integer(value)
