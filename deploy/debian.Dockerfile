@@ -82,8 +82,6 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
-
-    ARG NODE_VER
     ARG NODE_MAJOR
 
     ARG APP_DIR
@@ -95,7 +93,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
@@ -309,9 +307,13 @@ FROM build-deps-get AS test-image
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
 
-    # COPY --link bi[n] ./bin
-    COPY --link test ./test
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
     COPY --link priv ./priv
+    COPY --link test ./test
+    # COPY --link bi[n] ./bin
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -359,9 +361,11 @@ FROM build-deps-get AS prod-release
     COPY --link assets/yarn.loc[k] assets/yarn.lock
     COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
+    WORKDIR ${APP_DIR}/assets
+
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-        cd assets && \
+        mkdir -p ./assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
@@ -376,10 +380,20 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
+    WORKDIR $APP_DIR
+
+    # Compile assets with esbuild
+    COPY --link assets ./assets
+    COPY --link priv ./priv
+
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
-    COPY --link priv ./priv
-    COPY --link assets ./assets
+
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
+    COPY --link bi[n] ./bin
 
     RUN mix assets.deploy
 
@@ -519,7 +533,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
@@ -628,10 +642,13 @@ FROM prod-base AS prod
     RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
+        # mkdir -p "/etc/foo" && \
+        # mkdir -p "/var/lib/foo" && \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+            # "/var/lib/foo"
 
     # Copy CodeDeploy revision into prod image for publishing later
     # This could be put in a separate target, but it's faster to do it from prod test
@@ -693,13 +710,20 @@ FROM build-os-deps AS dev
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
-    ARG APP_PORT
 
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV HOME=$APP_DIR \
         LANG=$LANG
+
+    RUN set -exu && \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -769,14 +793,6 @@ FROM build-os-deps AS dev
         truncate -s 0 /var/log/dpkg.log
 
     RUN chsh --shell /bin/bash "$APP_USER"
-
-    RUN set -exu && \
-        # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # Make dirs writable by app
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            # Needed for RELEASE_TMP
-            "/run/${APP_NAME}"
 
     USER $APP_USER:$APP_GROUP
 
