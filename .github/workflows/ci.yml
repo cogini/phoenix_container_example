@@ -141,6 +141,11 @@ jobs:
                   build_os_ver: "bookworm-20250407-slim",
                   prod_os_ver: "bookworm-slim",
                   os: "debian"
+                },
+                {
+                  elixir: "1.18.3",
+                  otp: "27.3.3",
+                  os: "rocky"
                 }
               ]
             }
@@ -312,6 +317,22 @@ jobs:
         with:
           driver-opts: network=host
 
+      # - name: Create .buildx-cache
+      #   run: |
+      #     mkdir -p ${{ runner.temp }}/.buildx-cache
+      #     mkdir -p ${{ runner.temp }}/.buildx-cache-new
+
+      # - name: Cache Docker layers
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ runner.temp }}/.buildx-cache
+      #     key: ${{ github.workflow }}-buildx-test-${{ env.VAR }}
+      #     # restore-keys: |
+      #     #   ${{ github.workflow }}-buildx-test-${{ env.VAR }}-
+
+      # - name: Debug .buildx-cache
+      #   run: ls -l ${{ runner.temp }}/.buildx-cache
+
       - name: Build test image and push to GHCR
         uses: docker/build-push-action@v6
         # https://github.com/docker/build-push-action
@@ -329,6 +350,8 @@ jobs:
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}-${{ github.ref_name }}
           cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}-${{ github.ref_name }},mode=max
+          # cache-from: type=local,src=${{ runner.temp }}/.buildx-cache
+          # cache-to: type=local,dest=${{ runner.temp }}/.buildx-cache-new,mode=max
           no-cache: ${{ github.run_attempt != '1' }}
           # platforms: linux/amd64,linux/arm64
           # ssh: default
@@ -338,6 +361,14 @@ jobs:
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+      # - # Temp fix
+      #   # https://github.com/docker/build-push-action/issues/252
+      #   # https://github.com/moby/buildkit/issues/1896
+      #   name: Move cache
+      #   run: |
+      #     rm -rf ${{ runner.temp }}/.buildx-cache
+      #     mv ${{ runner.temp }}/.buildx-cache-new ${{ runner.temp }}/.buildx-cache
 
   test:
     name: Run tests
@@ -1503,7 +1534,7 @@ jobs:
   #     - name: Create CodeDeploy revision
   #       run: |
   #         aws deploy push --application-name "${CODEDEPLOY_APPLICATION}" \
-  #           --description "Bounce ${RELEASE_TAG} ${GITHUB_SHA_SHORT}" \
+  #           --description "App ${RELEASE_TAG} ${GITHUB_SHA_SHORT}" \
   #           --s3-location s3://${CODEDEPLOY_BUCKET}/${REVISION_FILE} \
   #           --source revision
 
@@ -1512,6 +1543,6 @@ jobs:
   #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
   #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}" \
   #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
-  #           --description "Bounce ${RELEASE_TAG} ${GITHUB_SHA_SHORT}"
+  #           --description "App ${RELEASE_TAG} ${GITHUB_SHA_SHORT}"
 
       # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
