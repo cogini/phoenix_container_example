@@ -7,7 +7,7 @@ ARG BASE_OS=ubuntu
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.18.3
-ARG OTP_VER=27.3.3
+ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/ubuntu
 ARG BUILD_OS_VER=jammy-20240427
@@ -20,7 +20,7 @@ ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
-ARG NODE_MAJOR=20
+ARG NODE_MAJOR=22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.

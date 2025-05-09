@@ -7,12 +7,12 @@ ARG BASE_OS=debian
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.18.3
-ARG OTP_VER=27.3.3
+ARG OTP_VER=27.3.4
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=bullseye-20250317-slim
-ARG PROD_OS_VER=bullseye-20250317-slim
+ARG BUILD_OS_VER=bookworm-20250428-slim
+ARG PROD_OS_VER=bookworm-20250428-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
@@ -21,7 +21,7 @@ ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
-ARG NODE_MAJOR=20
+ARG NODE_MAJOR=22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
