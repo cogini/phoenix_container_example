@@ -109,7 +109,7 @@ jobs:
               include: [
                 {
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim",
                   os: "debian"
@@ -142,7 +142,7 @@ jobs:
               include: [
                 {
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim",
                   os: "debian"
@@ -158,7 +158,7 @@ jobs:
               include: [
                 {
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim",
                   os: "debian"
@@ -176,7 +176,7 @@ jobs:
               include: [
                 {
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim",
                   os: "debian"
