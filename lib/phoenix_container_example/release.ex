@@ -1,8 +1,8 @@
 defmodule PhoenixContainerExample.Release do
   @moduledoc """
-  Used for executing DB release tasks when run in production without Mix
-  installed.
+  Execute release tasks when run in production without Mix installed.
   """
+
   require Logger
 
   @app :phoenix_container_example
@@ -45,14 +45,9 @@ defmodule PhoenixContainerExample.Release do
 
     Enum.each(repos(), fn repo ->
       ensure_repo(repo)
+      ensure_implements(repo.__adapter__(), Ecto.Adapter.Storage, "create storage for #{inspect(repo)}")
 
-      ensure_implements(
-        repo.__adapter__,
-        Ecto.Adapter.Storage,
-        "create storage for #{inspect(repo)}"
-      )
-
-      case repo.__adapter__.storage_up(repo.config) do
+      case repo.__adapter__().storage_up(repo.config()) do
         :ok ->
           Logger.info("Created database for #{inspect(repo)}")
 
