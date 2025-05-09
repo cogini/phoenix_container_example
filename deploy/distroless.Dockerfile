@@ -86,6 +86,7 @@ ARG APP_PORT=4000
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
+
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
@@ -101,7 +102,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
@@ -129,12 +130,14 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         fi
 
     # Install tools and libraries to build binary libraries
-    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu && \
+        # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
+        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
         apt-get update -qq && \
+        # apt-get -y build-dep python-pil -y && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -210,7 +213,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
         # export GPGHOME="$(mktemp -d)" && \
         # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
-        # mkdir -p /etc/apt/keyrings && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
         # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
         # gpgconf --kill all && \
         # rm -rf "$GPGHOME" && \
@@ -245,6 +248,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
@@ -252,14 +256,14 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
-    RUN mix 'do' local.rebar --force, local.hex --force
-
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
     COPY --link mix.exs ./
     COPY --link mix.lock ./
 
     COPY --link .env.defaul[t] ./
+
+    RUN mix 'do' local.rebar --force, local.hex --force
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -312,9 +316,13 @@ FROM build-deps-get AS test-image
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
 
-    # COPY --link bi[n] ./bin
-    COPY --link test ./test
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
     COPY --link priv ./priv
+    COPY --link test ./test
+    # COPY --link bi[n] ./bin
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -362,9 +370,11 @@ FROM build-deps-get AS prod-release
     COPY --link assets/yarn.loc[k] assets/yarn.lock
     COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
+    WORKDIR ${APP_DIR}/assets
+
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-	    cd assets && \
+        mkdir -p ./assets && \
         corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
@@ -379,10 +389,19 @@ FROM build-deps-get AS prod-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
+    WORKDIR $APP_DIR
+
+    # Compile assets with esbuild
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
-    COPY --link priv ./priv
     COPY --link assets ./assets
+    COPY --link priv ./priv
+
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
+    COPY --link bi[n] ./bin
 
     RUN mix assets.deploy
 
@@ -417,6 +436,7 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
+
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -454,6 +474,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \
@@ -572,10 +593,13 @@ FROM prod-base AS prod
     RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
+        # mkdir -p "/etc/foo" && \
+        # mkdir -p "/var/lib/foo" && \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+            # "/var/lib/foo"
 
     # Copy CodeDeploy revision into prod image for publishing later
     # This could be put in a separate target, but it's faster to do it from prod test
@@ -641,8 +665,8 @@ FROM build-os-deps AS dev
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
-    ENV LANG=$LANG \
-        HOME=$APP_DIR
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN set -exu && \
         # Create app dirs
@@ -672,6 +696,8 @@ FROM build-os-deps AS dev
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
         # apt-get purge -y --auto-remove curl && \
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
@@ -690,13 +716,14 @@ FROM build-os-deps AS dev
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
-    USER $APP_USER
+    USER $APP_USER:$APP_GROUP
 
     WORKDIR $APP_DIR
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
@@ -706,6 +733,7 @@ FROM scratch AS artifacts
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     COPY --from=prod-release /app/priv/static /static
+
 
 # Default target
 FROM prod

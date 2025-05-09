@@ -82,6 +82,8 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+
+    ARG NODE_VER
     ARG NODE_MAJOR
 
     ARG APP_DIR
@@ -383,11 +385,10 @@ FROM build-deps-get AS prod-release
     WORKDIR $APP_DIR
 
     # Compile assets with esbuild
-    COPY --link assets ./assets
-    COPY --link priv ./priv
-
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+    COPY --link priv ./priv
+    COPY --link assets ./assets
 
     # Erlang src files
     COPY --link sr[c] ./src

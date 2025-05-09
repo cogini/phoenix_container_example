@@ -388,6 +388,12 @@ FROM build-deps-get AS prod-release
     COPY --link priv ./priv
     COPY --link assets ./assets
 
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
+    COPY --link bi[n] ./bin
+
     RUN mix assets.deploy
 
     # RUN esbuild default --minify
