@@ -128,6 +128,11 @@ jobs:
       #            build_os_ver: bullseye-20240513
       #            prod_os_ver: bullseye-slim
       #            os: debian
+      # {
+      #   elixir: "1.18.3",
+      #   otp: "27.3.3",
+      #   os: "rocky"
+      # }
 
       - uses: actions/github-script@v7
         id: prod-matrix
@@ -141,11 +146,6 @@ jobs:
                   build_os_ver: "bookworm-20250407-slim",
                   prod_os_ver: "bookworm-slim",
                   os: "debian"
-                },
-                {
-                  elixir: "1.18.3",
-                  otp: "27.3.3",
-                  os: "rocky"
                 }
               ]
             }
