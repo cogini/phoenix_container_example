@@ -13,14 +13,12 @@ defmodule PhoenixContainerExample.Config.Endpoint do
         {key, convert_opt(key, value)}
       end
 
-    result = Keyword.merge(default_opts, opts)
+    Logger.info("HTTPS opts: #{inspect(opts)}")
 
-    Logger.info("HTTPS opts: #{inspect(result)}")
-
-    if Enum.empty?(result) do
+    if Enum.empty?(opts) do
       false
     else
-      result
+      Keyword.merge(default_opts, opts)
     end
   end
 
