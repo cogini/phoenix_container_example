@@ -15,6 +15,8 @@ defmodule PhoenixContainerExample.Config.Endpoint do
 
     result = Keyword.merge(default_opts, opts)
 
+    Logger.info("HTTPS opts: #{inspect(result)}")
+
     if Enum.empty?(result) do
       false
     else
@@ -30,7 +32,8 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   # defp convert_opt(:cipher_suite, value), do: String.to_existing_atom(value)
   defp convert_opt(:key, value), do: convert_pem_pkey(value)
   defp convert_opt(:keyfile, value), do: value
-  defp convert_opt(:port, value), do: String.to_integer(value)
+  defp convert_opt(:port, value) when is_binary(value), do: String.to_integer(value)
+  defp convert_opt(:port, value) when is_integer(value), value
 
   @doc "Convert PEM-encoded certificate to Erlang public_key format."
   @spec convert_pem_cert(binary()) :: [:public_key.pem_entry()]
