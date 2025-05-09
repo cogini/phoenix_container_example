@@ -98,6 +98,16 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
+  config :phoenix_container_example, PhoenixContainerExample.Repo,
+    ssl: maybe_ecto_ssl,
+    url: database_url,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    log: ecto_log,
+    # timeout: 20_000,
+    # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+    ssl_opts: AwsRdsCAStore.ssl_opts(database_url),
+    socket_options: maybe_ecto_ipv6
+
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     # static_url: [host: "assets." <> host, port: 443, scheme: "https"],
@@ -127,16 +137,6 @@ if config_env() == :prod do
         log_level: :warning
       ),
     secret_key_base: secret_key_base
-
-  config :phoenix_container_example, PhoenixContainerExample.Repo,
-    ssl: maybe_ecto_ssl,
-    url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    log: ecto_log,
-    # timeout: 20_000,
-    # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
-    ssl_opts: AwsRdsCAStore.ssl_opts(database_url),
-    socket_options: maybe_ecto_ipv6
 
   config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
