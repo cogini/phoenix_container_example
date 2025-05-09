@@ -33,7 +33,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   defp convert_opt(:key, value), do: convert_pem_pkey(value)
   defp convert_opt(:keyfile, value), do: value
   defp convert_opt(:port, value) when is_binary(value), do: String.to_integer(value)
-  defp convert_opt(:port, value) when is_integer(value), value
+  defp convert_opt(:port, value) when is_integer(value), do: value
 
   @doc "Convert PEM-encoded certificate to Erlang public_key format."
   @spec convert_pem_cert(binary()) :: [:public_key.pem_entry()]
