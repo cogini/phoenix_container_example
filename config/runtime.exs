@@ -118,22 +118,22 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0},
       port: port
     ],
-    https:
-      EndpointConfig.https_opts(
-        System.get_env(),
-        %{
-          "HTTPS_CACERTS" => :cacerts,
-          "HTTPS_CACERTFILE" => :cacertfile,
-          "HTTPS_CERT" => :cert,
-          "HTTPS_CERTFILE" => :certfile,
-          # "HTTPS_CIPHER_SUITE" => :cipher_suite,
-          "HTTPS_KEY" => :key,
-          "HTTPS_KEYFILE" => :keyfile,
-          "HTTPS_PORT" => :port
-        },
-        cipher_suite: :strong,
-        log_level: :warning
-      ),
+    # https:
+    #   EndpointConfig.https_opts(
+    #     System.get_env(),
+    #     %{
+    #       "HTTPS_CACERTS" => :cacerts,
+    #       "HTTPS_CACERTFILE" => :cacertfile,
+    #       "HTTPS_CERT" => :cert,
+    #       "HTTPS_CERTFILE" => :certfile,
+    #       # "HTTPS_CIPHER_SUITE" => :cipher_suite,
+    #       "HTTPS_KEY" => :key,
+    #       "HTTPS_KEYFILE" => :keyfile,
+    #       "HTTPS_PORT" => :port
+    #     },
+    #     cipher_suite: :strong,
+    #     log_level: :warning
+    #   ),
     secret_key_base: secret_key_base
 
   config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
