@@ -7,7 +7,7 @@ ARG BASE_OS=rockylinux
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.18.3
-ARG OTP_VER=27.3.3
+ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/rockylinux
 ARG BUILD_OS_VER=8
@@ -83,6 +83,11 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+
+    ARG OTP_VER
+    ARG ELIXIR_VER
+    ARG REBAR_VER
+    ARG NODE_VER
     ARG NODE_MAJOR
 
     ARG APP_DIR
@@ -101,6 +106,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         dnf install -y epel-release && \
         dnf upgrade -y && \
         # dnf makecache --refresh && \
+        dnf builddep erlang -y && \
         dnf group install -y 'Development Tools' && \
         dnf install -y \
             cmake \
@@ -158,6 +164,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     ENV HOME=$APP_DIR
+
     WORKDIR $APP_DIR
 
     COPY  bi[n] ./bin
@@ -234,6 +241,7 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
+
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -257,6 +265,8 @@ FROM build-deps-get AS test-image
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+
+    COPY --link we[b] ./web
 
     # Erlang src files
     COPY --link sr[c] ./src
@@ -334,11 +344,12 @@ FROM build-deps-get AS prod-release
     WORKDIR $APP_DIR
 
     # Compile assets with esbuild
-    COPY --link assets ./assets
-    COPY --link priv ./priv
-
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+    COPY --link we[b] ./web
+
+    COPY --link priv ./priv
+    COPY --link assets ./assets
 
     # Erlang src files
     COPY --link sr[c] ./src
@@ -374,6 +385,7 @@ FROM build-deps-get AS prod-release
     # COPY appspec.yml ./
     # RUN set -exu && \
     #     mkdir -p etc bin systemd && \
+    #     chmod +x /app/bin/* && \
     #     cp /app/bin/* ./bin/ && \
     #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
@@ -407,15 +419,17 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
-            openssl \
+            openssl
             # $RUNTIME_PACKAGES \
-        && \
-        dnf clean all
+        # && \
+        # dnf clean all
         # dnf clean all && rm -rf /var/cache/yum
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
 # https://www.mankier.com/8/microdnf
+# https://git.rockylinux.org/rocky/images/-/blob/main/base/scripts/build-container-rootfs.sh
+
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
@@ -576,10 +590,10 @@ FROM build-os-deps AS dev
             openssh-clients \
             sudo \
             # for chsh
-            util-linux-user \
+            util-linux-user
             # $DEV_PACKAGES \
-        && \
-        dnf clean all
+        # && \
+        # dnf clean all
         # yum clean all && rm -rf /var/cache/yum
 
     RUN chsh --shell /bin/bash "$APP_USER"
@@ -613,6 +627,8 @@ FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
+    # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
     # COPY --from=prod-release /app/_build/${MIX_ENV} ${MIX_ENV}
     COPY --from=prod-release /app/_build /_build
