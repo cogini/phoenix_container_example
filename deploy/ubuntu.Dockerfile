@@ -10,8 +10,8 @@ ARG ELIXIR_VER=1.18.3
 ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/ubuntu
-ARG BUILD_OS_VER=jammy-20250126
-ARG PROD_OS_VER=jammy-20250126
+ARG BUILD_OS_VER=jammy-20250404
+ARG PROD_OS_VER=jammy-20250404
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
