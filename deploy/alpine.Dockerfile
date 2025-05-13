@@ -10,8 +10,8 @@ ARG ELIXIR_VER=1.18.3
 ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/alpine
-ARG BUILD_OS_VER=3.17.5
-ARG PROD_OS_VER=3.17.5
+ARG BUILD_OS_VER=3.21.3
+ARG PROD_OS_VER=3.21.3
 
 # By default, packages come from the APK index for the base Alpine image.
 # Package versions are consistent between builds, and we normally upgrade by
@@ -97,12 +97,14 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         set -exu && \
         ln -s /var/cache/apk /etc/apk/cache && \
         $APK_UPDATE && $APK_UPGRADE && \
-        apk add --no-progress nodejs npm && \
+        apk add --no-progress nodejs npm yarn && \
         # Get private repos
         apk add --no-progress openssh && \
         # Build binary libraries
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base
+
+    # RUN npm install -g yarn
 
     # Database command line clients to check if DBs are up when performing integration tests
     # RUN apk add --no-progress postgresql-client mysql-client
