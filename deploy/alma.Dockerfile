@@ -21,9 +21,7 @@ ARG SNAPSHOT_VER=""
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
 ARG NODE_MAJOR=20
-
-ARG REBAR_VER=3.24.0
-ARG HEX_VER=2.1.1
+ARG YARN_VER=1.22.22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -189,7 +187,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # asdf install erlang "$OTP_VER" && \
         # asdf install elixir "$ELIXIR_VER" && \
         # asdf install nodejs "$NODE_VER" && \
-        # asdf install rebar "${REBAR_VER}" && \
+        # asdf install yarn "$YARN_VER" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
@@ -207,9 +205,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
     ENV HOME=$APP_DIR
-
-    ARG HEX_VER
-    ARG REBAR_VER
 
     WORKDIR $APP_DIR
 
