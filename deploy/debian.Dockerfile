@@ -20,8 +20,8 @@ ARG PROD_OS_VER=bookworm-20250428-slim
 ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
-ARG NODE_VER=lts
-ARG NODE_MAJOR=22
+ARG NODE_VER=24.0.1
+ARG NODE_MAJOR=24
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
