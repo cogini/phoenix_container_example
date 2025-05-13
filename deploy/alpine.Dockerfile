@@ -6,8 +6,8 @@ ARG BASE_OS=alpine
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.15.7
-ARG OTP_VER=26.1.2
+ARG ELIXIR_VER=1.18.3
+ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/alpine
 ARG BUILD_OS_VER=3.17.5
@@ -72,6 +72,7 @@ ARG APP_PORT=4000
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
+
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG APK_UPDATE
@@ -90,7 +91,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
 
     # Install tools and libraries to build binary libraries
-    # Not necessary for a minimal Phoenix app, but likely needed
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
@@ -120,14 +120,14 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
+    RUN mix 'do' local.rebar --force, local.hex --force
+
     # Copy only the minimum files needed for deps, improving caching
     COPY --link config ./config
-    COPY --link mix.exs .
-    COPY --link mix.lock .
+    COPY --link mix.exs ./
+    COPY --link mix.lock ./
 
-    # COPY --link .env.default ./
-
-    RUN mix 'do' local.rebar --force, local.hex --force
+    COPY --link .env.defaul[t] ./
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -156,6 +156,7 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
+
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -164,28 +165,32 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY --link .env.test ./
+    COPY --link .env.tes[t] ./
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
     RUN mix esbuild.install --if-missing
 
-    RUN mix dialyzer --plt
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
     COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
-    # Non-umbrella
-    COPY --link lib ./lib
+    RUN mix dialyzer --plt
+
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
+
+    COPY --link we[b] ./web
+    COPY --link template[s] ./templates
+
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
     COPY --link priv ./priv
     COPY --link test ./test
-    # COPY --link bin ./bin
-
-    # Umbrella
-    # COPY --link apps ./apps
-    # COPY --link priv ./priv
+    # COPY --link bi[n] ./bin
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -207,11 +212,11 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS prod-release
     ARG APP_DIR
     ARG RELEASE
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
 
     WORKDIR $APP_DIR
 
-    # COPY --link .env.prod .
+    COPY --link .env.pro[d] ./
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
@@ -225,54 +230,51 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
-    # Install JavaScript deps using yarn
+    RUN mkdir -p ./assets
+
+    # Install JavaScript deps
     COPY --link assets/package.jso[n] assets/package.json
     COPY --link assets/package-lock.jso[n] assets/package-lock.json
     COPY --link assets/yarn.loc[k] assets/yarn.lock
+    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
 
-    RUN set -exu && \
+    WORKDIR ${APP_DIR}/assets
+
+    RUN --mount=type=cache,target=~/.npm,sharing=locked \
+        set -exu && \
         mkdir -p ./assets && \
-        yarn --cwd ./assets install --prod
-        # cd assets && yarn install --prod
+        corepack enable && \
+        # yarn --cwd ./assets install --prod
+        yarn install --prod
+        # npm install
+        # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+        # node node_modules/brunch/bin/brunch build
 
-    # Install JavaScript deps using npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY --link assets/package.jso[n] ./
-    # COPY --link assets/package-lock.jso[n] ./
-    # RUN npm install
-
-    # Compile assets the old way
-    # WORKDIR "${APP_DIR}/assets"
-    #
-    # COPY --link assets/package.json ./
-    # COPY --link assets/package-lock.json ./
-    #
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-    #
-    # COPY --link assets ./
-    #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
 
     # Compile assets with esbuild
-    COPY --link assets ./assets
+    COPY --link li[b] ./lib
+    COPY --link app[s] ./apps
+    COPY --link we[b] ./web
+
+    # Erlang src files
+    COPY --link sr[c] ./src
+    COPY --link includ[e] ./include
+
     COPY --link priv ./priv
+    COPY --link assets ./assets
 
-    # Non-umbrella
-    COPY --link lib ./lib
-
-    # Umbrella
-    # COPY --link apps ./apps
+    COPY --link bi[n] ./bin
 
     RUN mix assets.deploy
+
     # RUN esbuild default --minify
     # RUN mix phx.digest
 
@@ -363,10 +365,13 @@ FROM prod-base AS prod
     RUN \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
+        # mkdir -p "/etc/foo" && \
+        # mkdir -p "/var/lib/foo" && \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+            # "/var/lib/foo"
 
     # USER $APP_USER
 
@@ -375,7 +380,7 @@ FROM prod-base AS prod
     WORKDIR $APP_DIR
 
     # When using a startup script, copy to /app/bin
-    # COPY --link bin ./bin
+    # COPY --link bi[n] ./bin
 
     USER $APP_USER:$APP_GROUP
 
@@ -423,7 +428,9 @@ FROM scratch AS artifacts
     ARG RELEASE
 
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     COPY --from=prod-release /app/priv/static /static
+
 
 # Default target
 FROM prod

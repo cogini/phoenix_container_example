@@ -285,6 +285,7 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
+
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -308,6 +309,9 @@ FROM build-deps-get AS test-image
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+
+    COPY --link we[b] ./web
+    COPY --link template[s] ./templates
 
     # Erlang src files
     COPY --link sr[c] ./src
@@ -387,12 +391,14 @@ FROM build-deps-get AS prod-release
     # Compile assets with esbuild
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
-    COPY --link priv ./priv
-    COPY --link assets ./assets
+    COPY --link we[b] ./web
 
     # Erlang src files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+
+    COPY --link priv ./priv
+    COPY --link assets ./assets
 
     COPY --link bi[n] ./bin
 
@@ -424,6 +430,7 @@ FROM build-deps-get AS prod-release
     # COPY appspec.yml ./
     # RUN set -exu && \
     #     mkdir -p etc bin systemd && \
+    #     chmod +x /app/bin/* && \
     #     cp /app/bin/* ./bin/ && \
     #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
@@ -662,7 +669,7 @@ FROM prod-base AS prod
     WORKDIR $APP_DIR
 
     # When using a startup script, copy to /app/bin
-    # COPY --link bin ./bin
+    # COPY --link bi[n] ./bin
 
     USER $APP_USER:$APP_GROUP
 
@@ -721,10 +728,13 @@ FROM build-os-deps AS dev
     RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
+        # mkdir -p "/etc/foo" && \
+        # mkdir -p "/var/lib/foo" && \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+           # "/var/lib/foo"
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
