@@ -22,6 +22,9 @@ ARG SNAPSHOT_VER=""
 ARG NODE_VER=lts
 ARG NODE_MAJOR=20
 
+ARG REBAR_VER=3.24.0
+ARG HEX_VER=2.1.1
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -64,11 +67,11 @@ ARG LANG=C.UTF-8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
-ARG MIX_ENV=public
+ARG MIX_ENV=prod
 
 # Name of Elixir release
 # This should match mix.exs releases()
-ARG RELEASE=public
+ARG RELEASE=prod
 
 # App listen port
 ARG APP_PORT=4000
@@ -185,7 +188,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         asdf install && \
         # asdf install erlang "$OTP_VER" && \
         # asdf install elixir "$ELIXIR_VER" && \
-        # asdf install nodejs && \
+        # asdf install nodejs "$NODE_VER" && \
+        # asdf install rebar "${REBAR_VER}" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
@@ -203,6 +207,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
     ENV HOME=$APP_DIR
+
+    ARG HEX_VER
+    ARG REBAR_VER
 
     WORKDIR $APP_DIR
 

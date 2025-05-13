@@ -64,11 +64,11 @@ ARG LANG=C.UTF-8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
-ARG MIX_ENV=public
+ARG MIX_ENV=prod
 
 # Name of Elixir release
 # This should match mix.exs releases()
-ARG RELEASE=public
+ARG RELEASE=prod
 
 # App listen port
 ARG APP_PORT=4000
@@ -180,7 +180,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     # Install using asdf
     RUN set -ex && \
-        # Install Erlang/Elixir using the versions in .tool-versions
+        # Install using .tool-versions versions
         asdf install && \
         # asdf install erlang "$OTP_VER" && \
         # asdf install elixir "$ELIXIR_VER" && \
@@ -471,6 +471,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
         chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod

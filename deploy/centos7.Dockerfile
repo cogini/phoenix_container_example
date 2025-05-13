@@ -70,11 +70,11 @@ ARG APP_GROUP_ID=$APP_USER_ID
 ARG LANG=en_US.utf8
 
 # Elixir release env to build
-ARG MIX_ENV=public
+ARG MIX_ENV=prod
 
 # Name of Elixir release
 # This should match mix.exs releases()
-ARG RELEASE=public
+ARG RELEASE=prod
 
 # App listen port
 ARG APP_PORT=4000
@@ -176,8 +176,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # https://github.com/asdf-vm/asdf-erlang/issues/206
         # rpm --eval '%{_arch}' && \
         yum install -y \
-            autoconf \
-            automake \
+            # autoconf \
+            # automake \
             # bison \
             # flex \
             # gcc \
@@ -256,7 +256,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # asdf install elixir "$ELIXIR_VER" && \
         # asdf install nodejs "$NODE_VER" && \
         # asdf install rebar "${REBAR_VER}" && \
-        # asdf install rebar && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
@@ -282,12 +281,7 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
-    # Copy only the minimum files needed for deps, improving caching
-    COPY --link config ./config
-    COPY --link mix.exs ./
-    COPY --link mix.lock ./
-
-    # The mix task fails with a TLS error, so download and install manually
+    # This mix task fails with a TLS error, so download and install manually
     # RUN mix 'do' local.rebar --force, local.hex --force
 
     RUN set -ex && \
@@ -295,6 +289,11 @@ FROM build-os-deps AS build-deps-get
         curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" && \
         mix archive.install --force /tmp/hex.ez && \
         mix local.rebar rebar3 /app/.asdf/installs/rebar/${REBAR_VER}/bin/rebar3
+
+    # Copy only the minimum files needed for deps, improving caching
+    COPY --link config ./config
+    COPY --link mix.exs ./
+    COPY --link mix.lock ./
 
     COPY --link .env.defaul[t] ./
 
