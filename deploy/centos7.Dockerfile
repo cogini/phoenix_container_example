@@ -18,11 +18,11 @@ ARG PROD_OS_VER=8
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
 
-# ARG NODE_VER=16.14.1
-ARG NODE_VER=22.15.0
-
 # Newer binary releases of nodejs require a newer version of glibc not available in CentOS 7
-ARG NODE_MAJOR=20
+ARG NODE_VER=14.21.3
+# ARG NODE_VER=22.15.0
+ARG NODE_MAJOR=14
+ARG YARN_VER=1.22.22
 
 ARG REBAR_VER=3.24.0
 ARG HEX_VER=2.1.1
@@ -95,6 +95,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG REBAR_VER
     ARG NODE_VER
     ARG NODE_MAJOR
+    ARG YARN_VER
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -251,11 +252,12 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Erlang build scripts expect wx-config
         ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config && \
         # Install using .tool-versions versions
-        asdf install && \
-        # asdf install erlang "$OTP_VER" && \
-        # asdf install elixir "$ELIXIR_VER" && \
-        # asdf install nodejs "$NODE_VER" && \
-        # asdf install rebar "${REBAR_VER}" && \
+        # asdf install && \
+        asdf install erlang "$OTP_VER" && \
+        asdf install elixir "$ELIXIR_VER" && \
+        asdf install nodejs "$NODE_VER" && \
+        asdf install nodejs "$YARN_VER" && \
+        asdf install rebar "${REBAR_VER}" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
