@@ -256,7 +256,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         asdf install erlang "$OTP_VER" && \
         asdf install elixir "$ELIXIR_VER" && \
         asdf install nodejs "$NODE_VER" && \
-        asdf install nodejs "$YARN_VER" && \
+        asdf install yarn "$YARN_VER" && \
         asdf install rebar "${REBAR_VER}" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
