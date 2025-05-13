@@ -3,13 +3,14 @@
 # Install Erlang, Elixir and Node.js from packages on CentOS
 
 set -e
+set -o xtrace
 
 # Environment vars
 
 # In order to make things more predictable, install specific versions of
 # Erlang and Elixir rather than just taking the latest available
-ERL_VERSION="${ERL_VERSION:-21.3}"
-ELIXIR_VERSION="${ELIXIR_VERSION:-1.8.1}"
+ERL_VER="${ERL_VER:-21.3}"
+ELIXIR_VER="${ELIXIR_VER:-1.8.1}"
 
 # Make sure we have a good LANG
 export LANG="${LANG:-en_US.UTF-8}"

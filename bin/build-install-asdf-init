@@ -11,7 +11,11 @@ echo "==> Install ASDF and plugins"
 
 if [ ! -d "$HOME/.asdf" ]; then
     echo "===> Installing ASDF"
-    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.0
+    # git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.0
+    # 0.15.0 is the last version in bash
+    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.15.0
+    # 0.16.7 is the new version in golang
+    # git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.16.7
 
     echo -e "\n. $HOME/.asdf/asdf.sh" >> ~/.bashrc
     echo -e "\n. $HOME/.asdf/completions/asdf.bash" >> ~/.bashrc
@@ -26,6 +30,13 @@ else
     asdf plugin-add erlang
 fi
 
+if [ -d "$ASDF_DIR/plugins/rebar" ]; then
+    asdf plugin-update rebar
+else
+    echo "===> Installing ASDF rebar plugin"
+    asdf plugin-add rebar
+fi
+
 if [ -d "$ASDF_DIR/plugins/elixir" ]; then
     asdf plugin-update elixir
 else
@@ -33,12 +44,12 @@ else
     asdf plugin-add elixir
 fi
 
-# if [ -d "$ASDF_DIR/plugins/nodejs" ]; then
-#     asdf plugin-update nodejs
-# else
-#     echo "===> Installing ASDF nodejs plugin"
-#     asdf plugin-add nodejs
-# fi
+if [ -d "$ASDF_DIR/plugins/nodejs" ]; then
+    asdf plugin-update nodejs
+else
+    echo "===> Installing ASDF nodejs plugin"
+    asdf plugin-add nodejs
+fi
 
 # if [ -d "$ASDF_DIR/plugins/yarn" ]; then
 #     asdf plugin-update yarn

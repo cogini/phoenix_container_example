@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# Install Erlang, Elixir and Node.js from packages on CentOS
+
+set -e
+set -o xtrace
+
+# Environment vars
+
+# In order to make things more predictable, install specific versions of
+# Erlang and Elixir rather than just taking the latest available
+ERL_VER="${ERL_VER:-27.3_1}"
+RPM_FILE="esl-erlang_${ERL_VER}~rockylinux~8_x86_64.rpm"
+RPM_URL="https://binaries2.erlang-solutions.com/rockylinux/8/esl-erlang_${ERL_VER}~rockylinux~8_x86_64.rpm
+
+# Make sure we have a good LANG
+export LANG="${LANG:-en_US.UTF-8}"
+
+echo "===> Installing Erlang ${ERL_VER} from erlang-solutions"
+curl -s -o "/tmp/${RPM_FILE}" "${RPM_URL}"
+rpm -Uvh "/tmp/${RPM_FILE}"
