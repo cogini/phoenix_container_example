@@ -243,7 +243,7 @@ FROM build-deps-get AS prod-release
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
         mkdir -p ./assets && \
-        corepack enable && \
+        # corepack enable && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # npm install
