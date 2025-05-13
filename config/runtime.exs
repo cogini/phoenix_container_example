@@ -133,8 +133,8 @@ if config_env() == :prod do
           "HTTPS_KEYFILE" => :keyfile,
           "HTTPS_PORT" => :port
         },
-        port: String.to_integer(System.get_env("HTTPS_PORT") || "4001"),
-        cipher_suite: :strong,
+        port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
+        cipher_suite: :stron,
         log_level: :warning
       ),
     secret_key_base: secret_key_base
