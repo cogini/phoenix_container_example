@@ -5,7 +5,9 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
 
   test "no config returns false" do
     assert EndpointConfig.https_opts(%{}, %{}, []) == false
-    result = EndpointConfig.https_opts(
+
+    result =
+      EndpointConfig.https_opts(
         %{},
         %{
           "HTTPS_CACERTS" => :cacerts,
@@ -21,6 +23,7 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
         cipher_suite: :stron,
         log_level: :warning
       )
+
     assert result == false
   end
 
@@ -43,17 +46,18 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
         "HTTPS_PORT" => :port
       }
 
-      result = EndpointConfig.https_opts(env, config, [port: 4443])
+      result = EndpointConfig.https_opts(env, config, port: 4443)
+
       expected = [
         keyfile: "/etc/foo/ssl/key.pem",
         certfile: "/etc/foo/ssl/cert.pem",
         thousand_island_options: [
           transport_options: [
-          cacertfile: "/etc/foo/ssl/cacert.pem"
+            cacertfile: "/etc/foo/ssl/cacert.pem"
           ]
         ],
         scheme: :https,
-        port: 4443,
+        port: 4443
       ]
 
       assert result == expected
@@ -78,6 +82,7 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
         "HTTPS_KEYFILE" => :keyfile,
         "HTTPS_PORT" => :port
       }
+
       default_opts = [
         adapter: Phoenix.Endpoint.Cowboy2Adapter,
         port: 4443,
@@ -86,6 +91,7 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
       ]
 
       result = EndpointConfig.https_opts(env, config, default_opts)
+
       expected = [
         cipher_suite: :strong,
         log_level: :warning,
@@ -94,6 +100,7 @@ defmodule PhoenixContainerExample.Config.EndpointTest do
         keyfile: "/etc/foo/ssl/key.pem",
         port: 4443
       ]
+
       assert result == expected
     end
   end
