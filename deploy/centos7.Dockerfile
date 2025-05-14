@@ -150,6 +150,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             shadow-utils \
             unzip \
             wget \
+            which \
             zip \
          && \
         # devtoolset-10 is the latest supported by arm64
