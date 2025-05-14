@@ -118,6 +118,39 @@ jobs:
         #   build_os_ver: "jammy-20250404",
         #   prod_os_ver: "jammy-20250404"
         # },
+        # {
+        #   os: "ubuntu",
+        #   elixir: "1.18.3",
+        #   otp: "27.3.4",
+        #   build_os_ver: "noble-20250415.1",
+        #   prod_os_ver: "noble-20250415.1"
+        # },
+        # {
+        #   os: "alpine",
+        #   elixir: "1.18.3",
+        #   otp: "27.3.4",
+        #   build_os_ver: "3.21.3",
+        #   prod_os_ver: "3.21.3"
+        # },
+        # {
+        #   os: "rocky",
+        #   elixir: "1.18.3",
+        #   otp: "27.3.4",
+        #   build_os_ver: "8",
+        #   prod_os_ver: "8"
+        # },
+        # {
+        #   os: "alma",
+        #   elixir: "1.18.3",
+        #   otp: "27.3.4",
+        #   build_os_ver: "9",
+        #   prod_os_ver: "9"
+        # },
+        # {
+        #   os: "centos7",
+        #   elixir: "1.18.3",
+        #   otp: "27.3.4"
+        # },
         with:
           script: |
             return {
@@ -128,39 +161,6 @@ jobs:
                   otp: "27.3.4",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim"
-                },
-                {
-                  os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "noble-20250415.1",
-                  prod_os_ver: "noble-20250415.1"
-                },
-                {
-                  os: "alpine",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "3.21.3",
-                  prod_os_ver: "3.21.3"
-                },
-                {
-                  os: "rocky",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "8",
-                  prod_os_ver: "8"
-                },
-                {
-                  os: "alma",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "9",
-                  prod_os_ver: "9"
-                },
-                {
-                  os: "centos7",
-                  elixir: "1.18.3",
-                  otp: "27.3.4"
                 },
               ]
             }
@@ -189,6 +189,46 @@ jobs:
       #   build_os_ver: "jammy-20250404",
       #   prod_os_ver: "jammy-20250404"
       # },
+      # {
+      #   os: "distroless",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4",
+      #   build_os_ver: "bookworm-20250428-slim",
+      #   prod_os_ver: "bookworm-20250428-slim"
+      # },
+      # {
+      #   os: "ubuntu",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4",
+      #   build_os_ver: "noble-20250415.1",
+      #   prod_os_ver: "noble-20250415.1"
+      # },
+      # {
+      #   os: "alpine",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4",
+      #   build_os_ver: "3.21.3",
+      #   prod_os_ver: "3.21.3"
+      # },
+      # {
+      #   os: "rocky",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4",
+      #   build_os_ver: "8",
+      #   prod_os_ver: "8"
+      # },
+      # {
+      #   os: "alma",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4",
+      #   build_os_ver: "9",
+      #   prod_os_ver: "9"
+      # },
+      # {
+      #   os: "centos7",
+      #   elixir: "1.18.3",
+      #   otp: "27.3.4"
+      # },
 
       - uses: actions/github-script@v7
         id: prod-matrix
@@ -202,46 +242,6 @@ jobs:
                   otp: "27.3.4",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim"
-                },
-                {
-                  os: "distroless",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
-                  prod_os_ver: "bookworm-20250428-slim"
-                },
-                {
-                  os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "noble-20250415.1",
-                  prod_os_ver: "noble-20250415.1"
-                },
-                {
-                  os: "alpine",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "3.21.3",
-                  prod_os_ver: "3.21.3"
-                },
-                {
-                  os: "rocky",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "8",
-                  prod_os_ver: "8"
-                },
-                {
-                  os: "alma",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "9",
-                  prod_os_ver: "9"
-                },
-                {
-                  os: "centos7",
-                  elixir: "1.18.3",
-                  otp: "27.3.4"
                 },
               ]
             }
