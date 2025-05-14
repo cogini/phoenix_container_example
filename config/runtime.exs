@@ -136,7 +136,8 @@ if config_env() == :prod do
         },
         port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
         cipher_suite: :stron,
-        log_level: :warning
+        log_level: :warning,
+        adapter: Phoenix.Endpoint.Cowboy2Adapter
       ),
     secret_key_base: secret_key_base
 

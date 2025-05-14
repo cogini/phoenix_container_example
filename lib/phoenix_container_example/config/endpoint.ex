@@ -18,7 +18,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     if Enum.empty?(opts) do
       false
     else
-      Keyword.merge(default_opts, opts)
+      adapter_opts(default_opts, opts)
     end
   end
 
@@ -50,6 +50,33 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     |> :public_key.pem_decode()
     |> Enum.map(fn {type, der, :not_encrypted} -> {type, der} end)
     |> Enum.at(0)
+  end
+
+  defp adapter_opts(default_opts, opts) do
+    {adapter, defaults} = Keyword.pop(default_opts, :adapter, Bandit.PhoenixAdapter)
+    adapter_opts(adapter, defaults, opts)
+  end
+
+  defp adapter_opts(Phoenix.Endpoint.Cowboy2Adapter, default_opts, opts) do
+    Keyword.merge(default_opts, opts)
+  end
+
+  defp adapter_opts(Bandit.PhoenixAdapter, default_opts, opts) do
+    bandit_opts =
+      default_opts
+      |> Keyword.put(:scheme, :https)
+      |> Keyword.put_new(:thousand_island_options, [])
+      |> put_in([:thousand_island_options, :transport_options], [])
+
+    Enum.reduce(opts, bandit_opts, &bandit_opt/2)
+  end
+
+  defp bandit_opt({key, value}, acc) when key in [:cacertfile, :cacerts, :cert, :key] do
+    put_in(acc, [:thousand_island_options, :transport_options, key], value)
+  end
+
+  defp bandit_opt({key, value}, acc) do
+    Keyword.put(acc, key, value)
   end
 
   defp empty?(""), do: true
