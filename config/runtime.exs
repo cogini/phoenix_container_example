@@ -69,6 +69,7 @@ if config_env() == :dev do
           "HTTPS_KEYFILE" => :keyfile,
           "HTTPS_PORT" => :port
         },
+        port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
         cipher_suite: :strong,
         log_level: :warning
       ),
