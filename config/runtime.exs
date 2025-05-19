@@ -72,8 +72,8 @@ if config_env() == :dev do
         # adapter: Bandit.PhoenixAdapter,
         # adapter: Phoenix.Endpoint.Cowboy2Adapter
         port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
-        cipher_suite: :strong,
-        log_level: :warning
+        cipher_suite: :strong
+        # log_level: :warning
       ),
     secret_key_base: secret_key_base
 end
