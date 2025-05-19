@@ -46,7 +46,8 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoo
 
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   url: [host: "localhost"],
-  adapter: Phoenix.Endpoint.Cowboy2Adapter,
+  # adapter: Phoenix.Endpoint.Cowboy2Adapter,
+  adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [
       html: PhoenixContainerExampleWeb.ErrorHTML,
