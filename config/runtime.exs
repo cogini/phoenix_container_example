@@ -66,7 +66,7 @@ if config_env() == :dev do
           "HTTPS_CERTFILE" => :certfile,
           # "HTTPS_CIPHER_SUITE" => :cipher_suite,
           "HTTPS_KEY" => :key,
-          "HTTPS_KEYFILE" => :keyfile,
+          "HTTPS_KEYFILE" => :keyfile
           # "HTTPS_PORT" => :port
         },
         # adapter: Bandit.PhoenixAdapter,
@@ -133,7 +133,7 @@ if config_env() == :prod do
           "HTTPS_CERTFILE" => :certfile,
           # "HTTPS_CIPHER_SUITE" => :cipher_suite,
           "HTTPS_KEY" => :key,
-          "HTTPS_KEYFILE" => :keyfile,
+          "HTTPS_KEYFILE" => :keyfile
           # "HTTPS_PORT" => :port
         },
         port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
