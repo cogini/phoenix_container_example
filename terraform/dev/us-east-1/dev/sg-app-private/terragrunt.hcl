@@ -17,7 +17,7 @@ include "root" {
 
 inputs = {
   comp      = "app"
-  app_ports = [80, 443, 4000, 4001]
+  app_ports = [80, 443, 4000, 4001, 4443]
   # app_sources = ["sg-lb-public", "sg-bastion", "sg-devops", "sg-prometheus"]
   app_sources = ["sg-lb-public"]
 
