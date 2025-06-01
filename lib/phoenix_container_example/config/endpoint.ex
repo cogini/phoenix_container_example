@@ -13,8 +13,6 @@ defmodule PhoenixContainerExample.Config.Endpoint do
         {key, convert_opt(key, value)}
       end
 
-    # Logger.info("HTTPS opts: #{inspect(opts, limit: :infinity)}")
-
     if Enum.empty?(opts) do
       false
     else
