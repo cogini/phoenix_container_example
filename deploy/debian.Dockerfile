@@ -371,6 +371,7 @@ FROM build-deps-get AS prod-release
         corepack enable && corepack enable npm && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
+        # pnpm install --prod
         # npm install
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
