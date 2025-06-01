@@ -25,8 +25,8 @@ ARG LINUX_ARCH=x86_64
 # TARGETPLATFORM linux/amd64 linux/arm64
 
 # ARG NODE_VER=16.14.1
-ARG NODE_VER=lts
-ARG NODE_MAJOR=22
+ARG NODE_VER=24.0.1
+ARG NODE_MAJOR=24
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -181,9 +181,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # n "$NODE_VER" && \
         # rm /usr/local/bin/n && \
         # Install yarn from repo
-        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        # printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
         # Install Trivy
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
@@ -192,7 +192,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         apt-get -y install -y -qq --no-install-recommends \
             nodejs \
             # trivy \
-            yarn \
+            # yarn \
             # yarnpkg \
         && \
         # Install latest Postgres from postgres.org repo
@@ -250,6 +250,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN set -ex && corepack enable && corepack enable npm
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -260,12 +261,12 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
+    COPY --link .env.defaul[t] ./
+
     # Copy only the minimum files needed for deps, improving caching
-    COPY --link config ./config
     COPY --link mix.exs ./
     COPY --link mix.lock ./
-
-    COPY --link .env.defaul[t] ./
+    COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -294,7 +295,6 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -308,11 +308,9 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+    COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     RUN mix dialyzer --plt
 
@@ -341,8 +339,8 @@ FROM build-deps-get AS test-image
     # RUN mix cmd mix compile --warnings-as-errors
 
     # Add test libraries
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
+    # RUN npn install -g newman
+    # RUN npm install -g newman-reporter-junitfull
 
     # COPY --link Postman ./Postman
 
@@ -356,7 +354,7 @@ FROM build-deps-get AS prod-release
 
     COPY --link .env.pro[d] ./
 
-    # Compile deps separately from application for better caching.
+    # Compile deps separately from the application for better Docker caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
 
@@ -366,8 +364,7 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
+    # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
@@ -378,12 +375,14 @@ FROM build-deps-get AS prod-release
 
     WORKDIR ${APP_DIR}/assets
 
+    # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
         mkdir -p ./assets && \
-        corepack enable && \
+        # corepack enable && corepack enable npm && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
+        # pnpm install --prod
         # npm install
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
@@ -397,7 +396,9 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    # Compile assets with esbuild
+    # RUN mix esbuild.install --if-missing
+    RUN mix assets.setup
+
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
     COPY --link we[b] ./web
@@ -411,11 +412,6 @@ FROM build-deps-get AS prod-release
 
     COPY --link bi[n] ./bin
 
-    RUN mix assets.deploy
-
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
-
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
@@ -425,6 +421,10 @@ FROM build-deps-get AS prod-release
     #     mix compile --verbose --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
+
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
+    RUN mix assets.deploy
 
     # Build release
     COPY --link rel ./rel
@@ -445,7 +445,6 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
-
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -591,8 +590,8 @@ FROM prod-base AS prod
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        RELEASE=$RELEASE \
-        MIX_ENV=$MIX_ENV \
+        # RELEASE=$RELEASE \
+        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
@@ -700,7 +699,36 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         && \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
+        # Install latest Postgres from postgres.org repo
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
+        # Install Microsoft ODBC Driver for SQL Server
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # export ACCEPT_EULA=Y && \
+        # apt-get -qq update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
+        # Install specific version of mysql from MySQL repo
+        # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
+        # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
+        # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
+        # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
+        # export GPGHOME="$(mktemp -d)" && \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
+        # mkdir -p -m 755 /etc/apt/keyrings && \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
+        # gpgconf --kill all && \
+        # rm -rf "$GPGHOME" && \
+        # rm -rf "${HOME}/.gnupg" && \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
+        # apt-get update -qq && \
+        # DEBIAN_FRONTEND=noninteractive \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
@@ -735,6 +763,7 @@ FROM build-os-deps AS dev
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+    # RUN mix assets.setup
 
 
 # Copy build artifacts to host
