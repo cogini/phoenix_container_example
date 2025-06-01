@@ -328,8 +328,8 @@ FROM build-deps-get AS test-image
     # RUN mix cmd mix compile --warnings-as-errors
 
     # Add test libraries
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
+    # RUN npn install -g newman
+    # RUN npm install -g newman-reporter-junitfull
 
     # COPY --link Postman ./Postman
 
