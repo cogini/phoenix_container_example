@@ -250,12 +250,12 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
+    COPY --link .env.defaul[t] ./
+
     # Copy only the minimum files needed for deps, improving caching
-    COPY --link config ./config
     COPY --link mix.exs ./
     COPY --link mix.lock ./
-
-    COPY --link .env.defaul[t] ./
+    COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -297,11 +297,9 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+    COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     RUN mix dialyzer --plt
 
@@ -345,7 +343,7 @@ FROM build-deps-get AS prod-release
 
     COPY --link .env.pro[d] ./
 
-    # Compile deps separately from application for better caching.
+    # Compile deps separately from the application for better Docker caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
 
@@ -355,8 +353,7 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
+    # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
@@ -367,10 +364,11 @@ FROM build-deps-get AS prod-release
 
     WORKDIR ${APP_DIR}/assets
 
+    # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
         mkdir -p ./assets && \
-        corepack enable && \
+        corepack enable && corepack enable npm && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # npm install
@@ -386,7 +384,9 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    # Compile assets with esbuild
+    # RUN mix esbuild.install --if-missing
+    RUN mix assets.setup
+
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
     COPY --link we[b] ./web
@@ -400,11 +400,6 @@ FROM build-deps-get AS prod-release
 
     COPY --link bi[n] ./bin
 
-    RUN mix assets.deploy
-
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
-
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
@@ -414,6 +409,10 @@ FROM build-deps-get AS prod-release
     #     mix compile --verbose --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
+
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
+    RUN mix assets.deploy
 
     # Build release
     COPY --link rel ./rel
@@ -529,6 +528,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     ARG LANG
 
+    ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -619,25 +619,12 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-# Create final prod image which gets deployed
-FROM prod-base AS prod
-    ARG LANG
-
-    ARG APP_DIR
-    ARG APP_NAME
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_PORT
-
-    ARG MIX_ENV
-    ARG RELEASE
-
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        RELEASE=$RELEASE \
-        MIX_ENV=$MIX_ENV \
+        # RELEASE=$RELEASE \
+        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
@@ -654,6 +641,19 @@ FROM prod-base AS prod
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
             # "/var/lib/foo"
+
+# Create final prod image which gets deployed
+FROM prod-base AS prod
+    ARG LANG
+
+    ARG APP_DIR
+    ARG APP_NAME
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_PORT
+
+    ARG MIX_ENV
+    ARG RELEASE
 
     # Copy CodeDeploy revision into prod image for publishing later
     # This could be put in a separate target, but it's faster to do it from prod test
