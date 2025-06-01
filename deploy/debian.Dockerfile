@@ -812,6 +812,7 @@ FROM build-os-deps AS dev
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+    # RUN mix assets.setup
 
 
 # Copy build artifacts to host
