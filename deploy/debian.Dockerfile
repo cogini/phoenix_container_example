@@ -241,7 +241,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
@@ -284,7 +283,6 @@ FROM build-os-deps AS build-deps-get
         else \
             mix deps.get; \
         fi
-
 
 # Create base image for tests
 FROM build-deps-get AS test-image
@@ -436,7 +434,6 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
-
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
