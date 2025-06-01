@@ -241,6 +241,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN set -ex && corepack enable && corepack enable npm
+
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
@@ -368,7 +370,7 @@ FROM build-deps-get AS prod-release
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
         mkdir -p ./assets && \
-        corepack enable && corepack enable npm && \
+        # corepack enable && corepack enable npm && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # pnpm install --prod
