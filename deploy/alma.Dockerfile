@@ -110,7 +110,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # dnf makecache --refresh && \
         dnf group install -y 'Development Tools' && \
         dnf builddep erlang -y && \
-        dnf install -y --allowerasing \
+        # dnf install -y --allowerasing \
+        dnf install -y \
             cmake \
             cmake3 \
             curl \
@@ -199,7 +200,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         #   asdf install erlang; \
         # fi && \
         erl -version && \
-        elixir -v
+        elixir -v && \
+        node -v
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -210,12 +212,12 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
+    COPY --link .env.defaul[t] ./
+
     # Copy only the minimum files needed for deps, improving caching
-    COPY --link config ./config
     COPY --link mix.exs ./
     COPY --link mix.lock ./
-
-    COPY --link .env.defaul[t] ./
+    COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -244,7 +246,6 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -258,11 +259,9 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+    COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     RUN mix dialyzer --plt
 
@@ -270,6 +269,7 @@ FROM build-deps-get AS test-image
     COPY --link app[s] ./apps
 
     COPY --link we[b] ./web
+    COPY --link template[s] ./templates
 
     # Erlang src files
     COPY --link sr[c] ./src
@@ -290,8 +290,8 @@ FROM build-deps-get AS test-image
     # RUN mix cmd mix compile --warnings-as-errors
 
     # Add test libraries
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
+    # RUN npm install -g newman
+    # RUN npm install -g newman-reporter-junitfull
 
     # COPY --link Postman ./Postman
 
@@ -305,7 +305,7 @@ FROM build-deps-get AS prod-release
 
     COPY --link .env.pro[d] ./
 
-    # Compile deps separately from application for better caching.
+    # Compile deps separately from the application for better Docker caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
 
@@ -315,8 +315,9 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
+    # RUN mix esbuild.install --if-missing
 
+    # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
@@ -327,12 +328,13 @@ FROM build-deps-get AS prod-release
 
     WORKDIR ${APP_DIR}/assets
 
+    # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         set -exu && \
-        mkdir -p ./assets && \
-        corepack enable && \
+        # corepack enable && corepack enable npm && \
         # yarn --cwd ./assets install --prod
         yarn install --prod
+        # pnpm install --prod
         # npm install
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
@@ -346,24 +348,20 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    # Compile assets with esbuild
+    RUN mix assets.setup
+
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
     COPY --link we[b] ./web
-
-    COPY --link priv ./priv
-    COPY --link assets ./assets
 
     # Erlang src files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
 
+    COPY --link priv ./priv
+    COPY --link assets ./assets
+
     COPY --link bi[n] ./bin
-
-    RUN mix assets.deploy
-
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -374,6 +372,10 @@ FROM build-deps-get AS prod-release
     #     mix compile --verbose --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
+
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
+    RUN mix assets.deploy
 
     # Build release
     COPY --link rel ./rel
@@ -394,7 +396,6 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
-
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -441,6 +442,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     ARG LANG
 
+    ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -460,12 +462,12 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             openssl  \
             # useradd and groupadd
             shadow-utils \
-            wget \
-            && \
+            wget
+        #    && \
         # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 && \
         # localedef -i en_US -c -f UTF-8 en_US.UTF-8 && \
         # locale -a | grep -E 'en_US|C'
-        dnf clean all
+        # dnf clean all
         # dnf clean all && rm -rf /var/cache/dnf
 
     # Create OS user and group to run app under
@@ -474,7 +476,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
         chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
-
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
@@ -493,8 +494,8 @@ FROM prod-base AS prod
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        RELEASE=$RELEASE \
-        MIX_ENV=$MIX_ENV \
+        # RELEASE=$RELEASE \
+        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
@@ -523,7 +524,7 @@ FROM prod-base AS prod
     WORKDIR $APP_DIR
 
     # When using a startup script, copy to /app/bin
-    # COPY --link bin ./bin
+    # COPY --link bi[n] ./bin
 
     USER $APP_USER:$APP_GROUP
 
@@ -636,7 +637,6 @@ FROM scratch AS artifacts
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
     # COPY --from=prod-release /app/_build/${MIX_ENV} ${MIX_ENV}
     COPY --from=prod-release /app/_build /_build
-
     # COPY --from=prod-release /app/priv/static /static
 
 # Default target
