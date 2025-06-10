@@ -7,6 +7,7 @@
 
 # This is based on the structure in
 # https://github.com/gruntwork-io/terragrunt-infrastructure-live-example
+# modified to be more flat.
 
 locals {
   account_vars     = read_terragrunt_config(find_in_parent_folders("account.hcl"))
@@ -22,6 +23,7 @@ locals {
   org      = local.common_vars.locals.org
   app_name = local.common_vars.locals.app_name
   env      = local.env_vars.locals.env
+  # env      = get_env("ENV", "dev")
 }
 
 # Generate an AWS provider block
@@ -47,6 +49,7 @@ remote_state {
     dynamodb_table = format("%s-%s-%s-%s-tfstate", local.org, local.app_name, local.env, local.aws_region)
     key            = format("%s/terraform.tfstate", path_relative_to_include())
     region         = local.aws_region
+    # region         = get_env("TF_VAR_remote_state_s3_bucket_region", "us-east-1")
   }
   generate = {
     path      = "backend.tf"
@@ -80,6 +83,7 @@ inputs = merge(
   {
     # Used to reference data from other modules from state
     remote_state_s3_bucket_region = local.aws_region
+    # remote_state_s3_bucket_region = get_env("TF_VAR_remote_state_s3_bucket_region", "us-east-1")
     remote_state_s3_bucket_name   = format("%s-%s-%s-%s-tfstate", local.org, local.app_name, local.env, local.aws_region)
     remote_state_s3_key_prefix    = local.env
     remote_state_s3_parent_dir    = dirname(path_relative_to_include())
