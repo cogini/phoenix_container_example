@@ -3,7 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-role-app"
 }
-
+include "root" {
+  path = find_in_parent_folders()
+}
 # dependency "kms" {
 #   config_path = "../kms"
 # }
@@ -14,9 +16,6 @@ dependencies {
   paths = [
     "../s3-app",
   ]
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {
