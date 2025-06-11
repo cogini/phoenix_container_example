@@ -110,8 +110,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # dnf makecache --refresh && \
         dnf group install -y 'Development Tools' && \
         dnf builddep erlang -y && \
-        # dnf install -y --allowerasing \
-        dnf install -y \
+        dnf install -y --allowerasing \
             cmake \
             cmake3 \
             curl \
