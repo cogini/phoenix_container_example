@@ -444,6 +444,8 @@ FROM build-deps-get AS prod-release
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
 
+    COPY --link template[s] ./templates
+
     COPY --link priv ./priv
     COPY --link assets ./assets
 
