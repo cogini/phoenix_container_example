@@ -1555,7 +1555,7 @@ jobs:
           image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
@@ -1585,7 +1585,7 @@ jobs:
           image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS (worker)
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
