@@ -239,7 +239,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     # Set up ASDF
     RUN set -ex && \
-        export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH && \
+        export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" && \
         bin/build-install-asdf-init
 
     ENV ASDF_DIR="$HOME/.asdf"
@@ -247,7 +247,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     # Install using asdf
     RUN set -ex && \
-        export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH && \
+        export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" && \
         source /opt/rh/devtoolset-10/enable && \
         source /opt/rh/rh-git227/enable && \
         # Erlang build scripts expect wx-config
