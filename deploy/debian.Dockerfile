@@ -441,6 +441,7 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
+
     # Create release package for Ansible
     # WORKDIR /ansible
     # RUN set -exu && \

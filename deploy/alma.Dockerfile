@@ -90,6 +90,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG REBAR_VER
     ARG NODE_VER
     ARG NODE_MAJOR
+    ARG YARN_VER
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -188,6 +189,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # asdf install elixir "$ELIXIR_VER" && \
         # asdf install nodejs "$NODE_VER" && \
         # asdf install yarn "$YARN_VER" && \
+        # asdf install rebar "${REBAR_VER}" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
@@ -398,6 +400,21 @@ FROM build-deps-get AS prod-release
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
 
+    # Create release package for Ansible
+    # WORKDIR /ansible
+    # RUN set -exu && \
+    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system && \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ && \
+    #     # mkdir -p _build/${MIX_ENV}/deploy/bin && \
+    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ && \
+    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* && \
+    #     mkdir -p bin && \
+    #     cp /app/bin/* ./bin/ && \
+    #     chmod +x ./bin/* && \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ && \
+    #     zip -r /ansible.zip . && \
+    #     rm -rf /ansible/*
+
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
@@ -514,9 +531,13 @@ FROM prod-base AS prod
             "/run/${APP_NAME}"
             # "/var/lib/foo"
 
-    # Copy CodeDeploy revision into prod image for publishing later
     # This could be put in a separate target, but it's faster to do it from prod test
+
+    # Copy CodeDeploy revision into prod image for publishing later
     # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
+
+    # Copy Ansible release into prod image for publishing later
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /ansible.zip /ansible.zip
 
     # USER $APP_USER
 
@@ -611,6 +632,7 @@ FROM build-os-deps AS dev
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
+    # RUN mix assets.setup
 
 # Copy build artifacts to host
 FROM build-os-deps AS codedeploy-revision
