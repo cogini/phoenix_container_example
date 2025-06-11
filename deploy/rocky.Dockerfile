@@ -174,7 +174,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     # Set up ASDF
     RUN set -ex && \
-        export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH && \
+        export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" && \
         bin/build-install-asdf-init
 
     ENV ASDF_DIR="$HOME/.asdf"
