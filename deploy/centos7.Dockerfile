@@ -509,11 +509,11 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo && \
-        for i in `ls /etc/yum.repos.d/*.repo`; do \
-            echo ; \
-            echo "# >>>>> $i"; \
-            cat $i; \
-        done && \
+        # for i in `ls /etc/yum.repos.d/*.repo`; do \
+        #     echo ; \
+        #     echo "# >>>>> $i"; \
+        #     cat $i; \
+        # done && \
         yum update -y
 
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
@@ -578,11 +578,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo && \
-        for i in `ls /etc/yum.repos.d/*.repo`; do \
-            echo ; \
-            echo "# >>>>> $i"; \
-            cat $i; \
-        done && \
+        # for i in `ls /etc/yum.repos.d/*.repo`; do \
+        #     echo ; \
+        #     echo "# >>>>> $i"; \
+        #     cat $i; \
+        # done && \
         yum update -y
 
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
