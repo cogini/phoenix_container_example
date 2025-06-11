@@ -188,6 +188,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # asdf install elixir "$ELIXIR_VER" && \
         # asdf install nodejs "$NODE_VER" && \
         # asdf install yarn "$YARN_VER" && \
+        # asdf install rebar "${REBAR_VER}" && \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
         # echo "RPM_ARCH=$RPM_ARCH" && \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
