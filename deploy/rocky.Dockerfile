@@ -110,7 +110,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # dnf makecache --refresh && \
         dnf group install -y 'Development Tools' && \
         dnf builddep erlang -y && \
-        dnf install -y --allowerasing \
+        dnf install -y --nodocs --allowerasing \
             cmake \
             cmake3 \
             curl \
@@ -426,7 +426,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         set -exu && \
         # dnf makecache --refresh && \
         dnf upgrade -y && \
-        dnf install -y \
+        dnf install -y --nodocs \
             ca-certificates \
             curl \
             gnupg-agent \
@@ -470,7 +470,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         set -exu \
         # dnf makecache --refresh && \
         dnf upgrade -y && \
-        dnf install -y \
+        dnf install -y --nodocs \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks and get ECS metadata
@@ -611,7 +611,7 @@ FROM build-os-deps AS dev
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         set -exu && \
-        dnf install -y \
+        dnf install -y --nodocs \
             inotify-tools \
             openssh-clients \
             sudo \
