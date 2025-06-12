@@ -170,7 +170,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     WORKDIR $APP_DIR
 
     COPY  bi[n] ./bin
-    COPY .tool-versions ./
 
     # Set up ASDF
     RUN set -ex && \
@@ -179,6 +178,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     ENV ASDF_DIR="$HOME/.asdf"
     ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
+
+    COPY .tool-versions ./
 
     # Install using asdf
     RUN set -ex && \
