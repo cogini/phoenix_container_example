@@ -288,13 +288,14 @@ FROM build-os-deps AS build-deps-get
     # This mix task fails with a TLS error, so download and install manually
     # RUN mix 'do' local.rebar --force, local.hex --force
 
-    COPY --link .env.defaul[t] ./
 
     RUN set -ex && \
         export MIX_DEBUG=1 && \
         curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" && \
         mix archive.install --force /tmp/hex.ez && \
         mix local.rebar rebar3 /app/.asdf/installs/rebar/${REBAR_VER}/bin/rebar3
+
+    COPY --link .env.defaul[t] ./
 
     # Copy only the minimum files needed for deps, improving caching
     COPY --link mix.exs ./
