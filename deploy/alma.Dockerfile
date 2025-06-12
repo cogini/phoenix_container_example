@@ -171,7 +171,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     WORKDIR $APP_DIR
 
     COPY  bi[n] ./bin
-    COPY .tool-versions ./
 
     # Set up ASDF
     RUN set -ex && \
@@ -180,6 +179,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     ENV ASDF_DIR="$HOME/.asdf"
     ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
+
+    COPY .tool-versions ./
 
     # Install using asdf
     RUN set -ex && \
@@ -315,8 +316,6 @@ FROM build-deps-get AS prod-release
     #     mix deps.compile
 
     RUN mix deps.compile
-
-    # RUN mix esbuild.install --if-missing
 
     # Build assets
     RUN mkdir -p ./assets
