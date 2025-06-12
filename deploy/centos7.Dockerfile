@@ -123,11 +123,11 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo && \
-        # for i in `ls /etc/yum.repos.d/*.repo`; do \
-        #     echo ; \
-        #     echo "# >>>>> $i"; \
-        #     cat "$i"; \
-        # done && \
+        for i in `ls /etc/yum.repos.d/*.repo`; do \
+            echo ; \
+            echo "# >>>>> $i"; \
+            cat "$i"; \
+        done && \
         yum update -y
 
     # Install tools and libraries to build binary libraries
