@@ -289,6 +289,7 @@ FROM build-os-deps AS build-deps-get
     # RUN mix 'do' local.rebar --force, local.hex --force
 
 
+    # TLS error downloading hex and rebar, so download them separately
     RUN set -ex && \
         export MIX_DEBUG=1 && \
         curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" && \
@@ -521,7 +522,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         yum repolist && \
         yum install -y epel-release deltarpm && \
         yum install -y centos-release-scl && \
-        ls -l /etc/yum.repos.d/ && \
+        # ls -l /etc/yum.repos.d/ && \
         # installing centos-release-scl adds the Software Collections repo to Yum's configuration,
         # so the following replacement should be used for downloading from Centos vault
         # sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo && \
@@ -597,11 +598,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo && \
-        # for i in `ls /etc/yum.repos.d/*.repo`; do \
-        #     echo ; \
-        #     echo "# >>>>> $i"; \
-        #     cat $i; \
-        # done && \
+        for i in `ls /etc/yum.repos.d/*.repo`; do \
+            echo ; \
+            echo "# >>>>> $i"; \
+            cat $i; \
+        done && \
         yum update -y
 
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
