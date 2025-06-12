@@ -138,7 +138,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # yum install -y cmake centos-release-scl && \
         # yum groupinstall -y 'Development Tools' && \
         # yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries' && \
-        yum install -y \
+        yum install -y --nodocs \
             ca-certificates \
             cmake \
             # cmake3 \
