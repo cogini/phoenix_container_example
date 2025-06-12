@@ -178,8 +178,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # https://github.com/asdf-vm/asdf-erlang/issues/206
         # rpm --eval '%{_arch}' && \
         yum install -y \
-            # autoconf \
-            # automake \
+            autoconf \
+            automake \
             # bison \
             # flex \
             # gcc \
@@ -512,7 +512,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-        set -ex && \
+        set -exu && \
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo && \
         sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo && \
