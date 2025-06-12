@@ -260,6 +260,8 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
+    RUN mix esbuild.install --if-missing
+
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
     COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
@@ -315,8 +317,6 @@ FROM build-deps-get AS prod-release
     #     mix deps.compile
 
     RUN mix deps.compile
-
-    # RUN mix esbuild.install --if-missing
 
     # Build assets
     RUN mkdir -p ./assets
