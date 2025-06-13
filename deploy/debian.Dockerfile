@@ -22,6 +22,7 @@ ARG SNAPSHOT_VER=""
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=24.0.1
 ARG NODE_MAJOR=24
+ARG YARN_VER=1.22.22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -359,8 +360,6 @@ FROM build-deps-get AS prod-release
     #     mix deps.compile
 
     RUN mix deps.compile
-
-    # RUN mix esbuild.install --if-missing
 
     # Build assets
     RUN mkdir -p ./assets
@@ -835,7 +834,6 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install --if-missing
     # RUN mix assets.setup
 
 

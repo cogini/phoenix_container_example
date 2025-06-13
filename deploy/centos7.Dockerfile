@@ -138,7 +138,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # yum install -y cmake centos-release-scl && \
         # yum groupinstall -y 'Development Tools' && \
         # yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries' && \
-        yum install -y --nodocs \
+        yum install -y \
             ca-certificates \
             cmake \
             # cmake3 \
@@ -346,8 +346,6 @@ FROM build-deps-get AS test-image
         source /opt/rh/rh-git227/enable && \
         mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
     COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
@@ -403,8 +401,6 @@ FROM build-deps-get AS prod-release
     #     mix deps.compile
 
     RUN mix deps.compile
-
-    # RUN mix esbuild.install --if-missing
 
     # Build assets
     RUN mkdir -p ./assets
@@ -464,8 +460,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix compile --warnings-as-errors
 
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
     RUN mix assets.deploy
 
     # Build release
@@ -772,7 +766,6 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install --if-missing
     # RUN mix assets.setup
 
 # Copy build artifacts to host

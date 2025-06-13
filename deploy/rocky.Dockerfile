@@ -102,7 +102,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         set -ex && \
         # add config-manager plugin
-        dnf install -y dnf-plugins-core && \
+        dnf install -y --nodocs dnf-plugins-core && \
         dnf config-manager --set-enabled powertools && \
         # dnf config-manager --set-enabled devel && \
         dnf install -y epel-release && \
@@ -260,8 +260,6 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
     COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
@@ -376,8 +374,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix compile --warnings-as-errors
 
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
     RUN mix assets.deploy
 
     # Build release
@@ -631,7 +627,6 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install --if-missing
     # RUN mix assets.setup
 
 # Copy build artifacts to host

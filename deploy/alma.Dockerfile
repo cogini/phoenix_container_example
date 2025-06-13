@@ -375,8 +375,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix compile --warnings-as-errors
 
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
     RUN mix assets.deploy
 
     # Build release
@@ -630,7 +628,6 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install --if-missing
     # RUN mix assets.setup
 
 # Copy build artifacts to host
