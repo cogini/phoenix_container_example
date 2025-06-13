@@ -19,8 +19,9 @@ ARG PROD_OS_VER=jammy-20231004
 ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
-ARG NODE_VER=lts
-ARG NODE_MAJOR=20
+ARG NODE_VER=24.0.1
+ARG NODE_MAJOR=24
+ARG YARN_VER=1.22.22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -358,8 +359,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix deps.compile
 
-    # RUN mix esbuild.install --if-missing
-
     # Build assets
     RUN mkdir -p ./assets
 
@@ -416,8 +415,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix compile --warnings-as-errors
 
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
     RUN mix assets.deploy
 
     # Build release
@@ -439,6 +436,21 @@ FROM build-deps-get AS prod-release
     #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
     #     zip -r /revision.zip . && \
     #     rm -rf /revision/*
+
+    # Create release package for Ansible
+    # WORKDIR /ansible
+    # RUN set -exu && \
+    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system && \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ && \
+    #     # mkdir -p _build/${MIX_ENV}/deploy/bin && \
+    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ && \
+    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* && \
+    #     mkdir -p bin && \
+    #     cp /app/bin/* ./bin/ && \
+    #     chmod +x ./bin/* && \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ && \
+    #     zip -r /ansible.zip . && \
+    #     rm -rf /ansible/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -851,7 +863,6 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install --if-missing
     # RUN mix assets.setup
 
 
