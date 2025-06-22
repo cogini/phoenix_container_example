@@ -69,9 +69,9 @@
             "essential": true,
             "healthCheck": {
                 "command": ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"],
-                "interval": 1,
+                "interval": 5,
                 "timeout": 2,
-                "retries": 20,
+                "retries": 10,
                 "startPeriod": 2
             },
             "image": "<IMAGE1_NAME>",
