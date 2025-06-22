@@ -108,6 +108,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+    ARG SNAPSHOT_VER
+
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -122,6 +124,10 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
         fi
+
+    ARG NODE_VER
+    ARG NODE_MAJOR
+    ARG RUNTIME_PACKAGES
 
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -545,11 +551,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
-    ARG SNAPSHOT_VER
-    ARG RUNTIME_PACKAGES
-
-    ARG LANG
-
     ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
@@ -571,6 +572,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+    ARG SNAPSHOT_VER
+
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -588,6 +591,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     # Copy just the locale file used
     COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/${LANG}
+
+    ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -641,6 +646,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    ARG LANG
+
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
@@ -674,9 +681,6 @@ FROM prod-base AS prod
     ARG APP_GROUP
     ARG APP_PORT
 
-    ARG MIX_ENV
-    ARG RELEASE
-
     # This could be put in a separate target, but it's faster to do it from prod test
 
     # Copy CodeDeploy revision into prod image for publishing later
@@ -705,6 +709,9 @@ FROM prod-base AS prod
 
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
+
+    ARG MIX_ENV
+    ARG RELEASE
 
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
@@ -742,8 +749,6 @@ FROM build-os-deps AS dev
     ARG APP_NAME
     ARG APP_USER
 
-    ARG DEV_PACKAGES
-
     # Set environment vars used by the app
     ENV HOME=$APP_DIR \
         LANG=$LANG
@@ -758,6 +763,8 @@ FROM build-os-deps AS dev
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
            # "/var/lib/foo"
+
+    ARG DEV_PACKAGES
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
