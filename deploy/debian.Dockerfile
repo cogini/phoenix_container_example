@@ -145,6 +145,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             build-essential \
             # Enable app to make outbound SSL calls
             ca-certificates \
+            cmake \
             curl \
             git \
             gnupg \
