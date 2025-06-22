@@ -423,8 +423,6 @@ FROM build-deps-get AS prod-release
 
     RUN mix compile --warnings-as-errors
 
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
     RUN mix assets.deploy
 
     # Build release
@@ -839,11 +837,6 @@ FROM build-os-deps AS dev
 
     WORKDIR $APP_DIR
 
-    RUN mix 'do' local.rebar --force, local.hex --force
-
-    # RUN mix assets.setup
-
-
 # Copy build artifacts to host
 FROM scratch AS artifacts
     ARG MIX_ENV
@@ -851,8 +844,8 @@ FROM scratch AS artifacts
 
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
-    COPY --from=prod-release /app/priv/static /static
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
+    COPY --from=prod-release /app/priv/static /static
 
 # Default target
 FROM prod
