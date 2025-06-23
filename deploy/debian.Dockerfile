@@ -103,9 +103,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     # The default Debian Docker image has special apt config to clear caches,
     # but if we are using --mount=type=cache, then we want to keep the files.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
-    RUN set -exu && \
-        rm -f /etc/apt/apt.conf.d/docker-clean && \
-        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    RUN set -exu; \
+        rm -f /etc/apt/apt.conf.d/docker-clean; \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache; \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     ARG SNAPSHOT_VER
@@ -114,14 +114,14 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu && \
-            apt-get update -qq && \
+            set -exu; \
+            apt-get update -qq; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
-            && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+            ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list; \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
         fi
 
