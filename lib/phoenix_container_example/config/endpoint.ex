@@ -16,7 +16,9 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     if Enum.empty?(opts) do
       false
     else
-      adapter_opts(default_opts, opts)
+      result = adapter_opts(default_opts, opts)
+      Logger.info("HTTPS options: #{inspect(result)}") 
+      result
     end
   end
 
