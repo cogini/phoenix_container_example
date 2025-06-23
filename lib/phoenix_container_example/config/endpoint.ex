@@ -17,7 +17,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
       false
     else
       result = adapter_opts(default_opts, opts)
-      Logger.info("HTTPS options: #{inspect(result)}") 
+      Logger.info("HTTPS options: #{inspect(result)}")
       result
     end
   end
