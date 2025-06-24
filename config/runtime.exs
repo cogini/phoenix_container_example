@@ -3,7 +3,7 @@ import Config
 alias Elixir.Cluster.Strategy.DNSPoll
 alias PhoenixContainerExample.Config.Endpoint, as: EndpointConfig
 
-roles = (System.get_env("ROLES") || "app") |> String.split(",") |> Enum.map(&String.to_atom/1)
+roles = "ROLES" |> System.get_env("app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
 
 if System.get_env("PHX_SERVER") && :app in roles do
@@ -31,11 +31,11 @@ end
 config :ex_aws,
   access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
   secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
-  region: System.get_env("AWS_REGION") || "us-east-1"
+  region: System.get_env("AWS_REGION", "us-east-1")
 
 if config_env() == :dev do
   # host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
+  port = String.to_integer(System.get_env("PORT", "4000"))
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
@@ -71,7 +71,7 @@ if config_env() == :dev do
         },
         # adapter: Bandit.PhoenixAdapter,
         # adapter: Phoenix.Endpoint.Cowboy2Adapter
-        port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
+        port: String.to_integer(System.get_env("HTTPS_PORT", "4443")),
         cipher_suite: :strong
         # log_level: :warning
       ),
@@ -98,13 +98,13 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
+  host = System.get_env("PHX_HOST", "example.com")
+  port = String.to_integer(System.get_env("PORT", "4000"))
 
   config :phoenix_container_example, PhoenixContainerExample.Repo,
     ssl: maybe_ecto_ssl,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    pool_size: String.to_integer(System.get_env("POOL_SIZE", "10")),
     log: ecto_log,
     # timeout: 20_000,
     # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
@@ -136,7 +136,7 @@ if config_env() == :prod do
           "HTTPS_KEYFILE" => :keyfile
           # "HTTPS_PORT" => :port
         },
-        port: String.to_integer(System.get_env("HTTPS_PORT") || "4443"),
+        port: String.to_integer(System.get_env("HTTPS_PORT", "4443")),
         cipher_suite: :stron,
         log_level: :warning,
         adapter: Phoenix.Endpoint.Cowboy2Adapter
