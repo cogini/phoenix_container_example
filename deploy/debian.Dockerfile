@@ -18,6 +18,7 @@ ARG PROD_OS_VER=bookworm-20250428-slim
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
+ARG SNAPSHOT_NAME=bookworm
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=24.0.1
@@ -60,8 +61,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-ARG LANG=C.UTF-8
-# ARG LANG=C.utf8
+# ARG LANG=C.UTF-8
+ARG LANG=C.utf8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
@@ -81,12 +82,6 @@ ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
-    ARG SNAPSHOT_VER
-    ARG RUNTIME_PACKAGES
-
-    ARG NODE_VER
-    ARG NODE_MAJOR
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -103,12 +98,13 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     # The default Debian Docker image has special apt config to clear caches,
     # but if we are using --mount=type=cache, then we want to keep the files.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
-    RUN set -exu; \
-        rm -f /etc/apt/apt.conf.d/docker-clean; \
-        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache; \
+    RUN set -exu ; \
+        rm -f /etc/apt/apt.conf.d/docker-clean ; \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     ARG SNAPSHOT_VER
+    ARG SNAPSHOT_NAME
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -120,9 +116,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
             ; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
         fi
 
     ARG NODE_VER
@@ -133,10 +129,10 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
+        set -exu ; \
         # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
         # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
-        apt-get update -qq && \
+        apt-get update -qq ; \
         # apt-get -y build-dep python-pil -y && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
@@ -165,32 +161,32 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # libpq-dev \
             # postgresql-client \
             # $RUNTIME_PACKAGES \
-        && \
-        locale-gen && \
-        mkdir -p -m 755 /etc/apt/keyrings && \
+        ; \
+        locale-gen; \
+        mkdir -p -m 755 /etc/apt/keyrings ; \
         # Install nodejs from nodesource.com
-        curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-        echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+        curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
+        echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
-        # chmod +x /usr/local/bin/n && \
+        # chmod +x /usr/local/bin/n ; \
         # # Install lts version of node
-        # # n lts && \
+        # # n lts ; \
         # # Install specific version of node
-        # n "$NODE_VER" && \
-        # rm /usr/local/bin/n && \
+        # n "$NODE_VER" ; \
+        # rm /usr/local/bin/n ; \
         # Install yarn from repo
-        # curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        # printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc ; \
+        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
+        # printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref ; \
         # Install GitHub CLI
-        # wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
-        # chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
-        # echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list && \
+        # wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg ; \
+        # chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg ; \
+        # echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list ; \
         # Install Trivy
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update -qq && \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
+        apt-get update -qq ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # gh \
@@ -198,63 +194,63 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # trivy \
             # yarn \
             # yarnpkg \
-        && \
+        ; \
         # Install latest Postgres from postgres.org repo
-        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
-        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
-        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
-        # apt-get update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref ; \
+        # apt-get update -qq ; \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client ;
         # Install Microsoft ODBC Driver for SQL Server
-        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
-        # export ACCEPT_EULA=Y && \
-        # apt-get -qq update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc ; \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list ; \
+        # export ACCEPT_EULA=Y ; \
+        # apt-get -qq update -qq ; \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 ; \
         # Install specific version of mysql from MySQL repo
         # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
         # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
         # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
         # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
-        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
-        # export GPGHOME="$(mktemp -d)" && \
-        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
-        # mkdir -p -m 755 /etc/apt/keyrings && \
-        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
-        # gpgconf --kill all && \
-        # rm -rf "$GPGHOME" && \
-        # rm -rf "${HOME}/.gnupg" && \
-        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
-        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
-        # apt-get update -qq && \
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' ; \
+        # export GPGHOME="$(mktemp -d)" ; \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" ; \
+        # mkdir -p -m 755 /etc/apt/keyrings ; \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg ; \
+        # gpgconf --kill all ; \
+        # rm -rf "$GPGHOME" ; \
+        # rm -rf "${HOME}/.gnupg" ; \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
+        # apt-get update -qq ; \
         # DEBIAN_FRONTEND=noninteractive \
-        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
-        # apt-get purge -y --auto-remove curl && \
+        # apt-get purge -y --auto-remove curl ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
-        # apt-get clean && \
+        # apt-get clean ; \
         # Delete info on installed packages. This saves some space, but it can
         # be useful to have them as a record of what was installed, e.g. for auditing.
-        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/lib/dpkg ; \
         # Delete debconf data files to save some space
-        # rm -rf /var/cache/debconf && \
+        # rm -rf /var/cache/debconf ; \
         # Delete index of available files from apt-get update
         # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
         # Clear logs of installed packages
-        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
-    RUN set -ex && corepack enable && corepack enable npm
+    RUN set -ex ; corepack enable ; corepack enable npm
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -265,12 +261,11 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    COPY --link .env.defaul[t] ./
+    # COPY --link .env.defaul[t] ./
 
     # Copy only the minimum files needed for deps, improving caching
-    COPY --link mix.exs ./
-    COPY --link mix.lock ./
-    COPY --link config ./config
+    COPY --link mix.exs mix.lock ./
+    # COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -289,14 +284,15 @@ FROM build-os-deps AS build-deps-get
         # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
         # Copying a predefined known_hosts file would be more secure, but would need to be maintained
         if test -n "$SSH_AUTH_SOCK"; then \
-            mkdir -p /etc/ssh && \
-            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
-            mix deps.get; \
+            set -exu ; \
+            mkdir -p /etc/ssh ; \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
+            mix deps.get ; \
         # Access private repos using access token
         elif test -s /run/secrets/access_token; then \
-            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
         else \
-            mix deps.get; \
+            mix deps.get ; \
         fi
 
 # Create base image for tests
@@ -307,7 +303,13 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.tes[t] ./
+    # Postman tests
+    # RUN npm install -g newman
+    # RUN npm install -g newman-reporter-junitfull
+    COPY --link Postma[n] ./Postman
+
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
@@ -316,98 +318,85 @@ FROM build-deps-get AS test-image
     # Must have at least one existing file
     COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
+    # Generate Dialyzer files for deps
     RUN mix dialyzer --plt
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
 
+    # Old Phoenix
     COPY --link we[b] ./web
-    COPY --link template[s] ./templates
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+    COPY --link template[s] ./templates
 
     COPY --link priv ./priv
     COPY --link test ./test
     # COPY --link bi[n] ./bin
 
-    # RUN set -a && . ./.env.test && set +a && \
-    #     env && \
-    #     mix compile --warnings-as-errors
-
-    RUN mix compile --warnings-as-errors
+    # Load environment vars when compiling
+    COPY --link .env.tes[t] ./
+    RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # Add test libraries
-    # RUN npm install -g newman
-    # RUN npm install -g newman-reporter-junitfull
-
-    # COPY --link Postman ./Postman
-
 # Create Elixir release
 FROM build-deps-get AS prod-release
     ARG APP_DIR
-    ARG RELEASE
-    ARG MIX_ENV
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] ./
-
-    # Compile deps separately from the application for better Docker caching.
-    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
-    # because a single line of code changed causes a complete recompile.
-
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix deps.compile
-
-    RUN mix deps.compile
+    ARG MIX_ENV
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
-    COPY --link assets/package.jso[n] assets/package.json
-    COPY --link assets/package-lock.jso[n] assets/package-lock.json
-    COPY --link assets/yarn.loc[k] assets/yarn.lock
-    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
+    COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
 
     WORKDIR ${APP_DIR}/assets
 
     # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
-        set -exu && \
-        # corepack enable && corepack enable npm && \
+        # corepack enable ; corepack enable npm ; \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # pnpm install --prod
         # npm install
+        # npm run deploy
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
-
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm run deploy
-    #
-    # Generate assets the really old way
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     node node_modules/webpack/bin/webpack.js --mode production
+        # node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
 
-    RUN mix assets.setup
+    # Compile deps separately from the application for better Docker caching.
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
+    # because a single line of code changed causes a complete recompile.
+
+    COPY --link .env.pro[d] ./
+
+    # Load environment vars when compiling
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix deps.compile
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+
+    # Old Phoenix
     COPY --link we[b] ./web
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+    COPY --link template[s] ./templates
 
     COPY --link priv ./priv
     COPY --link assets ./assets
@@ -418,83 +407,87 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix compile --verbose --warnings-as-errors
+    COPY --link .env.pro[d] ./
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
-    RUN mix compile --warnings-as-errors
-
+    RUN mix assets.setup
     RUN mix assets.deploy
 
     # Build release
+    COPY --link config/runtime.exs ./config/
+
     COPY --link rel ./rel
 
     # Generate systemd and deploy scripts
     # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
 
+    ARG RELEASE
     RUN mix release "$RELEASE"
 
     # Create revision for CodeDeploy
     # WORKDIR /revision
     # COPY appspec.yml ./
-    # RUN set -exu && \
-    #     mkdir -p etc bin systemd && \
-    #     chmod +x /app/bin/* && \
-    #     cp /app/bin/* ./bin/ && \
-    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
-    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
-    #     zip -r /revision.zip . && \
+    # RUN set -exu ; \
+    #     mkdir -p etc bin systemd ; \
+    #     chmod +x /app/bin/* ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    #     zip -r /revision.zip . ; \
     #     rm -rf /revision/*
 
     # Create release package for Ansible
     # WORKDIR /ansible
-    # RUN set -exu && \
-    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system && \
-    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ && \
-    #     # mkdir -p _build/${MIX_ENV}/deploy/bin && \
-    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ && \
-    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* && \
-    #     mkdir -p bin && \
-    #     cp /app/bin/* ./bin/ && \
-    #     chmod +x ./bin/* && \
-    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ && \
-    #     zip -r /ansible.zip . && \
+    # RUN set -exu ; \
+    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
+    #     # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
+    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
+    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
+    #     mkdir -p bin ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     chmod +x ./bin/* ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
+    #     zip -r /ansible.zip . ; \
     #     rm -rf /ansible/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-    ARG LANG
-    ARG SNAPSHOT_VER
-    ARG RUNTIME_PACKAGES
-
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
     # If we are using --mount=type=cache, then we want it to preserve cached files.
-    RUN set -exu && \
-        rm -f /etc/apt/apt.conf.d/docker-clean && \
-        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    RUN set -exu ; \
+        rm -f /etc/apt/apt.conf.d/docker-clean ; \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    ARG SNAPSHOT_VER
+    ARG SNAPSHOT_NAME
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu && \
-            apt-get update -qq && \
+            set -exu; \
+            apt-get update -qq; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
-            && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
+            ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
         fi
+
+    ARG LANG
+    ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
+        set -exu ; \
+        apt-get update -qq ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -514,38 +507,38 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             locales \
             # openssl \
             # $RUNTIME_PACKAGES \
-        && \
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        # apt-get update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends trivy && \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        ; \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
+        # apt-get update -qq ; \
+        # apt-get -y install -y -qq --no-install-recommends trivy ; \
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
         # Generate locales specified in /etc/locale.gen
         # If LANG=C.UTF-8 is not enough, build full featured locale
-        # sed -i "/${LANG}/s/^# //g" /etc/locale.gen && \
-        locale-gen && \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
+        # sed -i "/${LANG}/s/^# //g" /etc/locale.gen ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
-        # apt-get purge -y --auto-remove curl && \
+        # apt-get purge -y --auto-remove curl ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
-        # apt-get clean && \
+        # apt-get clean ; \
         # Delete info on installed packages. This saves some space, but it can
         # be useful to have them as a record of what was installed, e.g. for auditing.
-        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/lib/dpkg ; \
         # Delete debconf data files to save some space
-        # rm -rf /var/cache/debconf && \
+        # rm -rf /var/cache/debconf ; \
         # Delete index of available files from apt-get update
         # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
         # Clear logs of installed packages
-        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
 # Create base image for prod with everything but the code release
@@ -566,27 +559,30 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
     # If we are using --mount=type=cache, then we want it to preserve cached files.
-    RUN set -exu && \
-        rm -f /etc/apt/apt.conf.d/docker-clean && \
-        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    RUN set -exu ; \
+        rm -f /etc/apt/apt.conf.d/docker-clean ; \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     ARG SNAPSHOT_VER
+    ARG SNAPSHOT_NAME
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu && \
-            apt-get update -qq && \
+            set -exu; \
+            apt-get update -qq; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
-            && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
+            ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
         fi
+
+    ARG LANG
 
     # Copy just the locale file used
     COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/${LANG}
@@ -596,8 +592,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
+        set -exu ; \
+        apt-get update -qq ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -621,28 +617,28 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # outside the application, e.g. in load balancer.
             # openssl \
             # $RUNTIME_PACKAGES \
-        && \
+        ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
-        # apt-get purge -y --auto-remove curl && \
+        # apt-get purge -y --auto-remove curl ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
-        # apt-get clean && \
+        # apt-get clean ; \
         # Delete info on installed packages. This saves some space, but it can
         # be useful to have them as a record of what was installed, e.g. for auditing.
-        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/lib/dpkg ; \
         # Delete debconf data files to save some space
-        # rm -rf /var/cache/debconf && \
+        # rm -rf /var/cache/debconf ; \
         # Delete index of available files from apt-get update
         # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
         # Clear logs of installed packages
-        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
     ARG LANG
@@ -659,11 +655,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # The app needs to be able to write to a tmp directory on startup, which by
     # default is under the release. This can be changed by setting RELEASE_TMP to
     # /tmp or, more securely, /run/foo
-    RUN set -exu && \
+    RUN set -exu ; \
         # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # mkdir -p "/etc/foo" && \
-        # mkdir -p "/var/lib/foo" && \
+        mkdir -p "/run/${APP_NAME}" ; \
+        # mkdir -p "/etc/foo" ; \
+        # mkdir -p "/var/lib/foo" ; \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
@@ -752,11 +748,11 @@ FROM build-os-deps AS dev
     ENV HOME=$APP_DIR \
         LANG=$LANG
 
-    RUN set -exu && \
+    RUN set -exu ; \
         # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # mkdir -p "/etc/foo" && \
-        # mkdir -p "/var/lib/foo" && \
+        mkdir -p "/run/${APP_NAME}" ; \
+        # mkdir -p "/etc/foo" ; \
+        # mkdir -p "/var/lib/foo" ; \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
@@ -768,68 +764,68 @@ FROM build-os-deps AS dev
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
+        set -exu ; \
+        apt-get update -qq ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             inotify-tools \
             ssh \
             sudo \
             # $DEV_PACKAGES \
-        && \
+        ; \
         # Install latest Postgres from postgres.org repo
-        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
-        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
-        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
-        # apt-get update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref ; \
+        # apt-get update -qq ; \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client ;
         # Install Microsoft ODBC Driver for SQL Server
-        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
-        # export ACCEPT_EULA=Y && \
-        # apt-get -qq update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc ; \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list ; \
+        # export ACCEPT_EULA=Y ; \
+        # apt-get -qq update -qq ; \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 ; \
         # Install specific version of mysql from MySQL repo
         # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
         # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
         # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
         # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
-        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
-        # export GPGHOME="$(mktemp -d)" && \
-        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
-        # mkdir -p -m 755 /etc/apt/keyrings && \
-        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
-        # gpgconf --kill all && \
-        # rm -rf "$GPGHOME" && \
-        # rm -rf "${HOME}/.gnupg" && \
-        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
-        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
-        # apt-get update -qq && \
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' ; \
+        # export GPGHOME="$(mktemp -d)" ; \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" ; \
+        # mkdir -p -m 755 /etc/apt/keyrings ; \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg ; \
+        # gpgconf --kill all ; \
+        # rm -rf "$GPGHOME" ; \
+        # rm -rf "${HOME}/.gnupg" ; \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
+        # apt-get update -qq ; \
         # DEBIAN_FRONTEND=noninteractive \
-        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
         # other packages removed, are no longer needed.
-        # apt-get purge -y --auto-remove curl && \
+        # apt-get purge -y --auto-remove curl ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
-        # apt-get clean && \
+        # apt-get clean ; \
         # Delete info on installed packages. This saves some space, but it can
         # be useful to have them as a record of what was installed, e.g. for auditing.
-        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/lib/dpkg ; \
         # Delete debconf data files to save some space
-        # rm -rf /var/cache/debconf && \
+        # rm -rf /var/cache/debconf ; \
         # Delete index of available files from apt-get update
         # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
         # Clear logs of installed packages
-        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
     RUN chsh --shell /bin/bash "$APP_USER"
