@@ -181,6 +181,7 @@ jobs:
                   build_os_ver: "3.21.3",
                   prod_os_ver: "3.21.3"
                 },
+              ]
             }
 
       # druzan/setup-matrix is slow, taking about 15 seconds to initialize
