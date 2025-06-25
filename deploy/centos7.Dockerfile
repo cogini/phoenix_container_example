@@ -18,10 +18,10 @@ ARG PROD_OS_VER=8
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
 
-# Newer binary releases of nodejs require a newer version of glibc not available in CentOS 7
-ARG NODE_VER=14.21.3
-# ARG NODE_VER=22.15.0
+# Newer binary releases of nodejs require a newer version of glibc not
+# available in CentOS 7, so we are stuck with 14.
 ARG NODE_MAJOR=14
+ARG NODE_VER=14.21.3
 ARG YARN_VER=1.22.22
 
 ARG REBAR_VER=3.24.0
