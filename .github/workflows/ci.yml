@@ -163,6 +163,13 @@ jobs:
                   prod_os_ver: "bookworm-20250428-slim"
                 },
                 {
+                  os: "distroless",
+                  elixir: "1.18.3",
+                  otp: "27.3.4",
+                  build_os_ver: "bookworm-20250428-slim",
+                  prod_os_ver: "bookworm-20250428-slim"
+                },
+                {
                   os: "alma",
                   elixir: "1.18.3",
                   otp: "27.3.4",
