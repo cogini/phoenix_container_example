@@ -126,6 +126,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         done ; \
         yum update -y
 
+    ARG RUNTIME_PACKAGES
+
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         set -ex ; \
@@ -269,6 +271,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # fi ; \
         asdf reshim ; \
         erl -version ; \
+        ls -l $ASDF_DIR/bin/ ; \
+        ls -l $ASDF_DIR/shims/ ; \
+        which elixir ; \
         elixir -v ; \
         node -v
 
