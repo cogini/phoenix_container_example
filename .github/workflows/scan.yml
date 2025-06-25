@@ -234,7 +234,7 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v6
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
