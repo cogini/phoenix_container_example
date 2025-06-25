@@ -24,6 +24,11 @@ ARG APK_UPGRADE=":"
 # ARG APK_UPDATE="apk update"
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
+# ARG NODE_VER=16.14.1
+ARG NODE_VER=24.0.1
+ARG NODE_MAJOR=24
+ARG YARN_VER=1.22.22
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -75,9 +80,6 @@ ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
-    ARG APK_UPDATE
-    ARG APK_UPGRADE
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -90,30 +92,38 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         then addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
         adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
 
+    ARG NODE_VER
+    ARG NODE_MAJOR
+    ARG RUNTIME_PACKAGES
+    ARG APK_UPDATE
+    ARG APK_UPGRADE
+
     # Install tools and libraries to build binary libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-        set -exu && \
-        ln -s /var/cache/apk /etc/apk/cache && \
-        $APK_UPDATE && $APK_UPGRADE && \
-        apk add --no-progress nodejs npm yarn && \
+        set -exu ; \
+        ln -s /var/cache/apk /etc/apk/cache ; \
+        $APK_UPDATE ; $APK_UPGRADE ; \
+        apk add --no-progress nodejs npm yarn ; \
         # Get private repos
-        apk add --no-progress openssh && \
+        apk add --no-progress openssh ; \
         # Build binary libraries
-        # apk add --no-progress alpine-sdk && \
+        # apk add --no-progress alpine-sdk ; \
         apk add --no-progress git build-base
-
-    # RUN npm install -g yarn
 
     # Database command line clients to check if DBs are up when performing integration tests
     # RUN apk add --no-progress postgresql-client mysql-client
-    # RUN apk add --no-progress --no-cache curl gnupg --virtual .build-dependencies -- && \
-    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk && \
-    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk && \
-    #     echo y | apk add --allow-untrusted msodbcsql17_17.5.2.1-1_amd64.apk mssql-tools_17.5.2.1-1_amd64.apk && \
+    # RUN set -exu ; apk add --no-progress --no-cache curl gnupg --virtual .build-dependencies -- ; \
+    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk ; \
+    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk ; \
+    #     echo y | apk add --allow-untrusted msodbcsql17_17.5.2.1-1_amd64.apk mssql-tools_17.5.2.1-1_amd64.apk ; \
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
+
+    # RUN npm install -g yarn
+
+    # RUN set -ex ; corepack enable ; corepack enable npm
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -124,12 +134,11 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # Copy only the minimum files needed for deps, improving caching
-    COPY --link config ./config
-    COPY --link mix.exs ./
-    COPY --link mix.lock ./
+    # COPY --link .env.defaul[t] ./
 
-    COPY --link .env.defaul[t] ./
+    # Copy only the minimum files needed for deps, improving caching
+    COPY --link mix.exs mix.lock ./
+    # COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -148,16 +157,16 @@ FROM build-os-deps AS build-deps-get
         # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
         # Copying a predefined known_hosts file would be more secure, but would need to be maintained
         if test -n "$SSH_AUTH_SOCK"; then \
-            mkdir -p /etc/ssh && \
-            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
-            mix deps.get; \
+            set -exu ; \
+            mkdir -p /etc/ssh ; \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
+            mix deps.get ; \
         # Access private repos using access token
         elif test -s /run/secrets/access_token; then \
-            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
         else \
-            mix deps.get; \
+            mix deps.get ; \
         fi
-
 
 # Create base image for tests
 FROM build-deps-get AS test-image
@@ -167,142 +176,158 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.tes[t] ./
+    # Postman tests
+    # RUN npm install -g newman
+    # RUN npm install -g newman-reporter-junitfull
+    COPY --link Postma[n] ./Postman
+
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
-    RUN mix esbuild.install --if-missing
-
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+    COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
+    # Generate Dialyzer files for deps
     RUN mix dialyzer --plt
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
 
+    # Old Phoenix
     COPY --link we[b] ./web
-    COPY --link template[s] ./templates
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+    COPY --link template[s] ./templates
 
     COPY --link priv ./priv
     COPY --link test ./test
     # COPY --link bi[n] ./bin
 
-    # RUN set -a && . ./.env.test && set +a && \
-    #     env && \
-    #     mix compile --warnings-as-errors
-
-    RUN mix compile --warnings-as-errors
+    # Load environment vars when compiling
+    COPY --link .env.tes[t] ./
+    RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # Add test libraries
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
-
-    # COPY --link Postman ./Postman
-
 # Create Elixir release
 FROM build-deps-get AS prod-release
     ARG APP_DIR
-    ARG RELEASE
-    ARG MIX_ENV
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] ./
+    ARG MIX_ENV
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
-    # Compile deps separately from application for better caching.
-    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
-    # because a single line of code changed causes a complete recompile.
-
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix deps.compile
-
-    RUN mix deps.compile
-
-    RUN mix esbuild.install --if-missing
-
+    # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
-    COPY --link assets/package.jso[n] assets/package.json
-    COPY --link assets/package-lock.jso[n] assets/package-lock.json
-    COPY --link assets/yarn.loc[k] assets/yarn.lock
-    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
+    COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
 
     WORKDIR ${APP_DIR}/assets
 
+    # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
-        set -exu && \
-        mkdir -p ./assets && \
-        # corepack enable && \
+        # corepack enable ; corepack enable npm ; \
         # yarn --cwd ./assets install --prod
         yarn install --prod
+        # pnpm install --prod
         # npm install
+        # npm run deploy
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
-
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm run deploy
-    #
-    # Generate assets the really old way
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     node node_modules/webpack/bin/webpack.js --mode production
+        # node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
 
-    # Compile assets with esbuild
+    # Compile deps separately from the application for better Docker caching.
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
+    # because a single line of code changed causes a complete recompile.
+
+    COPY --link .env.pro[d] ./
+
+    # Load environment vars when compiling
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix deps.compile
+
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+
+    # Old Phoenix
     COPY --link we[b] ./web
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+    COPY --link template[s] ./templates
 
     COPY --link priv ./priv
     COPY --link assets ./assets
 
     COPY --link bi[n] ./bin
 
-    RUN mix assets.deploy
-
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
-
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix compile --verbose --warnings-as-errors
+    COPY --link .env.pro[d] ./
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
-    RUN mix compile --warnings-as-errors
+    RUN mix assets.setup
+    RUN mix assets.deploy
 
     # Build release
+    COPY --link config/runtime.exs ./config/
+
     COPY --link rel ./rel
+
+    # Generate systemd and deploy scripts
+    # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+
+    ARG RELEASE
     RUN mix release "$RELEASE"
 
+    # Create revision for CodeDeploy
+    # WORKDIR /revision
+    # COPY appspec.yml ./
+    # RUN set -exu ; \
+    #     mkdir -p etc bin systemd ; \
+    #     chmod +x /app/bin/* ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    #     zip -r /revision.zip . ; \
+    #     rm -rf /revision/*
+
+    # Create release package for Ansible
+    # WORKDIR /ansible
+    # RUN set -exu ; \
+    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
+    #     # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
+    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
+    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
+    #     mkdir -p bin ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     chmod +x ./bin/* ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
+    #     zip -r /ansible.zip . ; \
+    #     rm -rf /ansible/*
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
-    ARG APK_UPDATE
-    ARG APK_UPGRADE
-    ARG RUNTIME_PACKAGES
-
-    ARG LANG
-
+    ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -314,6 +339,14 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
         adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
+
+
+    ARG LANG
+
+    ARG RUNTIME_PACKAGES
+
+    ARG APK_UPDATE
+    ARG APK_UPGRADE
 
     # Install Alpine libraries needed at runtime
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
@@ -338,42 +371,46 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Erlang deps
         apk add --no-progress ncurses-libs libgcc libstdc++
 
-
-# Create final prod image which gets deployed
-FROM prod-base AS prod
     ARG LANG
-
-    ARG APP_DIR
-    ARG APP_NAME
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_PORT
-
-    ARG MIX_ENV
-    ARG RELEASE
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        RELEASE=$RELEASE \
-        MIX_ENV=$MIX_ENV \
+        # RELEASE=$RELEASE \
+        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
     # The app needs to be able to write to a tmp directory on startup, which by
     # default is under the release. This can be changed by setting RELEASE_TMP to
     # /tmp or, more securely, /run/foo
-    RUN \
+    RUN set -exu ; \
         # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # mkdir -p "/etc/foo" && \
-        # mkdir -p "/var/lib/foo" && \
+        mkdir -p "/run/${APP_NAME}" ; \
+        # mkdir -p "/etc/foo" ; \
+        # mkdir -p "/var/lib/foo" ; \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
             # "/var/lib/foo"
+
+# Create final prod image which gets deployed
+FROM prod-base AS prod
+    ARG APP_DIR
+    ARG APP_NAME
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_PORT
+
+    # This could be put in a separate target, but it's faster to do it from prod test
+
+    # Copy CodeDeploy revision into prod image for publishing later
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
+
+    # Copy Ansible release into prod image for publishing later
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /ansible.zip /ansible.zip
 
     # USER $APP_USER
 
@@ -395,6 +432,9 @@ FROM prod-base AS prod
 
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
+
+    ARG MIX_ENV
+    ARG RELEASE
 
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
@@ -423,7 +463,6 @@ FROM prod-base AS prod
     # Run app in foreground
     # CMD ["start"]
 
-
 # Copy build artifacts to host
 FROM scratch AS artifacts
     ARG MIX_ENV
@@ -431,8 +470,8 @@ FROM scratch AS artifacts
 
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
+    # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
     COPY --from=prod-release /app/priv/static /static
-
 
 # Default target
 FROM prod

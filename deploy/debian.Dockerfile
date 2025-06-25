@@ -105,13 +105,12 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     ARG SNAPSHOT_VER
     ARG SNAPSHOT_NAME
-
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu; \
-            apt-get update -qq; \
+            set -exu ; \
+            apt-get update -qq ; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
@@ -162,13 +161,13 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # postgresql-client \
             # $RUNTIME_PACKAGES \
         ; \
-        locale-gen; \
+        locale-gen ; \
         mkdir -p -m 755 /etc/apt/keyrings ; \
         # Install nodejs from nodesource.com
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
         echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
         # Install node using n
-        # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
+        # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n ; \
         # chmod +x /usr/local/bin/n ; \
         # # Install lts version of node
         # # n lts ; \
@@ -250,7 +249,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
-    RUN set -ex ; corepack enable ; corepack enable npm
+    RUN set -ex ; corepack enable ; corepack enable npm ;
+        # npm install -g yarn
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -469,8 +469,8 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu; \
-            apt-get update -qq; \
+            set -exu ; \
+            apt-get update -qq ; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
@@ -571,8 +571,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         if test -n "$SNAPSHOT_VER" ; then \
-            set -exu; \
-            apt-get update -qq; \
+            set -exu ; \
+            apt-get update -qq ; \
             DEBIAN_FRONTEND=noninteractive \
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
@@ -614,7 +614,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             libstdc++6 \
             libgcc-s1 \
             # Allow app to listen on HTTPS. May not be needed if handled
-            # outside the application, e.g. in load balancer.
+            # outside the application, e.g., in load balancer.
             # openssl \
             # $RUNTIME_PACKAGES \
         ; \
@@ -630,7 +630,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Use this if not running --mount=type=cache.
         # apt-get clean ; \
         # Delete info on installed packages. This saves some space, but it can
-        # be useful to have them as a record of what was installed, e.g. for auditing.
+        # be useful to have them as a record of what was installed, e.g., for auditing.
         # rm -rf /var/lib/dpkg ; \
         # Delete debconf data files to save some space
         # rm -rf /var/cache/debconf ; \
@@ -640,8 +640,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
-
-    ARG LANG
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
@@ -668,13 +666,9 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
-    ARG LANG
-
     ARG APP_DIR
-    ARG APP_NAME
     ARG APP_USER
     ARG APP_GROUP
-    ARG APP_PORT
 
     # This could be put in a separate target, but it's faster to do it from prod test
 
@@ -710,6 +704,7 @@ FROM prod-base AS prod
 
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
+    ARG APP_PORT
     EXPOSE $APP_PORT
 
     # Erlang EPMD port

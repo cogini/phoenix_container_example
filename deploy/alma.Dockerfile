@@ -81,36 +81,33 @@ ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
-    ARG LANG
-    ARG SNAPSHOT_VER
-    ARG RUNTIME_PACKAGES
-
-    ARG OTP_VER
-    ARG ELIXIR_VER
-    ARG REBAR_VER
-    ARG NODE_VER
-    ARG NODE_MAJOR
-    ARG YARN_VER
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
     ARG APP_USER
     ARG APP_USER_ID
 
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
+
+    ARG RUNTIME_PACKAGES
+
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-        set -ex && \
+        set -ex ; \
         # add config-manager plugin
-        dnf install -y --nodocs dnf-plugins-core && \
-        # dnf config-manager --set-enabled powertools && \
-        # dnf config-manager --set-enabled devel && \
-        dnf install -y epel-release && \
-        /usr/bin/crb enable && \
-        dnf upgrade -y && \
-        # dnf makecache --refresh && \
-        dnf group install -y 'Development Tools' && \
-        dnf builddep erlang -y && \
+        dnf install -y --nodocs dnf-plugins-core ; \
+        # dnf config-manager --set-enabled powertools ; \
+        # dnf config-manager --set-enabled devel ; \
+        dnf install -y epel-release ; \
+        /usr/bin/crb enable ; \
+        dnf upgrade -y ; \
+        # dnf makecache --refresh ; \
+        dnf group install -y 'Development Tools' ; \
+        dnf builddep erlang -y ; \
         dnf install -y --nodocs --allowerasing \
             cmake \
             cmake3 \
@@ -124,9 +121,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             wget \
         # http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
         # https://github.com/asdf-vm/asdf-erlang
-        # bin/build-install-asdf-deps-centos && \
+        # bin/build-install-asdf-deps-centos ; \
         # https://github.com/asdf-vm/asdf-erlang/issues/206
-        # rpm --eval '%{_arch}' && \
+        # rpm --eval '%{_arch}' ; \
             # autoconf \
             # automake \
             # bison \
@@ -154,17 +151,11 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
             # wxBase3 \
             # erlang-odbc
-        # && \
+        # ; \
         # dnf clean all
-        # dnf clean all && rm -rf /var/cache/dnf
+        # dnf clean all ; rm -rf /var/cache/dnf
 
         # https://github.com/esl/packages/blob/master/builders/erlang_centos.Dockerfile
-
-    # Create OS user and group to run app under
-    RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     ENV HOME=$APP_DIR
 
@@ -173,8 +164,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     COPY  bi[n] ./bin
 
     # Set up ASDF
-    RUN set -ex && \
-        export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" && \
+    RUN set -ex ; \
+        export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
         bin/build-install-asdf-init
 
     ENV ASDF_DIR="$HOME/.asdf"
@@ -182,17 +173,24 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     COPY .tool-versions ./
 
+    ARG ELIXIR_VER
+    ARG NODE_MAJOR
+    ARG NODE_VER
+    ARG OTP_VER
+    ARG REBAR_VER
+    ARG YARN_VER
+
     # Install using asdf
-    RUN set -ex && \
+    RUN set -ex ; \
         # Install using .tool-versions versions
-        asdf install && \
-        # asdf install erlang "$OTP_VER" && \
-        # asdf install elixir "$ELIXIR_VER" && \
-        # asdf install nodejs "$NODE_VER" && \
-        # asdf install yarn "$YARN_VER" && \
-        # asdf install rebar "${REBAR_VER}" && \
-        # export RPM_ARCH=$(rpm --eval '%{_arch}') && \
-        # echo "RPM_ARCH=$RPM_ARCH" && \
+        asdf install ; \
+        # asdf install erlang "$OTP_VER" ; \
+        # asdf install elixir "$ELIXIR_VER" ; \
+        # asdf install nodejs "$NODE_VER" ; \
+        # asdf install yarn "$YARN_VER" ; \
+        # asdf install rebar "${REBAR_VER}" ; \
+        # export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
+        # echo "RPM_ARCH=$RPM_ARCH" ; \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
         #   # Install Erlang from erlang-solutions RPM
         #   bin/build-install-deps-alma; \
@@ -200,9 +198,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         #   # Install using asdf
         #   # bin/build-install-asdf
         #   asdf install erlang; \
-        # fi && \
-        erl -version && \
-        elixir -v && \
+        # fi ; \
+        erl -version ; \
+        elixir -v ; \
         node -v
 
 # Get Elixir deps
@@ -214,12 +212,11 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    COPY --link .env.defaul[t] ./
+    # COPY --link .env.defaul[t] ./
 
     # Copy only the minimum files needed for deps, improving caching
-    COPY --link mix.exs ./
-    COPY --link mix.lock ./
-    COPY --link config ./config
+    COPY --link mix.exs mix.lock ./
+    # COPY --link config ./config
 
     # Add private repo for Oban
     RUN --mount=type=secret,id=oban_license_key \
@@ -238,14 +235,15 @@ FROM build-os-deps AS build-deps-get
         # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
         # Copying a predefined known_hosts file would be more secure, but would need to be maintained
         if test -n "$SSH_AUTH_SOCK"; then \
-            mkdir -p /etc/ssh && \
-            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
-            mix deps.get; \
+            set -exu ; \
+            mkdir -p /etc/ssh ; \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
+            mix deps.get ; \
         # Access private repos using access token
         elif test -s /run/secrets/access_token; then \
-            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
         else \
-            mix deps.get; \
+            mix deps.get ; \
         fi
 
 # Create base image for tests
@@ -256,7 +254,13 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.tes[t] ./
+    # Postman tests
+    # RUN npm install -g newman
+    # RUN npm install -g newman-reporter-junitfull
+    COPY --link Postma[n] ./Postman
+
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
@@ -265,99 +269,84 @@ FROM build-deps-get AS test-image
     # Must have at least one existing file
     COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
+    # Generate Dialyzer files for deps
     RUN mix dialyzer --plt
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
 
+    # Old Phoenix
     COPY --link we[b] ./web
-    COPY --link template[s] ./templates
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
+    COPY --link template[s] ./templates
 
     COPY --link priv ./priv
     COPY --link test ./test
     # COPY --link bi[n] ./bin
 
-    # RUN set -a && . ./.env.test && set +a && \
-    #     env && \
-    #     mix compile --warnings-as-errors
-
-    RUN mix compile --warnings-as-errors
+    # Load environment vars when compiling
+    COPY --link .env.tes[t] ./
+    RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # Add test libraries
-    # RUN npm install -g newman
-    # RUN npm install -g newman-reporter-junitfull
-
-    # COPY --link Postman ./Postman
-
 # Create Elixir release
 FROM build-deps-get AS prod-release
     ARG APP_DIR
-    ARG RELEASE
-    ARG MIX_ENV
 
     WORKDIR $APP_DIR
 
-    COPY --link .env.pro[d] ./
-
-    # Compile deps separately from the application for better Docker caching.
-    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
-    # because a single line of code changed causes a complete recompile.
-
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix deps.compile
-
-    RUN mix deps.compile
+    ARG MIX_ENV
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Build assets
     RUN mkdir -p ./assets
 
     # Install JavaScript deps
-    COPY --link assets/package.jso[n] assets/package.json
-    COPY --link assets/package-lock.jso[n] assets/package-lock.json
-    COPY --link assets/yarn.loc[k] assets/yarn.lock
-    COPY --link assets/brunch-config.j[s] assets/brunch-config.js
+    COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
 
     WORKDIR ${APP_DIR}/assets
 
     # Install JavaScript dependencies
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
-        set -exu && \
-        # corepack enable && corepack enable npm && \
+        # corepack enable ; corepack enable npm ; \
         # yarn --cwd ./assets install --prod
         yarn install --prod
         # pnpm install --prod
         # npm install
+        # npm run deploy
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
-
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     npm run deploy
-    #
-    # Generate assets the really old way
-    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #     node node_modules/webpack/bin/webpack.js --mode production
+        # node node_modules/webpack/bin/webpack.js --mode production
 
     WORKDIR $APP_DIR
 
-    RUN mix assets.setup
+    # Compile deps separately from the application for better Docker caching.
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
+    # because a single line of code changed causes a complete recompile.
+
+    COPY --link .env.pro[d] ./
+
+    # Load environment vars when compiling
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix deps.compile
 
     COPY --link li[b] ./lib
     COPY --link app[s] ./apps
+
+    # Old Phoenix
     COPY --link we[b] ./web
 
-    # Erlang src files
+    # Erlang files
     COPY --link sr[c] ./src
     COPY --link includ[e] ./include
-
     COPY --link template[s] ./templates
 
     COPY --link priv ./priv
@@ -369,61 +358,62 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # RUN set -a && . ./.env.prod && set +a && \
-    #     env && \
-    #     mix compile --verbose --warnings-as-errors
+    COPY --link .env.pro[d] ./
+    RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+        mix compile --warnings-as-errors
 
-    RUN mix compile --warnings-as-errors
-
+    RUN mix assets.setup
     RUN mix assets.deploy
 
     # Build release
+    COPY --link config/runtime.exs ./config/
+
     COPY --link rel ./rel
 
     # Generate systemd and deploy scripts
     # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
 
+    ARG RELEASE
     RUN mix release "$RELEASE"
 
     # Create revision for CodeDeploy
     # WORKDIR /revision
     # COPY appspec.yml ./
-    # RUN set -exu && \
-    #     mkdir -p etc bin systemd && \
-    #     chmod +x /app/bin/* && \
-    #     cp /app/bin/* ./bin/ && \
-    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ && \
-    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" && \
-    #     zip -r /revision.zip . && \
+    # RUN set -exu ; \
+    #     mkdir -p etc bin systemd ; \
+    #     chmod +x /app/bin/* ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    #     zip -r /revision.zip . ; \
     #     rm -rf /revision/*
 
     # Create release package for Ansible
     # WORKDIR /ansible
-    # RUN set -exu && \
-    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system && \
-    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ && \
-    #     # mkdir -p _build/${MIX_ENV}/deploy/bin && \
-    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ && \
-    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* && \
-    #     mkdir -p bin && \
-    #     cp /app/bin/* ./bin/ && \
-    #     chmod +x ./bin/* && \
-    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ && \
-    #     zip -r /ansible.zip . && \
+    # RUN set -exu ; \
+    #     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
+    #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
+    #     # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
+    #     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
+    #     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
+    #     mkdir -p bin ; \
+    #     cp /app/bin/* ./bin/ ; \
+    #     chmod +x ./bin/* ; \
+    #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
+    #     zip -r /ansible.zip . ; \
     #     rm -rf /ansible/*
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
-    ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
 
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-        set -exu && \
-        # dnf makecache --refresh && \
-        dnf upgrade -y && \
+        set -exu ; \
+        # dnf makecache --refresh ; \
+        dnf upgrade -y ; \
         dnf install -y --nodocs \
             ca-certificates \
             curl \
@@ -440,9 +430,9 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             locales \
             openssl
             # $RUNTIME_PACKAGES \
-        # && \
+        # ; \
         # dnf clean all
-        # dnf clean all && rm -rf /var/cache/yum
+        # dnf clean all ; rm -rf /var/cache/yum
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
@@ -452,11 +442,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
-    ARG SNAPSHOT_VER
-    ARG RUNTIME_PACKAGES
-
-    ARG LANG
-
     ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
@@ -464,10 +449,20 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_USER
     ARG APP_USER_ID
 
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
+        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+
+    ARG LANG
+    ARG RUNTIME_PACKAGES
+
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-        set -exu \
-        # dnf makecache --refresh && \
-        dnf upgrade -y && \
+        set -exu ; \
+        # dnf makecache --refresh ; \
+        dnf upgrade -y ; \
         dnf install -y --nodocs \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
@@ -478,32 +473,14 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # useradd and groupadd
             shadow-utils \
             wget
-        #    && \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 && \
-        # localedef -i en_US -c -f UTF-8 en_US.UTF-8 && \
+            # $RUNTIME_PACKAGES
+        # ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
+        # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
         # locale -a | grep -E 'en_US|C'
         # dnf clean all
-        # dnf clean all && rm -rf /var/cache/dnf
+        # dnf clean all ; rm -rf /var/cache/dnf
 
-    # Create OS user and group to run app under
-    RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
-        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
-
-# Create final prod image which gets deployed
-FROM prod-base AS prod
-    ARG LANG
-
-    ARG APP_DIR
-    ARG APP_NAME
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_PORT
-
-    ARG MIX_ENV
-    ARG RELEASE
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
@@ -517,16 +494,22 @@ FROM prod-base AS prod
     # The app needs to be able to write to a tmp directory on startup, which by
     # default is under the release. This can be changed by setting RELEASE_TMP to
     # /tmp or, more securely, /run/foo
-    RUN set -exu && \
+    RUN set -exu ; \
         # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
-        # mkdir -p "/etc/foo" && \
-        # mkdir -p "/var/lib/foo" && \
+        mkdir -p "/run/${APP_NAME}" ; \
+        # mkdir -p "/etc/foo" ; \
+        # mkdir -p "/var/lib/foo" ; \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
             # "/var/lib/foo"
+
+# Create final prod image which gets deployed
+FROM prod-base AS prod
+    ARG APP_DIR
+    ARG APP_USER
+    ARG APP_GROUP
 
     # This could be put in a separate target, but it's faster to do it from prod test
 
@@ -557,8 +540,12 @@ FROM prod-base AS prod
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
+    ARG MIX_ENV
+    ARG RELEASE
+
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
+    ARG APP_PORT
     EXPOSE $APP_PORT
 
     # Erlang EPMD port
@@ -593,22 +580,25 @@ FROM build-os-deps AS dev
     ARG APP_NAME
     ARG APP_USER
 
-    ARG DEV_PACKAGES
-
     # Set environment vars used by the app
     ENV HOME=$APP_DIR \
         LANG=$LANG
 
-    RUN set -exu && \
+    RUN set -exu ; \
         # Create app dirs
-        mkdir -p "/run/${APP_NAME}" && \
+        mkdir -p "/run/${APP_NAME}" ; \
+        # mkdir -p "/etc/foo" ; \
+        # mkdir -p "/var/lib/foo" ; \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
+           # "/var/lib/foo"
+
+    ARG DEV_PACKAGES
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-        set -exu && \
+        set -exu ; \
         dnf install -y --nodocs \
             inotify-tools \
             openssh-clients \
@@ -616,35 +606,14 @@ FROM build-os-deps AS dev
             # for chsh
             util-linux-user
             # $DEV_PACKAGES \
-        # && \
+        # ; \
         # dnf clean all
-        # yum clean all && rm -rf /var/cache/yum
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
     USER $APP_USER:$APP_GROUP
 
     WORKDIR $APP_DIR
-
-    RUN mix 'do' local.rebar --force, local.hex --force
-
-    # RUN mix assets.setup
-
-# Copy build artifacts to host
-FROM build-os-deps AS codedeploy-revision
-    ARG MIX_ENV
-    ARG RELEASE
-    ARG APP_USER
-    ARG APP_GROUP
-
-    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
-
-    WORKDIR /revision
-    COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz ./
-    COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" ./systemd
-    COPY bin ./bin
-
-    RUN mkdir -p etc
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
@@ -654,9 +623,7 @@ FROM scratch AS artifacts
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
     # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
-    # COPY --from=prod-release /app/_build/${MIX_ENV} ${MIX_ENV}
-    COPY --from=prod-release /app/_build /_build
-    # COPY --from=prod-release /app/priv/static /static
+    COPY --from=prod-release /app/priv/static /static
 
 # Default target
 FROM prod
