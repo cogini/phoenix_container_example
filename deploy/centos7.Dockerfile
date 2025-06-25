@@ -273,7 +273,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         erl -version ; \
         ls -l $ASDF_DIR/bin/ ; \
         ls -l $ASDF_DIR/shims/ ; \
-        which elixir ; \
+        asdf which elixir ; \
+        cat `asdf which elixir` ; \
         elixir -v ; \
         node -v
 
