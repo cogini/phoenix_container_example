@@ -257,7 +257,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         asdf install erlang "$OTP_VER" ; \
         asdf install elixir "$ELIXIR_VER" ; \
         asdf install nodejs "$NODE_VER" ; \
-        asdf install yarn "$YARN_VER" ; \
+        # asdf install yarn "$YARN_VER" ; \
         asdf install rebar "${REBAR_VER}" ; \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
         # echo "RPM_ARCH=$RPM_ARCH" ; \
@@ -407,9 +407,9 @@ FROM build-deps-get AS prod-release
     RUN --mount=type=cache,target=~/.npm,sharing=locked \
         # corepack enable ; corepack enable npm ; \
         # yarn --cwd ./assets install --prod
-        yarn install --prod
+        # yarn install --prod
         # pnpm install --prod
-        # npm install
+        npm install
         # npm run deploy
         # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
         # node node_modules/brunch/bin/brunch build
