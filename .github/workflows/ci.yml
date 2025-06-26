@@ -156,6 +156,27 @@ jobs:
             return {
               include: [
                 {
+                  os: "alma",
+                  elixir: "1.18.3",
+                  otp: "27.3.4",
+                  build_os_ver: "9",
+                  prod_os_ver: "9"
+                },
+                {
+                  os: "alpine",
+                  elixir: "1.18.3",
+                  otp: "27.3.4",
+                  build_os_ver: "3.21.3",
+                  prod_os_ver: "3.21.3"
+                },
+                {
+                  os: "centos7",
+                  elixir: "1.18.3",
+                  otp: "27.3.3",
+                  build_os_ver: "7",
+                  prod_os_ver: "7"
+                },
+                {
                   os: "debian",
                   elixir: "1.18.3",
                   otp: "27.3.4",
@@ -168,25 +189,6 @@ jobs:
                   otp: "27.3.4",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim"
-                },
-                {
-                  os: "alma",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "9",
-                  prod_os_ver: "9"
-                },
-                {
-                  os: "centos7",
-                  elixir: "1.18.3",
-                  otp: "27.3.4"
-                },
-                {
-                  os: "alpine",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "3.21.3",
-                  prod_os_ver: "3.21.3"
                 },
               ]
             }
