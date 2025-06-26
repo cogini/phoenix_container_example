@@ -7,7 +7,7 @@ ARG BASE_OS=centos
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.18.3-otp-27
-ARG OTP_VER=27.3.3
+ARG OTP_VER=27.3.4
 
 # https://hub.docker.com/_/centos
 ARG BUILD_OS_VER=8
