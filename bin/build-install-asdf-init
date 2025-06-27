@@ -51,6 +51,14 @@ else
     asdf plugin-add nodejs
 fi
 
+if [ ! -d ~/.gnupg ]; then
+    if [ -f ~/.asdf/plugins/nodejs/bin/import-release-team-keyring ]; then
+        echo "===> Importing Node.js release team OpenPGP keys"
+        # This can be flaky
+        bash ~/.asdf/plugins/nodejs/bin/import-release-team-keyring
+    fi
+fi
+
 if [ -d "$ASDF_DIR/plugins/yarn" ]; then
     asdf plugin-update yarn
 else
@@ -58,19 +66,11 @@ else
     asdf plugin-add yarn
 fi
 
-# if [ -d "$ASDF_DIR/plugins/cmake" ]; then
-#     asdf plugin-update cmake
-# else
-#     echo "===> Installing ASDF nodejs plugin"
-#     asdf plugin-add cmake
-# fi
-
-if [ ! -d ~/.gnupg ]; then
-    if [ -f ~/.asdf/plugins/nodejs/bin/import-release-team-keyring ]; then
-        echo "===> Importing Node.js release team OpenPGP keys"
-        # This can be flaky
-        bash ~/.asdf/plugins/nodejs/bin/import-release-team-keyring
-    fi
+if [ -d "$ASDF_DIR/plugins/cmake" ]; then
+    asdf plugin-update cmake
+else
+    echo "===> Installing ASDF cmake plugin"
+    asdf plugin-add cmake
 fi
 
 # echo "===> Installing build deps with ASDF"
