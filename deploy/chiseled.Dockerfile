@@ -649,7 +649,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     COPY --link ./deploy/chisel/release /release
 
     WORKDIR /rootfs
-    RUN chisel cut --release /release/  --root /rootfs \
+    RUN chisel cut --release /release/ --root /rootfs \
         base-files_release-info \
         libc6_libs \
         # libc6_config \
