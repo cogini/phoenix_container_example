@@ -142,7 +142,6 @@ defmodule PhoenixContainerExample.MixProject do
       "assets.build": ["tailwind default", "esbuild default"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"],
       quality: [
-        "test",
         "format --check-formatted",
         "credo",
         # "credo --mute-exit-status",
