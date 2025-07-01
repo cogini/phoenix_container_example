@@ -407,7 +407,6 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    COPY --link .env.pro[d] ./
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
