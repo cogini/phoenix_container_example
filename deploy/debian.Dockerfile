@@ -130,9 +130,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu ; \
         # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
-        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
+        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list ; \
         apt-get update -qq ; \
-        # apt-get -y build-dep python-pil -y && \
+        # apt-get -y build-dep python-pil -y ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
