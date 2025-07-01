@@ -92,7 +92,6 @@ jobs:
   setup-matrix:
     name: Set up build matrix
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     outputs:
       # Elixir/Erlang/OS combinations for tests
       # Generally this will match prod
@@ -311,7 +310,6 @@ jobs:
   create-release:
     name: Create GitHub release
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     outputs:
       release-tag: build-${{ github.run_number }}
       upload-url: ${{ steps.release-view.outputs.upload-url }}
@@ -348,7 +346,6 @@ jobs:
       # Push to ghcr.io repository
       packages: write
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -443,7 +440,7 @@ jobs:
           driver-opts: network=host
 
       # Building build-os-deps target can be slow (> 10 min), causing the
-      # GitHub Actions cache to time out, so use a disk-based cache
+      # GitHub Actions Docker build cache to time out, so use a disk-based cache
 
       - name: Create .buildx-cache for build-os-deps
         run: mkdir -p ${{ runner.temp }}/.buildx-cache-build-os-deps
@@ -543,14 +540,6 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      # - # Temp fix
-      #   # https://github.com/docker/build-push-action/issues/252
-      #   # https://github.com/moby/buildkit/issues/1896
-      #   name: Move cache
-      #   run: |
-      #     rm -rf ${{ runner.temp }}/.buildx-cache
-      #     mv ${{ runner.temp }}/.buildx-cache-new ${{ runner.temp }}/.buildx-cache
-
   test:
     name: Run tests
     needs: [build-test, setup-matrix]
@@ -565,7 +554,6 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -656,7 +644,6 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -698,7 +685,6 @@ jobs:
       # Upload SARIF report files
       security-events: write
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -784,7 +770,6 @@ jobs:
   #     pull-requests: write
   #     issues: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1077,14 +1062,6 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-     # Temp fix
-     # https://github.com/docker/build-push-action/issues/252
-     # https://github.com/moby/buildkit/issues/1896
-     # - name: Move cache
-     #   run: |
-     #     rm -rf ${{ runner.temp }}/.buildx-cache
-     #     mv ${{ runner.temp }}/.buildx-cache-new ${{ runner.temp }}/.buildx-cache
-
   test-prod:
     name: Run external API tests
     needs: [build-prod, setup-matrix]
@@ -1100,7 +1077,6 @@ jobs:
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1251,7 +1227,6 @@ jobs:
       # Upload SARIF report files
       security-events: write
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -1354,7 +1329,6 @@ jobs:
   #     pull-requests: write
   #     issues: read
   #   runs-on: ubuntu-latest
-  #   # runs-on: ubuntu-24-arm
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
   #   strategy:
   #     fail-fast: false
@@ -1432,7 +1406,6 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1536,7 +1509,6 @@ jobs:
       id-token: write
       contents: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1676,7 +1648,6 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-24-arm
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
@@ -1748,7 +1719,6 @@ jobs:
   #     pull-requests: write
   #     issues: read
   #   runs-on: ubuntu-latest
-  #   # runs-on: ubuntu-24-arm
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
   #   strategy:
   #     fail-fast: false
