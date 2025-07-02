@@ -641,7 +641,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         truncate -s 0 /var/log/dpkg.log
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
-    # environment-specific config such as DATABASE_URL should be set at runtime.
+    # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
         # RELEASE=$RELEASE \
@@ -649,9 +649,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
     RUN set -exu ; \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" ; \
