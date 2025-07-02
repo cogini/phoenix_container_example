@@ -18,6 +18,9 @@ on: push
 #       - '.github/**'
 #       - '.vscode'
 #       - '.gitignore'
+#       # Handled by otel.yml GitHub Action
+#       - 'deploy/aws-otel-collector.Dockerfile'
+#       - 'otel/*'
 #   pull_request:
 #     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
@@ -280,11 +283,11 @@ jobs:
             return {
               include: [
                 {
+                  os: "debian",
                   elixir: "1.18.3",
                   otp: "27.3.4",
                   build_os_ver: "bookworm-20250428-slim",
                   prod_os_ver: "bookworm-20250428-slim",
-                  os: "debian"
                 }
               ]
             }
@@ -347,6 +350,7 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -771,6 +775,7 @@ jobs:
   #     issues: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -1078,6 +1083,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -1107,9 +1113,9 @@ jobs:
 
       # - name: Get test data files
       #   run: |
-      #     mkdir -p bounce-data
+      #     mkdir -p test-data
       #     aws s3 cp s3://${{ vars.S3_BUCKET_CI }}/test-data.zip test-data.zip
-      #     unzip -o test-data.zip -d bounce-data
+      #     unzip -o test-data.zip -d test-data
 
       - name: Pull repos
         # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
@@ -1200,7 +1206,7 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
-      # - name: Push release files
+      # - name: Push CodeBuild release files
       #   run: |
       #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
       #     NAME="codebuild-revision-${{ env.VAR }}.zip"
@@ -1298,7 +1304,7 @@ jobs:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      # - name: Scan image with snyk
+      # - name: Scan image with Snyk
       #   # if: github.event_name != 'pull_request'
       #   uses: snyk/actions/docker@master
       #   continue-on-error: true
@@ -1330,6 +1336,7 @@ jobs:
   #     issues: read
   #   runs-on: ubuntu-latest
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
@@ -1407,6 +1414,7 @@ jobs:
       issues: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
@@ -1510,6 +1518,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
@@ -1616,6 +1625,7 @@ jobs:
       - name: Create AppSignal revision
         env:
           APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
+          # APPSIGNAL_APP_ENV: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'stage') || 'stage' }}
           APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
           APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
           REVISION: ${{ env.GITHUB_SHA_SHORT }}
@@ -1627,7 +1637,6 @@ jobs:
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
 
-
   tag:
     name: Tag prod images as latest
     if: github.event_name != 'pull_request'
@@ -1638,10 +1647,8 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
       # Push to ghcr.io repository
       packages: write
-
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
@@ -1649,6 +1656,7 @@ jobs:
       issues: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
@@ -1713,13 +1721,9 @@ jobs:
   #     contents: read
   #     # Push to ghcr.io repository
   #     packages: write
-  #     # Upload JUnit report files
-  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-  #     checks: write
-  #     pull-requests: write
-  #     issues: read
   #   runs-on: ubuntu-latest
   #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
@@ -1735,39 +1739,56 @@ jobs:
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   #         aws-region: ${{ vars.AWS_REGION }}
-
+  #
   #     - name: Check out source
   #       uses: actions/checkout@v4
-
+  #
   #     - name: Set variables
   #       id: vars
   #       run: |
   #         echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-
+  #
   #     - name: Download release files
   #       run: |
   #         gh release download "${RELEASE_TAG}" -p "codebuild-revision-${VAR}.zip"
   #         mkdir -p revision
   #         unzip -o "codebuild-revision-${VAR}.zip" -d revision
-
+  #
   #     - name: Set variables
   #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{ github.run_number }}-${{env.VAR}}.zip" >> $GITHUB_ENV
   #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
+  #       # echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
   #       run: |
-  #         echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
-
+  #         echo "RELEASE_TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+  #         echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
+  #
+  #     # - name: Copy Ansible release files to S3
+  #     #   run: |
+  #     #     gh release download "${RELEASE_TAG}" -p "ansible-release-${VAR}.zip"
+  #     #     aws s3 cp "ansible-release-${VAR}.zip" "s3://${CODEDEPLOY_BUCKET}/ansible-release-${VAR}-${RELEASE_TIMESTAMP}.zip"
+  #
   #     - name: Create CodeDeploy revision
   #       run: |
   #         aws deploy push --application-name "${CODEDEPLOY_APPLICATION}" \
-  #           --description "App ${RELEASE_TAG} ${GITHUB_SHA_SHORT}" \
+  #           --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}" \
   #           --s3-location s3://${CODEDEPLOY_BUCKET}/${REVISION_FILE} \
   #           --source revision
-
+  #
+  #     - name: Create CodeDeploy deployment for dev servers
+  #       run: |
+  #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
+  #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}-dev-${{ matrix.os }}" \
+  #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
+  #           --description "Bounce ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
+  #
   #     - name: Create CodeDeploy deployment
+  #       # if: ${{ matrix.os == 'debian' }}
   #       run: |
   #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
   #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}" \
   #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
-  #           --description "App ${RELEASE_TAG} ${GITHUB_SHA_SHORT}"
+  #           --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
 
-      # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
+  # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
+  # https://github.com/marketplace/actions/slack-notify-build
+  # https://github.com/marketplace/actions/post-slack-message
