@@ -21,10 +21,6 @@ ARG PROD_OS_VER=bookworm-20250428-slim
 ARG SNAPSHOT_VER=""
 ARG SNAPSHOT_NAME=bookworm
 
-# ARG LINUX_ARCH=aarch64
-# ARG LINUX_ARCH=x86_64
-# TARGETPLATFORM linux/amd64 linux/arm64
-
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=24.0.1
 ARG NODE_MAJOR=24
@@ -416,7 +412,6 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    COPY --link .env.pro[d] ./
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
@@ -549,12 +544,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
-
-    # RUN cat /etc/locale.gen
-    # RUN ls -l "/lib/$(uname -m)-linux-gnu/"
-    # RUN ls -l "/lib/"
-    # RUN ls -l "/usr/lib/"
-    # RUN ls -l "/usr/lib/$(uname -m)-linux-gnu/"
 
     # lrwxrwxrwx 1 root root      18 May  7  2023 libncursesw.so.6 -> libncursesw.so.6.4
     # -rw-r--r-- 1 root root  264048 May  7  2023 libncursesw.so.6.4
