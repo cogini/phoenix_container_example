@@ -600,7 +600,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
 
     # Copy just the locale file used
-    COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
+    COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     # Copy shared libraries needed at runtime
 
