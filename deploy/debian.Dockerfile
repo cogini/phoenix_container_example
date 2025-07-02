@@ -584,7 +584,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
 
     # Copy just the locale file used
-    COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/${LANG}
+    COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     ARG RUNTIME_PACKAGES
 
