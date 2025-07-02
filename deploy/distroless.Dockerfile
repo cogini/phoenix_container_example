@@ -563,7 +563,18 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         find /lib/$(uname -m)-linux-gnu/ -name 'libtinfo.*' -type f -exec cp -v {} "/stage/lib/" \;
         # find /usr/lib/$(uname -m)-linux-gnu/ -name 'libtic.*' -type f -exec cp -v {} "/stage/usr/lib/" \; ; \
 
-    # Part of distroless/cc image
+    # Create dpkg status files for use by security scanners like Trivy
+    RUN set -ex ; \
+        # dpkg-query --help ; \
+        # md5sum --help ; \
+        mkdir -p /var/lib/dpkg/status.d ; \
+        awk 'BEGIN{RS=""; FS="\n"}/^Package: libncursesw6/' /var/lib/dpkg/status > /var/lib/dpkg/status.d/libncursesw6 ; \
+        dpkg-query --listfiles libncursesw6 | grep "so" | sort -u | xargs md5sum > /var/lib/dpkg/status.d/libncursesw6.md5sums ; \
+        awk 'BEGIN{RS=""; FS="\n"}/^Package: libtinfo6/' /var/lib/dpkg/status > /var/lib/dpkg/status.d/libtinfo6 ; \
+        dpkg-query --listfiles libtinfo6 | grep "so" | sort -u | xargs md5sum > /var/lib/dpkg/status.d/libtinfo6.md5sums ; \
+        ls -l /var/lib/dpkg/status.d/
+
+    # These packages are part of the Google distroless/cc image
     # libgcc-s1
     # /lib/$(uname -m)-linux-gnu/libgcc_s.so.1
     # libstdc++6
@@ -571,6 +582,11 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
+    ARG APP_NAME
+    ARG APP_DIR
+    ARG APP_GROUP
+    ARG APP_USER
+
     # User and group are created in Distroless base image (nonroot:nonroot)
 
     # Default environment vars:
@@ -595,10 +611,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # ln /arch/usr/lib/* /usr/lib/$(uname -m)-linux-gnu/ && \
         ls -l /lib/$(uname -m)-linux-gnu/
 
-    ARG APP_DIR
-    ARG APP_NAME
-    ARG APP_USER
-    ARG APP_GROUP
+    COPY --from=prod-install "/var/lib/dpkg/status.d/*" "/var/lib/dpkg/status.d/"
+
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
