@@ -83,7 +83,7 @@ jobs:
 
       - name: Build image and push to AWS ECR
         if: ${{ env.AWS_ENABLED == 1 }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
