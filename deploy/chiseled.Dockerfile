@@ -129,9 +129,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu ; \
         # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
-        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
+        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list ; \
         apt-get update -qq ; \
-        # apt-get -y build-dep python-pil -y && \
+        # apt-get -y build-dep python-pil -y ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -406,7 +406,6 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    COPY --link .env.pro[d] ./
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
@@ -604,7 +603,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks and get ECS metadata
-            # curl \
+            curl \
             jq \
             wget \
             # tini is a minimal init which will reap zombie processes
@@ -695,19 +694,17 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
 # Create final prod image which gets deployed
 FROM scratch AS prod
-    ARG LANG
-
     ARG APP_DIR
-    ARG APP_NAME
     ARG APP_USER
     ARG APP_GROUP
+
+    ARG LANG
+    ARG APP_NAME
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 

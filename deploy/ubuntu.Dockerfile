@@ -128,9 +128,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu ; \
         # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
-        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list && \
+        # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list ; \
         apt-get update -qq ; \
-        # apt-get -y build-dep python-pil -y && \
+        # apt-get -y build-dep python-pil -y ; \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
@@ -405,7 +405,6 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    COPY --link .env.pro[d] ./
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
@@ -599,7 +598,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks and get ECS metadata
-            # curl \
+            curl \
             jq \
             wget \
             # tini is a minimal init which will reap zombie processes
@@ -640,7 +639,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         truncate -s 0 /var/log/dpkg.log
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
-    # environment-specific config such as DATABASE_URL should be set at runtime.
+    # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
         # RELEASE=$RELEASE \
@@ -648,9 +647,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
     RUN set -exu ; \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" ; \

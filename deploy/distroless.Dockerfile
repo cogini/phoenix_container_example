@@ -603,7 +603,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     # Copy shared libraries needed at runtime
-
     COPY --from=prod-install "/stage/lib/*" "/arch/lib/"
 
     # Hack to get libraries into directory named by arch
