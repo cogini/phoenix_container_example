@@ -66,8 +66,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-# ARG LANG=C.UTF-8
-ARG LANG=C.utf8
+ARG LANG=C.UTF-8
+# ARG LANG=C.utf8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
@@ -81,8 +81,8 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
-ARG RUNTIME_PACKAGES=""
-ARG DEV_PACKAGES=""
+ARG RUNTIME_PACKAGES="libncursesw6"
+ARG DEV_PACKAGES="inotify-tools"
 
 
 # Create build base image with OS dependencies
@@ -164,9 +164,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
-            # $RUNTIME_PACKAGES \
+            $RUNTIME_PACKAGES \
         ; \
-        locale-gen ; \
         mkdir -p -m 755 /etc/apt/keyrings ; \
         # Install nodejs from nodesource.com
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
@@ -253,6 +252,17 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
+
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        # If LANG=C.UTF-8 is not enough, build full featured locale
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        cat /etc/locale.gen | grep "${LANG}" ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
 
     RUN set -ex ; corepack enable ; corepack enable npm ;
         # npm install -g yarn
@@ -484,7 +494,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
         fi
 
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -505,24 +514,20 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # jq \
             lsb-release \
             # Needed by Erlang VM
+            libncursesw6 \
             libtinfo6 \
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
             locales \
-            # openssl \
-            # $RUNTIME_PACKAGES \
+            openssl \
+            $RUNTIME_PACKAGES \
         ; \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
         # apt-get update -qq ; \
         # apt-get -y install -y -qq --no-install-recommends trivy ; \
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
-        # Generate locales specified in /etc/locale.gen
-        # If LANG=C.UTF-8 is not enough, build full featured locale
-        # sed -i "/${LANG}/s/^# //g" /etc/locale.gen ; \
-        locale-gen ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
@@ -545,6 +550,17 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
+
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        # If LANG=C.UTF-8 is not enough, build full featured locale
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        grep -v '^#' /etc/locale.gen ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
 
     # Stage files for copying into final image.
     RUN set -ex ; \
@@ -601,10 +617,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 
     ARG LANG
-
-    # Copy just the locale file used
-    COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
-
     # Copy staged files
     COPY --from=prod-install ["/stage", "/"]
 
@@ -612,6 +624,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN if test -s /bin/make-symlinks.sh ; then \
             /bin/sh /bin/make-symlinks.sh ; \
         fi
+
+    ARG LANG
+    # Copy locale file used
+    # COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
+    COPY --link --from=prod-install /usr/lib/locale/locale-archive /usr/lib/locale/
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
@@ -699,16 +716,10 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG LANG
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
-
-    # Set environment vars used by the app
-    ENV HOME=$APP_DIR \
-        LANG=$LANG
 
     RUN set -exu ; \
         # Create app dirs
@@ -733,9 +744,8 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
-            # $DEV_PACKAGES \
+            $DEV_PACKAGES \
         ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
@@ -790,6 +800,20 @@ FROM build-os-deps AS dev
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
+
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        # If LANG=C.UTF-8 is not enough, build full featured locale
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
+
+    # Set environment vars used by the app
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
