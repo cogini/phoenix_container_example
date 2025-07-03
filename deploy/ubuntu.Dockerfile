@@ -495,6 +495,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # software-properties-common \
             gnupg \
             unzip \
+            # jq \
             lsb-release \
             # Needed by Erlang VM
             libtinfo6 \
@@ -612,7 +613,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             libgcc-s1 \
             # Allow app to listen on HTTPS. May not be needed if handled
             # outside the application, e.g., in load balancer.
-            # openssl \
+            openssl \
             # $RUNTIME_PACKAGES \
         ; \
         # Remove packages installed temporarily. Removes everything related to
@@ -642,8 +643,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 

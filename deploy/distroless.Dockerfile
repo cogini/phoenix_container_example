@@ -502,7 +502,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # software-properties-common \
             gnupg \
             unzip \
-            jq \
+            # jq \
             lsb-release \
             # Needed by Erlang VM
             libtinfo6 \
@@ -735,6 +735,7 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \

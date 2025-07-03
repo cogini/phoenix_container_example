@@ -420,6 +420,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # software-properties-common \
             gpg \
             unzip \
+            # jq \
             lsb-release \
             # Needed by Erlang VM
             libtinfo6 \
@@ -485,8 +486,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
