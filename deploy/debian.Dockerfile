@@ -644,8 +644,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
