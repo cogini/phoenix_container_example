@@ -615,7 +615,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             libgcc-s1 \
             # Allow app to listen on HTTPS. May not be needed if handled
             # outside the application, e.g., in load balancer.
-            # openssl \
+            openssl \
             # $RUNTIME_PACKAGES \
         ; \
         # Remove packages installed temporarily. Removes everything related to
@@ -763,6 +763,7 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
