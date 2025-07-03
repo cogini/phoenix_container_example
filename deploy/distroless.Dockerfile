@@ -545,34 +545,24 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
-    # lrwxrwxrwx 1 root root      18 May  7  2023 libncursesw.so.6 -> libncursesw.so.6.4
-    # -rw-r--r-- 1 root root  264048 May  7  2023 libncursesw.so.6.4
-    # lrwxrwxrwx 1 root root      15 May  7  2023 libtinfo.so.6 -> libtinfo.so.6.4
-    # -rw-r--r-- 1 root root  199896 May  7  2023 libtinfo.so.6.4
-
-    # Stage runtime libraries for copying into final image
-    # Only copy files actually used by the Erlang VM
+    # Stage files for copying into final image, including shared libraries
+    # needed by the Erlang VM and binary extensions
     RUN set -ex ; \
-        mkdir -p "/stage/lib" ; \
-        # mkdir -p "/stage/usr/lib" ; \
-        # libncursesw6
-        # https://packages.debian.org/bookworm/arm64/libncursesw6/filelist
-        find /lib/$(uname -m)-linux-gnu/ -name 'libncursesw.*' -type f -exec cp -v {} "/stage/lib/" \; ; \
-        # libtinfo6, dependency of libncursesw6
-        # https://packages.debian.org/bookworm/arm64/libtinfo6/filelist
-        find /lib/$(uname -m)-linux-gnu/ -name 'libtinfo.*' -type f -exec cp -v {} "/stage/lib/" \;
-        # find /usr/lib/$(uname -m)-linux-gnu/ -name 'libtic.*' -type f -exec cp -v {} "/stage/usr/lib/" \; ; \
-
-    # Create dpkg status files for use by security scanners like Trivy
-    RUN set -ex ; \
-        # dpkg-query --help ; \
-        # md5sum --help ; \
-        mkdir -p /var/lib/dpkg/status.d ; \
+        mkdir -p /stage/var/lib/dpkg/status.d ; \
         for pkg in libncursesw6 libtinfo6 ; do \
-            awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/var/lib/dpkg/status.d/${pkg}" ; \
-            dpkg-query --listfiles "${pkg}" | grep "so" | sort -u | xargs md5sum > "/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
+            # Create dpkg status files for use by security scanners like Trivy
+            awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
+            # Copy shared libraries, skiping symlinks
+            for file in $(dpkg-query --listfiles "${pkg}" | grep "so" | sort -u) ; do \
+                if [ -f "$file" ] && [ ! -L "$file" ] ; then \
+                    dir=$(dirname "$file") ; \
+                    mkdir -p "/stage${dir}" ; \
+                    cp -v "$file" "/stage${file}" ; \
+                    md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
+                fi ; \
+            done ; \
         done ; \
-        ls -l /var/lib/dpkg/status.d/
+        find /stage -type f -print
 
     # These packages are part of the Google distroless/cc image
     # libgcc-s1
@@ -585,9 +575,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_NAME
     ARG APP_DIR
     ARG APP_GROUP
+    ARG APP_GROUP_ID
     ARG APP_USER
+    ARG APP_USER_ID
 
-    # User and group are created in Distroless base image (nonroot:nonroot)
+    # User and group are created in the Google Distroless base image (nonroot:nonroot)
 
     # Default environment vars:
     # SHLVL=1
@@ -602,16 +594,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # Copy just the locale file used
     COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
-    # Copy shared libraries needed at runtime
-    COPY --from=prod-install "/stage/lib/*" "/arch/lib/"
-
-    # Hack to get libraries into directory named by arch
-    RUN ln /arch/lib/* /lib/$(uname -m)-linux-gnu/ && \
-        # ln /arch/usr/lib/* /usr/lib/$(uname -m)-linux-gnu/ && \
-        ls -l /lib/$(uname -m)-linux-gnu/
-
-    COPY --from=prod-install "/var/lib/dpkg/status.d/*" "/var/lib/dpkg/status.d/"
-
+    # Copy staged files
+    COPY --from=prod-install ["/stage", "/"]
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
