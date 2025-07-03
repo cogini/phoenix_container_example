@@ -497,6 +497,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # software-properties-common \
             gnupg \
             unzip \
+            jq \
             lsb-release \
             # Needed by Erlang VM
             libtinfo6 \
