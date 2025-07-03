@@ -95,6 +95,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG NODE_VER
     ARG NODE_MAJOR
     ARG RUNTIME_PACKAGES
+
     ARG APK_UPDATE
     ARG APK_UPGRADE
 
@@ -280,7 +281,6 @@ FROM build-deps-get AS prod-release
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    COPY --link .env.pro[d] ./
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
@@ -374,7 +374,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
-    # environment-specific config such as DATABASE_URL should be set at runtime.
+    # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
         # RELEASE=$RELEASE \
@@ -382,9 +382,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
     RUN set -exu ; \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" ; \
@@ -399,10 +396,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 # Create final prod image which gets deployed
 FROM prod-base AS prod
     ARG APP_DIR
-    ARG APP_NAME
     ARG APP_USER
     ARG APP_GROUP
-    ARG APP_PORT
 
     # This could be put in a separate target, but it's faster to do it from prod test
 
@@ -438,6 +433,7 @@ FROM prod-base AS prod
 
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
+    ARG APP_PORT
     EXPOSE $APP_PORT
 
     # Erlang EPMD port
