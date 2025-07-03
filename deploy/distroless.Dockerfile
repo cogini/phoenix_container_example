@@ -556,6 +556,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
             # Copy shared libraries, skiping symlinks
             for file in $(dpkg-query --listfiles "${pkg}" | grep "so" | sort -u) ; do \
+                # Skip symlinks as they result in duplicate so files and are not needed in this case
                 if [ -f "$file" ] && [ ! -L "$file" ] ; then \
                     dir=$(dirname "$file") ; \
                     mkdir -p "/stage${dir}" ; \
@@ -565,18 +566,18 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             done ; \
         done ; \
         # Additional packages
-        for pkg in jq libjq1 libonig5 ; do \
-            # Create dpkg status files for use by security scanners like Trivy
-            awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
-            for file in $(dpkg-query --listfiles "${pkg}" | sort -u) ; do \
-                if [ -f "$file" ] ; then \
-                    dir=$(dirname "$file") ; \
-                    mkdir -p "/stage${dir}" ; \
-                    cp -v "$file" "/stage${file}" ; \
-                    md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
-                fi ; \
-            done ; \
-        done ; \
+        # for pkg in jq libjq1 libonig5 ; do \
+        #     # Create dpkg status files for use by security scanners like Trivy
+        #     awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
+        #     for file in $(dpkg-query --listfiles "${pkg}" | sort -u) ; do \
+        #         if [ -f "$file" ] ; then \
+        #             dir=$(dirname "$file") ; \
+        #             mkdir -p "/stage${dir}" ; \
+        #             cp -v "$file" "/stage${file}" ; \
+        #             md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
+        #         fi ; \
+        #     done ; \
+        # done ; \
         find /stage -type f -print
 
     # These packages are part of the Google distroless/cc image
