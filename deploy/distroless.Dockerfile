@@ -549,35 +549,30 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     # Stage files for copying into final image.
     RUN set -ex ; \
         mkdir -p /stage/var/lib/dpkg/status.d ; \
-        # Minimal files needed for Erlang VM to run
+        mkdir -p /stage/bin ; \
+        touch /stage/bin/make-symlinks.sh ; \
+        # Minimal files needed for Erlang VM
         # https://packages.debian.org/bookworm/arm64/libncursesw6
+        # https://packages.debian.org/bookworm/arm64/libtinfo6
+        # for pkg in libncursesw6 libtinfo6 jq libjq1 libonig5 ; do \
         for pkg in libncursesw6 libtinfo6 ; do \
             # Create dpkg status files for use by security scanners like Trivy
             awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
-            # Copy shared libraries, skiping symlinks
-            for file in $(dpkg-query --listfiles "${pkg}" | grep "so" | sort -u) ; do \
-                # Skip symlinks as they result in duplicate so files and are not needed in this case
-                if [ -f "$file" ] && [ ! -L "$file" ] ; then \
+            for file in $(dpkg-query --listfiles "${pkg}" | sort -u) ; do \
+                if [ -f "$file" ] ; then \
                     dir=$(dirname "$file") ; \
                     mkdir -p "/stage${dir}" ; \
-                    cp -v "$file" "/stage${file}" ; \
+                    if [ -L "$file" ] ; then \
+                        target=$(readlink "$file") ; \
+                        echo "ln -v -s ${dir}/${target} ${file}" >> /stage/bin/make-symlinks.sh ; \
+                    else \
+                        cp -v "$file" "/stage${file}" ; \
+                    fi ; \
                     md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
                 fi ; \
             done ; \
         done ; \
-        # Additional packages
-        # for pkg in jq libjq1 libonig5 ; do \
-        #     # Create dpkg status files for use by security scanners like Trivy
-        #     awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
-        #     for file in $(dpkg-query --listfiles "${pkg}" | sort -u) ; do \
-        #         if [ -f "$file" ] ; then \
-        #             dir=$(dirname "$file") ; \
-        #             mkdir -p "/stage${dir}" ; \
-        #             cp -v "$file" "/stage${file}" ; \
-        #             md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
-        #         fi ; \
-        #     done ; \
-        # done ; \
+        cat /stage/bin/make-symlinks.sh ; \
         find /stage -type f -print
 
     # These packages are part of the Google distroless/cc image
@@ -612,6 +607,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     # Copy staged files
     COPY --from=prod-install ["/stage", "/"]
+
+    # Make symlinks for files copied from prod-install stage
+    RUN if test -s /bin/make-symlinks.sh ; then \
+            /bin/sh /bin/make-symlinks.sh ; \
+        fi
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
