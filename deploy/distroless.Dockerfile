@@ -502,6 +502,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # software-properties-common \
             gnupg \
             unzip \
+            jq \
             lsb-release \
             # Needed by Erlang VM
             libtinfo6 \
@@ -545,16 +546,30 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
-    # Stage files for copying into final image, including shared libraries
-    # needed by the Erlang VM and binary extensions
+    # Stage files for copying into final image.
     RUN set -ex ; \
         mkdir -p /stage/var/lib/dpkg/status.d ; \
+        # Minimal files needed for Erlang VM to run
+        # https://packages.debian.org/bookworm/arm64/libncursesw6
         for pkg in libncursesw6 libtinfo6 ; do \
             # Create dpkg status files for use by security scanners like Trivy
             awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
             # Copy shared libraries, skiping symlinks
             for file in $(dpkg-query --listfiles "${pkg}" | grep "so" | sort -u) ; do \
                 if [ -f "$file" ] && [ ! -L "$file" ] ; then \
+                    dir=$(dirname "$file") ; \
+                    mkdir -p "/stage${dir}" ; \
+                    cp -v "$file" "/stage${file}" ; \
+                    md5sum $file >> "/stage/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
+                fi ; \
+            done ; \
+        done ; \
+        # Additional packages
+        for pkg in jq libjq1 libonig5 ; do \
+            # Create dpkg status files for use by security scanners like Trivy
+            awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/stage/var/lib/dpkg/status.d/${pkg}" ; \
+            for file in $(dpkg-query --listfiles "${pkg}" | sort -u) ; do \
+                if [ -f "$file" ] ; then \
                     dir=$(dirname "$file") ; \
                     mkdir -p "/stage${dir}" ; \
                     cp -v "$file" "/stage${file}" ; \
