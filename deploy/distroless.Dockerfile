@@ -568,10 +568,10 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # dpkg-query --help ; \
         # md5sum --help ; \
         mkdir -p /var/lib/dpkg/status.d ; \
-        awk 'BEGIN{RS=""; FS="\n"}/^Package: libncursesw6/' /var/lib/dpkg/status > /var/lib/dpkg/status.d/libncursesw6 ; \
-        dpkg-query --listfiles libncursesw6 | grep "so" | sort -u | xargs md5sum > /var/lib/dpkg/status.d/libncursesw6.md5sums ; \
-        awk 'BEGIN{RS=""; FS="\n"}/^Package: libtinfo6/' /var/lib/dpkg/status > /var/lib/dpkg/status.d/libtinfo6 ; \
-        dpkg-query --listfiles libtinfo6 | grep "so" | sort -u | xargs md5sum > /var/lib/dpkg/status.d/libtinfo6.md5sums ; \
+        for pkg in libncursesw6 libtinfo6 ; do \
+            awk "BEGIN{RS=\"\"; FS=\"\n\"}/^Package: ${pkg}/" /var/lib/dpkg/status > "/var/lib/dpkg/status.d/${pkg}" ; \
+            dpkg-query --listfiles "${pkg}" | grep "so" | sort -u | xargs md5sum > "/var/lib/dpkg/status.d/${pkg}.md5sums" ; \
+        done ; \
         ls -l /var/lib/dpkg/status.d/
 
     # These packages are part of the Google distroless/cc image
