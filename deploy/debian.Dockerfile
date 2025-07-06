@@ -62,7 +62,6 @@ ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
-# ARG LANG=C.utf8
 # ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
@@ -193,7 +192,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # yarn \
             # yarnpkg \
         ; \
-        # Install latest Postgres from postgres.org repo
+        # Install latest PostgreSQL client library from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
         # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref ; \
@@ -251,7 +250,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG LANG
     RUN set -exu ; \
         # Generate locales specified in /etc/locale.gen
-        # If LANG=C.UTF-8 is not enough, build full featured locale
         sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
         cat /etc/locale.gen | grep "${LANG}" ; \
         locale-gen ; \
@@ -518,11 +516,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             openssl \
             $RUNTIME_PACKAGES \
         ; \
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
-        # apt-get update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends trivy ; \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
@@ -549,7 +542,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
     RUN set -exu ; \
         # Generate locales specified in /etc/locale.gen
-        # If LANG=C.UTF-8 is not enough, build full featured locale
         sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
         grep -v '^#' /etc/locale.gen ; \
         locale-gen ; \
@@ -773,36 +765,6 @@ FROM build-os-deps AS dev
             sudo \
             $DEV_PACKAGES \
         ; \
-        # Install latest Postgres from postgres.org repo
-        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
-        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
-        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref ; \
-        # apt-get update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client ;
-        # Install Microsoft ODBC Driver for SQL Server
-        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc ; \
-        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list ; \
-        # export ACCEPT_EULA=Y ; \
-        # apt-get -qq update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 ; \
-        # Install specific version of mysql from MySQL repo
-        # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
-        # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
-        # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
-        # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
-        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' ; \
-        # export GPGHOME="$(mktemp -d)" ; \
-        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" ; \
-        # mkdir -p -m 755 /etc/apt/keyrings ; \
-        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg ; \
-        # gpgconf --kill all ; \
-        # rm -rf "$GPGHOME" ; \
-        # rm -rf "${HOME}/.gnupg" ; \
-        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
-        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
-        # apt-get update -qq ; \
-        # DEBIAN_FRONTEND=noninteractive \
-        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
@@ -831,10 +793,8 @@ FROM build-os-deps AS dev
     ARG LANG
     RUN set -exu ; \
         # Generate locales specified in /etc/locale.gen
-        # If LANG=C.UTF-8 is not enough, build full featured locale
         sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
         locale-gen ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         localedef --list-archive ; \
         ls -l /usr/lib/locale/
 
