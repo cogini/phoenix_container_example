@@ -47,9 +47,10 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
       - LOG_CONSOLE=${LOG_CONSOLE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - POOL_SIZE=${POOL_SIZE:-50}
       - PORT=4000
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
-      - POOL_SIZE=${POOL_SIZE:-50}
       # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
       # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
