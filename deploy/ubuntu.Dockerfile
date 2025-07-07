@@ -250,6 +250,16 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        cat /etc/locale.gen | grep "${LANG}" ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
+
     RUN set -ex ; corepack enable ; corepack enable npm ;
         # npm install -g yarn
 
@@ -817,6 +827,18 @@ FROM build-os-deps AS dev
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
+
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        locale-gen ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
+
+    # Set environment vars used by the app
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN chsh --shell /bin/bash "$APP_USER"
 
