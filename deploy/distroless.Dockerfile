@@ -13,7 +13,7 @@ ARG OTP_VER=27.3.4
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
 ARG BUILD_OS_VER=bookworm-20250428-slim
-ARG PROD_OS_VER=bookworm-20250428-slim
+ARG PROD_OS_VER=bookworm
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
