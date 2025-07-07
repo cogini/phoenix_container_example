@@ -17,6 +17,7 @@ ARG PROD_OS_VER=9
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
+ARG SNAPSHOT_NAME=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
@@ -430,7 +431,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             locales \
             openssl \
             $RUNTIME_PACKAGES \
-        # ; \
+        ;
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/yum
 
