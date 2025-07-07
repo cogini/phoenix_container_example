@@ -491,7 +491,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
