@@ -5,7 +5,9 @@
 
 # Elixir dirs
 !apps
-!assets
+!assets/
+# Ignore specific directory again
+assets/node_modules/
 !bin
 !config
 !lib
