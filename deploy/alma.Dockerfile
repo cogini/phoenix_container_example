@@ -75,8 +75,8 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
-ARG RUNTIME_PACKAGES=""
-ARG DEV_PACKAGES=""
+ARG RUNTIME_PACKAGES="libncursesw6"
+ARG DEV_PACKAGES="inotify-tools"
 
 
 # Create build base image with OS dependencies
@@ -428,8 +428,8 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
-            openssl
-            # $RUNTIME_PACKAGES \
+            openssl \
+            $RUNTIME_PACKAGES \
         # ; \
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/yum
@@ -472,8 +472,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             openssl  \
             # useradd and groupadd
             shadow-utils \
-            wget
-            # $RUNTIME_PACKAGES
+            wget \
+            $RUNTIME_PACKAGES
         # ; \
         # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
         # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
@@ -599,8 +599,8 @@ FROM build-os-deps AS dev
             openssh-clients \
             sudo \
             # for chsh
-            util-linux-user
-            # $DEV_PACKAGES \
+            util-linux-user \ 
+            $DEV_PACKAGES \
         # ; \
         # dnf clean all
 
