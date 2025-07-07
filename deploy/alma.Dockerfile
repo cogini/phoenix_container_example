@@ -425,7 +425,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # jq \
             lsb-release \
             # Needed by Erlang VM
-            libtinfo6 \
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
