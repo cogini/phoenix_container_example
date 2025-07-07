@@ -741,16 +741,10 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG LANG
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
-
-    # Set environment vars used by the app
-    ENV HOME=$APP_DIR \
-        LANG=$LANG
 
     RUN set -exu ; \
         # Create app dirs
