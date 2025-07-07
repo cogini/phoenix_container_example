@@ -170,6 +170,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Install nodejs from nodesource.com
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
         echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+        #
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n ; \
         # chmod +x /usr/local/bin/n ; \
@@ -178,38 +179,34 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # # Install specific version of node
         # n "$NODE_VER" ; \
         # rm /usr/local/bin/n ; \
+        #
         # Install yarn from repo
         # curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc ; \
         # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
         # printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref ; \
+        #
         # Install GitHub CLI
         # wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg ; \
         # chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg ; \
         # echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list ; \
+        #
         # Install Trivy
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
-        apt-get update -qq ; \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends \
-            # gh \
-            nodejs \
-            # trivy \
-            # yarn \
-            # yarnpkg \
-        ; \
+        #
+        # Install Grype
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
+        #
         # Install latest PostgreSQL client library from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
         # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref ; \
-        # apt-get update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client ;
+        #
         # Install Microsoft ODBC Driver for SQL Server
         # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc ; \
         # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list ; \
         # export ACCEPT_EULA=Y ; \
-        # apt-get -qq update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 ; \
+        #
         # Install specific version of mysql from MySQL repo
         # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
         # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
@@ -218,16 +215,24 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' ; \
         # export GPGHOME="$(mktemp -d)" ; \
         # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" ; \
-        # mkdir -p -m 755 /etc/apt/keyrings ; \
         # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg ; \
         # gpgconf --kill all ; \
         # rm -rf "$GPGHOME" ; \
         # rm -rf "${HOME}/.gnupg" ; \
         # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
         # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
-        # apt-get update -qq ; \
-        # DEBIAN_FRONTEND=noninteractive \
-        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client ; \
+        apt-get update -qq ; \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            # gh \
+            nodejs \
+            # trivy \
+            # yarn \
+            # yarnpkg \
+            # libpq-dev postgresql-client \
+            # msodbcsql17 \
+            # libmysqlclient-dev mysql-client \
+        ; \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
