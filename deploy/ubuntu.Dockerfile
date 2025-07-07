@@ -518,7 +518,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
-            # openssl \
+            openssl \
             $RUNTIME_PACKAGES \
         ; \
         # Remove packages installed temporarily. Removes everything related to
