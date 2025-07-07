@@ -650,6 +650,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
 
+    ARG LANG
+    # Copy locale file used
+    # COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
+    COPY --link --from=prod-install /usr/lib/locale/locale-archive /usr/lib/locale/
+
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
