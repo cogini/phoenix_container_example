@@ -114,6 +114,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             cmake3 \
             curl \
             git \
+            # glibc-langpack -en \
             gpg \
             make \
             # useradd and groupadd
@@ -405,7 +406,6 @@ FROM build-deps-get AS prod-release
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
@@ -419,6 +419,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             curl \
             gnupg-agent \
             # software-properties-common \
+            # glibc-langpack -en \
             gpg \
             unzip \
             # jq \
@@ -440,7 +441,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 # https://www.mankier.com/8/microdnf
 # https://git.rockylinux.org/rocky/images/-/blob/main/base/scripts/build-container-rootfs.sh
 
-
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_NAME
@@ -457,7 +457,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
         chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
@@ -469,6 +468,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             ca-certificates \
             # Run health checks and get ECS metadata
             curl \
+            # glibc-langpack -en \
             jq \
             openssl  \
             # useradd and groupadd
@@ -476,12 +476,12 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             wget \
             $RUNTIME_PACKAGES
         # ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
-        # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
-        # locale -a | grep -E 'en_US|C'
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/dnf
-
+    ARG LANG
+    # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
+    # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
+    # locale -a | grep -E 'en_US|C'
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
@@ -569,16 +569,10 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG LANG
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
-
-    # Set environment vars used by the app
-    ENV HOME=$APP_DIR \
-        LANG=$LANG
 
     RUN set -exu ; \
         # Create app dirs
@@ -602,7 +596,7 @@ FROM build-os-deps AS dev
             # for chsh
             util-linux-user \ 
             $DEV_PACKAGES \
-        # ; \
+        ;
         # dnf clean all
 
     RUN chsh --shell /bin/bash "$APP_USER"
