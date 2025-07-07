@@ -113,10 +113,13 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
             ; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
-        fi
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
+        fi ; \
+        truncate -s 0 /var/log/apt/* ; \
+        truncate -s 0 /var/log/dpkg.log
+
 
     ARG NODE_VER
     ARG NODE_MAJOR
@@ -472,10 +475,12 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
             ; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
-        fi
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
+        fi ; \
+        truncate -s 0 /var/log/apt/* ; \
+        truncate -s 0 /var/log/dpkg.log
 
     ARG LANG
     ARG RUNTIME_PACKAGES
@@ -575,15 +580,12 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             apt-get -y install -y -qq --no-install-recommends \
                 ca-certificates \
             ; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list; \
-            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list; \
-        fi
-
-    ARG LANG
-
-    # Copy just the locale file used
-    # COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
+        fi ; \
+        truncate -s 0 /var/log/apt/* ; \
+        truncate -s 0 /var/log/dpkg.log
 
     ARG RUNTIME_PACKAGES
 
