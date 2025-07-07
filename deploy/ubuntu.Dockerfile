@@ -162,7 +162,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # postgresql-client \
             $RUNTIME_PACKAGES \
         ; \
-        locale-gen ; \
         mkdir -p -m 755 /etc/apt/keyrings ; \
         # Install nodejs from nodesource.com
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
@@ -521,16 +520,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # openssl \
             $RUNTIME_PACKAGES \
         ; \
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
-        # apt-get update -qq ; \
-        # apt-get -y install -y -qq --no-install-recommends trivy ; \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
-        # Generate locales specified in /etc/locale.gen
-        # If LANG=C.UTF-8 is not enough, build full featured locale
-        # sed -i "/${LANG}/s/^# //g" /etc/locale.gen ; \
-        locale-gen ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
@@ -553,6 +542,16 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* ; \
         truncate -s 0 /var/log/dpkg.log
+
+    ARG LANG
+    RUN set -exu ; \
+        # Generate locales specified in /etc/locale.gen
+        sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
+        grep -v '^#' /etc/locale.gen ; \
+        locale-gen ; \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
+        localedef --list-archive ; \
+        ls -l /usr/lib/locale/
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
