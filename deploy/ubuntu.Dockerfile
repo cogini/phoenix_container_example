@@ -74,8 +74,8 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
-ARG RUNTIME_PACKAGES=""
-ARG DEV_PACKAGES=""
+ARG RUNTIME_PACKAGES="libncursesw6"
+ARG DEV_PACKAGES="inotify-tools"
 
 
 # Create build base image with OS dependencies
@@ -160,7 +160,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
-            # $RUNTIME_PACKAGES \
+            $RUNTIME_PACKAGES \
         ; \
         locale-gen ; \
         mkdir -p -m 755 /etc/apt/keyrings ; \
@@ -509,7 +509,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libgcc-s1 \
             locales \
             # openssl \
-            # $RUNTIME_PACKAGES \
+            $RUNTIME_PACKAGES \
         ; \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
@@ -616,7 +616,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Allow app to listen on HTTPS. May not be needed if handled
             # outside the application, e.g., in load balancer.
             openssl \
-            # $RUNTIME_PACKAGES \
+            $RUNTIME_PACKAGES \
         ; \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
@@ -761,7 +761,7 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
-            # $DEV_PACKAGES \
+            $DEV_PACKAGES \
         ; \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
