@@ -429,7 +429,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
-            locales \
+            # locales \
             openssl \
             $RUNTIME_PACKAGES \
         ;
