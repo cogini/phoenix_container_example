@@ -454,8 +454,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
-        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     ARG RUNTIME_PACKAGES
 
