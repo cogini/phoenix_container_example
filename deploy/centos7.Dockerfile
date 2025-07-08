@@ -6,7 +6,7 @@ ARG BASE_OS=centos
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.18.3-otp-27
+ARG ELIXIR_VER=1.18.3
 ARG OTP_VER=27.3.3
 
 # https://hub.docker.com/_/centos
@@ -253,12 +253,12 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Erlang build scripts expect wx-config
         ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
         # Install using .tool-versions versions
-        # asdf install ; \
-        asdf install erlang "$OTP_VER" ; \
-        asdf install elixir "$ELIXIR_VER" ; \
-        asdf install nodejs "$NODE_VER" ; \
+        asdf install ; \
+        # asdf install erlang "$OTP_VER" ; \
+        # asdf install elixir "$ELIXIR_VER" ; \
+        # asdf install nodejs "$NODE_VER" ; \
         # asdf install yarn "$YARN_VER" ; \
-        asdf install rebar "${REBAR_VER}" ; \
+        # asdf install rebar "${REBAR_VER}" ; \
         # export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
         # echo "RPM_ARCH=$RPM_ARCH" ; \
         # if [ "${RPM_ARCH}" = "x86_64" ]; then \
