@@ -236,7 +236,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ENV ASDF_DIR="$HOME/.asdf"
     ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
 
-    # COPY .tool-versions ./
+    COPY .tool-versions ./
 
     ARG ELIXIR_VER
     ARG NODE_MAJOR
