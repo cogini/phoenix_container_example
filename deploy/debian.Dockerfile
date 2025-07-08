@@ -140,7 +140,17 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Enable installation of packages over https
             apt-transport-https \
             build-essential \
-            # Enable app to make outbound SSL calls
+            # Build tools/libraries for Erlang in hexpm/elixir
+            # autoconf \
+            # dpkg-dev \
+            # gcc \
+            # gcc-9 \
+            # g++ \
+            # make \
+            # libncurses-dev \
+            # unixodbc-dev \
+            # libssl-dev \
+            # libsctp-dev \
             ca-certificates \
             cmake \
             curl \
@@ -152,19 +162,13 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             locales \
             lsb-release \
             openssh-client \
-            # Support ssl in container, as opposed to load balancer
-            openssl \
             wget \
             zip \
-            # Install default nodejs
-            # nodejs \
-            # Install default Postgres
-            # libpq-dev \
-            # postgresql-client \
             $RUNTIME_PACKAGES \
         ; \
+        # Support keyrings for apt repositories
         mkdir -p -m 755 /etc/apt/keyrings ; \
-        # Install nodejs from nodesource.com
+        # Install nodejs from nodesource.com repo
         curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg ; \
         echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
         #
@@ -613,11 +617,18 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         apt-get -y install -y -qq --no-install-recommends \
             # Enable installation of packages over https
             # apt-transport-https \
+            # Libraries used by hexpm
             # Enable the app to make outbound SSL calls.
             ca-certificates \
+            # Allow app to listen on HTTPS
+            libssl3 \
+            # libodbc1 \
+            # libsctp1 \
+            netbase \
             # Run health checks and get ECS metadata
-            curl \
-            jq \
+            # curl \
+            # jq \
+            # Prefer wget over curl, as it part of busybox
             wget \
             # tini is a minimal init which will reap zombie processes
             # https://github.com/krallin/tini
@@ -628,9 +639,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
-            # Allow app to listen on HTTPS. May not be needed if handled
-            # outside the application, e.g., in load balancer.
-            openssl \
             $RUNTIME_PACKAGES \
         ; \
         # Remove packages installed temporarily. Removes everything related to
