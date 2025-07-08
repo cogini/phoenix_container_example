@@ -202,7 +202,7 @@ jobs:
                 {
                   os: "centos7",
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "7",
                   prod_os_ver: "7"
                 },
@@ -304,7 +304,7 @@ jobs:
                 {
                   os: "centos7",
                   elixir: "1.18.3",
-                  otp: "27.3.4",
+                  otp: "27.3.3",
                   build_os_ver: "7",
                   prod_os_ver: "7"
                 },
