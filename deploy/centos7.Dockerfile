@@ -388,6 +388,7 @@ FROM build-deps-get AS test-image
 
 # Create Elixir release
 FROM build-deps-get AS prod-release
+    ARG LANG
     ARG APP_DIR
 
     WORKDIR $APP_DIR
@@ -494,7 +495,6 @@ FROM build-deps-get AS prod-release
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
@@ -531,6 +531,8 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             curl \
             gnupg-agent \
             # software-properties-common \
+            # en_US.UTF-8 locale
+            glibc-langpack-en \
             gpg \
             unzip \
             lsb-release \
@@ -546,13 +548,12 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum
 
-    RUN localedef -i en_US -f UTF-8 en_US.UTF-8
+    # RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
 # https://www.mankier.com/8/microdnf
 # https://git.rockylinux.org/rocky/images/-/blob/main/base/scripts/build-container-rootfs.sh
-
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
@@ -570,7 +571,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
         chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
@@ -620,14 +620,13 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum
 
+    ARG LANG
     # ENV LANG=en_US.UTF-8
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
