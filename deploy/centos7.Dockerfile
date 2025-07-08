@@ -463,6 +463,10 @@ FROM build-deps-get AS prod-release
     ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
     ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
+    RUN set -ex ; \
+        curl https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o _build/tailwindcss-linux-x64 ; \
+        chmod +x _build/tailwindcss-linux-x64
+
     RUN mix assets.setup
     RUN mix assets.deploy
 
