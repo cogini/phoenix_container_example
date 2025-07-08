@@ -465,9 +465,9 @@ FROM build-deps-get AS prod-release
 
     RUN set -ex ; \
         ls -l  ; \
-        mkdir -p ./_build ; \
-        curl https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o ./_build/tailwindcss-linux-x64 ; \
-        chmod +x ./_build/tailwindcss-linux-x64 ;
+        curl -v https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o /app/_build/tailwindcss-linux-x64 ; \
+        ls -l _build/ ; \
+        chmod +x /app/_build/tailwindcss-linux-x64 ;
 
     RUN mix assets.setup
     RUN mix assets.deploy
