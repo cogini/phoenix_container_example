@@ -452,6 +452,17 @@ FROM build-deps-get AS prod-release
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
+    # Use latest CA certs from Mozilla for hex
+    # https://curl.se/docs/caextract.html
+    # https://stackoverflow.com/questions/37043442/how-to-add-certificate-authority-file-in-centos-7
+    RUN set -ex ; \
+        curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
+        update-ca-trust
+
+    # https://hexdocs.pm/mix/Mix.html
+    ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
+    ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
+
     RUN mix assets.setup
     RUN mix assets.deploy
 
