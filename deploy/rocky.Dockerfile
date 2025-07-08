@@ -17,6 +17,7 @@ ARG PROD_OS_VER=8
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
+ARG SNAPSHOT_NAME=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
@@ -75,8 +76,9 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
-ARG RUNTIME_PACKAGES=""
-ARG DEV_PACKAGES=""
+# These variables must always have something defined
+ARG RUNTIME_PACKAGES="ca-certificates"
+ARG DEV_PACKAGES="inotify-tools"
 
 
 # Create build base image with OS dependencies
@@ -103,6 +105,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         dnf config-manager --set-enabled powertools ; \
         # dnf config-manager --set-enabled devel ; \
         dnf install -y epel-release ; \
+        # /usr/bin/crb enable ; \
         dnf upgrade -y ; \
         # dnf makecache --refresh ; \
         dnf group install -y 'Development Tools' ; \
@@ -112,6 +115,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             cmake3 \
             curl \
             git \
+            # glibc-langpack -en \
             gpg \
             make \
             # useradd and groupadd
@@ -403,7 +407,6 @@ FROM build-deps-get AS prod-release
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
@@ -412,23 +415,24 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         set -exu ; \
         # dnf makecache --refresh ; \
         dnf upgrade -y ; \
-        dnf install -y --nodocs \
+        dnf install -y --nodocs --allowerasing \
             ca-certificates \
             curl \
             gnupg-agent \
             # software-properties-common \
+            # glibc-langpack -en \
             gpg \
             unzip \
+            # jq \
             lsb-release \
             # Needed by Erlang VM
-            libtinfo6 \
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
-            locales \
-            openssl
-            # $RUNTIME_PACKAGES \
-        # ; \
+            # locales \
+            openssl \
+            $RUNTIME_PACKAGES \
+        ;
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/yum
 
@@ -436,7 +440,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
 # https://www.mankier.com/8/microdnf
 # https://git.rockylinux.org/rocky/images/-/blob/main/base/scripts/build-container-rootfs.sh
-
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
@@ -454,38 +457,37 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
         chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
-    ARG LANG
     ARG RUNTIME_PACKAGES
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         set -exu ; \
         # dnf makecache --refresh ; \
         dnf upgrade -y ; \
-        dnf install -y --nodocs \
+        dnf install -y --nodocs --allowerasing \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks and get ECS metadata
             curl \
+            # glibc-langpack -en \
             jq \
             openssl  \
             # useradd and groupadd
             shadow-utils \
-            wget
-            # $RUNTIME_PACKAGES
+            wget \
+            $RUNTIME_PACKAGES
         # ; \
-        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
-        # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
-        # locale -a | grep -E 'en_US|C'
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/dnf
 
+    ARG LANG
+    # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
+    # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
+    # locale -a | grep -E 'en_US|C'
 
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL are set at runtime.
     ENV HOME=$APP_DIR \
         LANG=$LANG \
-        # RELEASE=$RELEASE \
-        # MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
@@ -568,16 +570,10 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG LANG
-
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
-
-    # Set environment vars used by the app
-    ENV HOME=$APP_DIR \
-        LANG=$LANG
 
     RUN set -exu ; \
         # Create app dirs
@@ -594,14 +590,14 @@ FROM build-os-deps AS dev
 
     RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         set -exu ; \
-        dnf install -y --nodocs \
+        dnf install -y --nodocs --allowerasing \
             inotify-tools \
             openssh-clients \
             sudo \
             # for chsh
-            util-linux-user
-            # $DEV_PACKAGES \
-        # ; \
+            util-linux-user \ 
+            $DEV_PACKAGES \
+        ;
         # dnf clean all
 
     RUN chsh --shell /bin/bash "$APP_USER"
