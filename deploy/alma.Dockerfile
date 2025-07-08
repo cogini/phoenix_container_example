@@ -478,6 +478,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # ; \
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/dnf
+
     ARG LANG
     # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
     # localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
