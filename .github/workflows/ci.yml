@@ -1431,122 +1431,123 @@ jobs:
   #     - name: Create CloudFront invalidation
   #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
-  upload-assets:
-    name: Build and upload assets to CDN
-    needs: [setup-matrix]
-    # Build assets in host instead of Docker for better performance.
-    if: github.event_name != 'pull_request'
-    permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
-      id-token: write
-      contents: read
-      # Push to ghcr.io repository
-      packages: write
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
-    runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
-    env:
-      MIX_ENV: prod
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
+  # upload-assets:
+  #   name: Build and upload assets to CDN
+  #   needs: [setup-matrix]
+  #   # Build assets in host instead of Docker for better performance.
+  #   if: github.event_name != 'pull_request'
+  #   permissions:
+  #     # Interact with GitHub OIDC Token endpoint for AWS
+  #     id-token: write
+  #     contents: read
+  #     # Push to ghcr.io repository
+  #     packages: write
+  #     # Upload JUnit report files
+  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+  #     checks: write
+  #     pull-requests: write
+  #     issues: read
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
+  #   env:
+  #     MIX_ENV: prod
+  #   steps:
+  #     - name: Check out source
+  #       uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
 
-      - name: Enable corepack
-        run: corepack enable
+  #     - name: Enable corepack
+  #       run: corepack enable
 
-      - name: Install Erlang and Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.otp }}
-          elixir-version: ${{ matrix.elixir }}
+  #     - name: Install Erlang and Elixir
+  #       uses: erlef/setup-beam@v1
+  #       with:
+  #         otp-version: ${{ matrix.otp }}
+  #         elixir-version: ${{ matrix.elixir }}
 
-      - name: Cache deps
-        id: cache-deps
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-elixir-deps
-        with:
-          path: deps
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+  #     - name: Cache deps
+  #       id: cache-deps
+  #       uses: actions/cache@v4
+  #       env:
+  #         cache-name: cache-elixir-deps
+  #       with:
+  #         path: deps
+  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
-      - name: Cache compiled build
-        id: cache-build
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-compiled-build
-        with:
-          path: _build
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+  #     - name: Cache compiled build
+  #       id: cache-build
+  #       uses: actions/cache@v4
+  #       env:
+  #         cache-name: cache-compiled-build
+  #       with:
+  #         path: _build
+  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
-      - name: Cache node-modules
-        id: node-modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: assets/node_modules
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+  #     - name: Cache node-modules
+  #       id: node-modules
+  #       uses: actions/cache@v4
+  #       env:
+  #         cache-name: cache-node-modules
+  #       with:
+  #         path: assets/node_modules
+  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
-      - name: Install build tools
-        run: mix do local.rebar --force, local.hex --force
+  #     - name: Install build tools
+  #       run: mix do local.rebar --force, local.hex --force
 
-      # Force full recompile on builds that are retried.
-      - name: Clean deps to avoid flaky incremental builds
-        if: github.run_attempt != '1'
-        run: |
-          mix deps.clean --all
-          mix clean
-        shell: sh
+  #     # Force full recompile on builds that are retried.
+  #     - name: Clean deps to avoid flaky incremental builds
+  #       if: github.run_attempt != '1'
+  #       run: |
+  #         mix deps.clean --all
+  #         mix clean
+  #       shell: sh
 
-      - name: Get Elixir deps
-        run: mix deps.get
+  #     - name: Get Elixir deps
+  #       run: mix deps.get
 
-      - name: Compile
-        run: mix compile
+  #     - name: Compile
+  #       run: mix compile
 
-      # - name: Install JavaScript libs
-      #   # working-directory: assets
-      #   # run: npm install && npm run deploy
-      #   run: yarn --cwd ./assets install --prod
+  #     # - name: Install JavaScript libs
+  #     #   # working-directory: assets
+  #     #   # run: npm install && npm run deploy
+  #     #   run: yarn --cwd ./assets install --prod
 
-      - name: Deploy assets
-        run: mix assets.deploy
+  #     - name: Deploy assets
+  #       run: mix assets.deploy
 
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
+  #     - name: Configure AWS credentials
+  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Sync to S3
-        run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
+  #     - name: Sync to S3
+  #       run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
 
-      - name: Create CloudFront invalidation
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+  #     - name: Create CloudFront invalidation
+  #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
   deploy-ecs:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
+    # needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
+    needs: [test-prod, test, test-dialyzer, setup-matrix]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
