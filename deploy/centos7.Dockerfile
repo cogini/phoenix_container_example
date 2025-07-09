@@ -65,9 +65,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-# ARG LANG=C.UTF-8
+ARG LANG=C.UTF-8
 # ARG LANG=en_US.UTF-8
-ARG LANG=en_US.utf8
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -205,7 +204,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
             # wxBase3 \
             # erlang-odbc
-        #    ; \
+            # $RUNTIME_PACKAGES \
+        # ; \
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum
 
@@ -251,6 +251,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         source /opt/rh/devtoolset-10/enable ; \
         source /opt/rh/rh-git227/enable ; \
         # Erlang build scripts expect wx-config
+        # Install Erlang Solutions binary
+        # bin/build-install-deps-centos ; \
+        # Erlang build scripts expect the name to be wx-config
         ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
         # Install using .tool-versions versions
         asdf install ; \
@@ -271,11 +274,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # fi ; \
         asdf reshim ; \
         erl -version ; \
-        ls -l $ASDF_DIR/bin/ ; \
-        ls -l $ASDF_DIR/shims/ ; \
-        cat $ASDF_DIR/shims/elixir ; \
-        # asdf which elixir ; \
-        # cat `asdf which elixir` ; \
         elixir -v ; \
         node -v
 
@@ -284,13 +282,13 @@ FROM build-os-deps AS build-deps-get
     ARG APP_DIR
     ENV HOME=$APP_DIR
 
-    ARG HEX_VER
-    ARG REBAR_VER
-
     WORKDIR $APP_DIR
 
     # This mix task fails with a TLS error, so download and install manually
     # RUN mix 'do' local.rebar --force, local.hex --force
+
+    ARG HEX_VER
+    ARG REBAR_VER
 
     # TLS error downloading hex and rebar, so download them separately
     RUN set -ex ; \
@@ -335,6 +333,7 @@ FROM build-os-deps AS build-deps-get
 
 # Create base image for tests
 FROM build-deps-get AS test-image
+    ARG LANG
     ARG APP_DIR
 
     ENV MIX_ENV=test
@@ -393,10 +392,6 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    ARG MIX_ENV
-    # COPY --link config ./config
-    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
-
     # Build assets
     RUN mkdir -p ./assets
 
@@ -424,6 +419,10 @@ FROM build-deps-get AS prod-release
     # because a single line of code changed causes a complete recompile.
 
     COPY --link .env.pro[d] ./
+
+    ARG MIX_ENV
+    # COPY --link config ./config
+    COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
     # Load environment vars when compiling
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
@@ -516,6 +515,8 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 
     # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
+    ARG RUNTIME_PACKAGES
+
     RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         set -exu ; \
         sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
@@ -559,13 +560,10 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
-            openssl
-            # $RUNTIME_PACKAGES \
-        # ; \
+            $RUNTIME_PACKAGES \
+        ;
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum
-
-    # RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
@@ -585,8 +583,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
-        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+        rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
     ARG RUNTIME_PACKAGES
 
@@ -622,10 +619,10 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         yum install -y \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
+            # Run health checks and get ECS metadata
+            # curl \
             # en_US.UTF-8 locale
             glibc-langpack-en \
-            # Run health checks and get ECS metadata
-            curl \
             jq \
             openssl  \
             # useradd and groupadd
@@ -633,7 +630,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             wget
             # $RUNTIME_PACKAGES
         #    ; \
-        # localedef --no-archive -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum
 
@@ -757,8 +753,8 @@ FROM build-os-deps AS dev
             ssh \
             sudo \
             # for chsh
-            util-linux-user
-            # $DEV_PACKAGES \
+            util-linux-user \
+            $DEV_PACKAGES \
         # ; \
         # yum clean all
         # yum clean all ; rm -rf /var/cache/yum

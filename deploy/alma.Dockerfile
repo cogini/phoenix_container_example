@@ -19,7 +19,6 @@ ARG PROD_OS_VER=9
 ARG SNAPSHOT_VER=""
 ARG SNAPSHOT_NAME=""
 
-# ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
 ARG NODE_MAJOR=20
 ARG YARN_VER=1.22.22
@@ -154,6 +153,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
             # wxBase3 \
             # erlang-odbc
+            # $RUNTIME_PACKAGES \
         # ; \
         # dnf clean all
         # dnf clean all ; rm -rf /var/cache/dnf
@@ -430,7 +430,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             # locales \
-            openssl \
             $RUNTIME_PACKAGES \
         ;
         # dnf clean all
@@ -464,12 +463,10 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         dnf upgrade -y ; \
         dnf install -y --nodocs --allowerasing \
             # Enable the app to make outbound SSL calls.
-            ca-certificates \
             # Run health checks and get ECS metadata
             curl \
             # glibc-langpack -en \
             jq \
-            openssl  \
             # useradd and groupadd
             shadow-utils \
             wget \
@@ -569,10 +566,16 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
+    ARG LANG
+
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_NAME
     ARG APP_USER
+
+    # Set environment vars used by the app
+    ENV HOME=$APP_DIR \
+        LANG=$LANG
 
     RUN set -exu ; \
         # Create app dirs
@@ -594,7 +597,7 @@ FROM build-os-deps AS dev
             openssh-clients \
             sudo \
             # for chsh
-            util-linux-user \ 
+            util-linux-user \
             $DEV_PACKAGES \
         ;
         # dnf clean all
