@@ -451,6 +451,9 @@ FROM build-deps-get AS prod-release
     RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
         mix compile --warnings-as-errors
 
+    # Downloading is broken on CentOS 7, so download manually
+    # RUN mix assets.setup
+
     # Use latest CA certs from Mozilla for hex
     # https://curl.se/docs/caextract.html
     # https://stackoverflow.com/questions/37043442/how-to-add-certificate-authority-file-in-centos-7
@@ -468,7 +471,6 @@ FROM build-deps-get AS prod-release
         ls -l _build/ ; \
         chmod +x /app/_build/tailwindcss-linux-x64 ;
 
-    RUN mix assets.setup
     RUN mix assets.deploy
 
     # Build release
