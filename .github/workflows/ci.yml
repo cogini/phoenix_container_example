@@ -6,24 +6,24 @@ name: CI
 # Run tests and quality checks on test image
 # Run security scans on code and prod images
 # Use matrix for multiple versions of Elixir, OTP, and OS
-on: push
-# on:
-#   push:
-#     branches:
-#       - main
-#       - qa
-#     tags: [prod]
-#     paths-ignore:
-#       - 'README.md'
-#       - '.github/**'
-#       - '.vscode'
-#       - '.gitignore'
-#       # Handled by otel.yml GitHub Action
-#       - 'deploy/aws-otel-collector.Dockerfile'
-#       - 'otel/*'
-#   pull_request:
-#     # branches: [main]
-#     types: [opened,synchronize,reopened,labeled,unlabeled]
+# on: push
+on:
+  push:
+    branches:
+      - main
+      - qa
+    tags: [prod]
+    paths-ignore:
+      - 'README.md'
+      # - '.github/**'
+      - '.vscode'
+      - '.gitignore'
+      # Handled by otel.yml GitHub Action
+      - 'deploy/aws-otel-collector.Dockerfile'
+      - 'otel/*'
+  pull_request:
+    # branches: [main]
+    types: [opened,synchronize,reopened,labeled,unlabeled]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
