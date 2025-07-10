@@ -533,7 +533,7 @@ chown -R "${APP_USER}:${APP_GROUP}" \
     # Needed for RELEASE_TMP
     "/run/${APP_NAME}"
 
-# USER $APP_USER
+# USER $APP_USER:$APP_GROUP
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
@@ -619,14 +619,6 @@ yum clean all
 # yum clean all && rm -rf /var/cache/yum
 
 RUN chsh --shell /bin/bash "$APP_USER"
-
-USER $APP_USER
-
-WORKDIR $APP_DIR
-
-# RUN mix 'do' local.rebar --force, local.hex --force
-
-# RUN mix esbuild.install --if-missing
 
 
 # Copy build artifacts to host

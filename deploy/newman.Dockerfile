@@ -9,8 +9,8 @@ ARG PUBLIC_REGISTRY=$REGISTRY
 # https://www.npmjs.com/package/newman-reporter-junitfull
 
 FROM ${PUBLIC_REGISTRY}postman/newman
-RUN set -exu && \
-    npm install -g newman-reporter-html && \
-    npm install -g newman-reporter-json-summary && \
-    npm install -g get-graphql-schema && \
+RUN set -exu ; \
+    npm install -g newman-reporter-html ; \
+    npm install -g newman-reporter-json-summary ; \
+    npm install -g get-graphql-schema ; \
     npm install -g newman-reporter-junitfull

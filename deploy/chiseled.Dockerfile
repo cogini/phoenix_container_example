@@ -737,7 +737,7 @@ COPY --from=prod-base ["/rootfs", "/"]
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# USER $APP_USER
+# USER $APP_USER:$APP_GROUP
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
@@ -866,10 +866,6 @@ ENV HOME=$APP_DIR \
 LANG=$LANG
 
 RUN chsh --shell /bin/bash "$APP_USER"
-
-USER $APP_USER:$APP_GROUP
-
-WORKDIR $APP_DIR
 
 
 # Copy build artifacts to host

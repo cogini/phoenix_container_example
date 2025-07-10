@@ -671,7 +671,7 @@ ARG APP_GROUP
 # Copy Ansible release into prod image for publishing later
 # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /ansible.zip /ansible.zip
 
-# USER $APP_USER
+# USER $APP_USER:$APP_GROUP
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
@@ -800,10 +800,6 @@ ENV HOME=$APP_DIR \
     LANG=$LANG
 
 RUN chsh --shell /bin/bash "$APP_USER"
-
-USER $APP_USER:$APP_GROUP
-
-WORKDIR $APP_DIR
 
 
 # Copy build artifacts to host

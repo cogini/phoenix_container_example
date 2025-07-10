@@ -26,6 +26,16 @@ services:
       postgres:
         condition: service_healthy
 
+  prod-release:
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER:-prod-release}"
+    build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
+      target: prod-release
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY:-docker.io/}
+
   # Final deploy image
   prod:
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER:-latest}"
