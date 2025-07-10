@@ -13,12 +13,12 @@ ARG BASE_IMAGE_NAME=${PUBLIC_REGISTRY}aws-observability/aws-otel-collector
 ARG BASE_IMAGE_TAG=latest
 
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
-    ARG AWS_REGION
+ARG AWS_REGION
 
-    ENV AWS_REGION=${AWS_REGION}
+ENV AWS_REGION=${AWS_REGION}
 
-    COPY --link otel/aws-collector-config.yml /etc/otel-collector-config.yml
-    COPY --link otel/extraconfig.tx[t] /opt/aws/aws-otel-collector/etc/extracfg.txt
+COPY --link otel/aws-collector-config.yml /etc/otel-collector-config.yml
+COPY --link otel/extraconfig.tx[t] /opt/aws/aws-otel-collector/etc/extracfg.txt
 
-    CMD ["--config=/etc/otel-collector-config.yml"]
-    # CMD ["--config=/etc/ecs/ecs-default-config.yaml"]
+CMD ["--config=/etc/otel-collector-config.yml"]
+# CMD ["--config=/etc/ecs/ecs-default-config.yaml"]
