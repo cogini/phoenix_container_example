@@ -119,58 +119,65 @@ jobs:
               include: [
                 {
                   os: "alma",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "9",
-                  prod_os_ver: "9"
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "10",
+                  prod_os_ver: "10"
                 },
                 {
                   os: "alpine",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "3.21.3",
                   prod_os_ver: "3.21.3"
                 },
                 {
                   os: "centos7",
-                  elixir: "1.18.3",
-                  otp: "27.3.3",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "7",
                   prod_os_ver: "7"
                 },
                 {
                   os: "debian",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim"
                 },
                 {
                   os: "distroless",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim"
                 },
                 {
                   os: "rocky",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "9",
                   prod_os_ver: "9"
                 },
                 {
                   os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "jammy-20250404",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "jammy-20250619",
+                  prod_os_ver: "jammy"
+                },
+                {
+                  os: "chiseled",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "jammy-20250619",
                   prod_os_ver: "jammy"
                 },
                 {
                   os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "noble-20250415.1",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "noble-20250619",
                   prod_os_ver: "noble"
                 },
               ]
@@ -197,58 +204,58 @@ jobs:
               include: [
                 {
                   os: "alma",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "9",
-                  prod_os_ver: "9"
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "10",
+                  prod_os_ver: "10"
                 },
                 {
                   os: "alpine",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "3.21.3",
                   prod_os_ver: "3.21.3"
                 },
                 {
                   os: "centos7",
-                  elixir: "1.18.3",
-                  otp: "27.3.3",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "7",
                   prod_os_ver: "7"
                 },
                 {
                   os: "debian",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
-                  prod_os_ver: "bookworm-slim"
-                },
-                {
-                  os: "distroless",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim"
                 },
                 {
                   os: "rocky",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
                   build_os_ver: "9",
                   prod_os_ver: "9"
                 },
                 {
                   os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "jammy-20250404",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "jammy-20250619",
+                  prod_os_ver: "jammy"
+                },
+                {
+                  os: "chiseled",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "jammy-20250619",
                   prod_os_ver: "jammy"
                 },
                 {
                   os: "ubuntu",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "noble-20250415.1",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "noble-20250619",
                   prod_os_ver: "noble"
                 },
               ]
@@ -262,11 +269,11 @@ jobs:
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim",
-                }
+                },
               ]
             }
 
@@ -279,12 +286,12 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.18.3",
-                  otp: "27.3.4",
-                  build_os_ver: "bookworm-20250428-slim",
+                  os: "debian",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim",
-                  os: "debian"
-                }
+                },
               ]
             }
 
