@@ -259,6 +259,7 @@ RUN set -ex ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     ls -l /opt/rh/ ; \
+    yum list rh-python3\* ; \
     source /opt/rh/rh-python38/enable ; \
     # Erlang build scripts expect wx-config
     # Install Erlang Solutions binary
