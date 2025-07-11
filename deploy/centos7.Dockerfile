@@ -262,7 +262,7 @@ RUN set -ex ; \
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
-    export ASDF_NODEJS_FORCE_COMPILE=1 \
+    export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     # Install using .tool-versions versions
     asdf install python 3.10.18 ; \
     asdf install ; \
