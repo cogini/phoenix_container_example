@@ -265,7 +265,7 @@ RUN set -ex ; \
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     # Install using .tool-versions versions
-    asdf install python 3.10.18 ; \
+    asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
