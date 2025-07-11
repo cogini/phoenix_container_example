@@ -258,8 +258,8 @@ ARG YARN_VER
 # Install using asdf
 RUN set -ex ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-    export CFLAGS="${CFLAGS}:$(pkg-config --cflags openssl11)" ; \
-    export LDFLAGS="$LDFLAGS:$(pkg-config --libs openssl11)" ; \
+    export CFLAGS="${CFLAGS} $(pkg-config --cflags openssl11)" ; \
+    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     # ls -l /opt/rh/ ; \
@@ -271,6 +271,7 @@ RUN set -ex ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
+    env ; \
     # Install using .tool-versions versions
     # asdf install python 3.12.11 ; \
     asdf install ; \
