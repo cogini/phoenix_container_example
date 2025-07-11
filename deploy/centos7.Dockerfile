@@ -200,7 +200,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # python3 \
         # python3-pip \
         # SCL python
-        rh-python38 \
+        # rh-python38 \
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
         patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tk-devel libffi-devel xz-devel \
         compat-openssl11-devel \
@@ -257,7 +257,7 @@ ARG YARN_VER
 
 # Install using asdf
 RUN set -ex ; \
-    env ; \
+    # env ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
     export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
     export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
@@ -265,7 +265,7 @@ RUN set -ex ; \
     source /opt/rh/rh-git227/enable ; \
     # ls -l /opt/rh/ ; \
     # yum list rh-python3\* ; \
-    source /opt/rh/rh-python38/enable ; \
+    # source /opt/rh/rh-python38/enable ; \
     # Erlang build scripts expect wx-config
     # Install Erlang Solutions binary
     # bin/build-install-deps-centos ; \
@@ -274,7 +274,7 @@ RUN set -ex ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     env ; \
     # Install using .tool-versions versions
-    # asdf install python 3.12.11 ; \
+    asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
