@@ -1,8 +1,7 @@
 # awscli 2.13.20
 cmake 4.0.3
-elixir 1.18.3-otp-27
-erlang 27.3.4
-nodejs 14.21.3
-# nodejs 24.1.0
+elixir 1.18.4-otp-28
+erlang 28.0.1
+nodejs 24.1.0
 rebar 3.24.0
 yarn 1.22.22
