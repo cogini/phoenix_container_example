@@ -259,8 +259,8 @@ ARG YARN_VER
 RUN set -ex ; \
     # env ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-    export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
-    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
+    export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11) $(pkg-conig --cflags tcl)" ; \
+    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11) $(pkg-conig --libs tcl)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     # ls -l /opt/rh/ ; \
