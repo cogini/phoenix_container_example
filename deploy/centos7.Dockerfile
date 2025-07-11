@@ -196,7 +196,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         lksctp-tools-devel \
         mesa-libGL-devel \
         ncurses-devel \
-        openssl \
+        # openssl \
         # python3 \
         # python3-pip \
         # SCL python
@@ -204,7 +204,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
         patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tk-devel libffi-devel xz-devel \
         compat-openssl11-devel \
-        # openssl-devel \
+        openssl-devel \
         openssl11-devel \
         readline-devel \
         sqlite-devel \
@@ -258,6 +258,8 @@ ARG YARN_VER
 # Install using asdf
 RUN set -ex ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+    export CFLAGS="${CFLAGS}:$(pkg-config --cflags openssl11)" ; \
+    export LDFLAGS="$LDFLAGS:$(pkg-config --libs openssl11)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     ls -l /opt/rh/ ; \
