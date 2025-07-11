@@ -175,6 +175,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # bin/build-install-asdf-deps-centos ; \
     # https://github.com/asdf-vm/asdf-erlang/issues/206
     # rpm --eval '%{_arch}' ; \
+    # https://github.com/nodejs/node/blob/main/BUILDING.md#building-nodejs-on-supported-platforms
     yum install -y \
         autoconf \
         automake \
@@ -197,6 +198,8 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         ncurses-devel \
         openssl \
         openssl-devel \
+        python3 \
+        python3-pip \
         readline-devel \
         sqlite-devel \
         unixODBC-devel \
@@ -256,6 +259,7 @@ RUN set -ex ; \
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
+    ASDF_NODEJS_FORCE_COMPILE=1 \
     # Install using .tool-versions versions
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
