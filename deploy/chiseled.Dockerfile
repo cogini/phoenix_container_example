@@ -263,7 +263,6 @@ RUN set -exu ; \
 sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
 cat /etc/locale.gen | grep "${LANG}" ; \
 locale-gen ; \
-# localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
 localedef --list-archive ; \
 ls -l /usr/lib/locale/
 
@@ -707,13 +706,12 @@ chown -R "${APP_USER}:${APP_GROUP}" \
     "/rootfs/run/${APP_NAME}"
     # "/rootfs/var/lib/foo"
 
-RUN set -exu ; \
-cp /etc/passwd /etc/shadow /etc/group /rootfs/etc/ ; \
-mkdir -p /rootfs/usr/lib/locale ; \
-cp /usr/lib/locale/locale-archive /rootfs/usr/lib/locale/ \ 	
-mkdir -p /rootfs/bin ; \
-/usr/bin/busybox --install /rootfs/bin ;
-# find /rootfs ! -type d -exec ls -l {} \;
+RUN <<EOT
+set -exu
+cp /etc/passwd /etc/shadow /etc/group /rootfs/etc/
+mkdir -p /rootfs/bin
+/usr/bin/busybox --install /rootfs/bin
+EOT
 
 
 # Create final prod image which gets deployed
@@ -725,14 +723,14 @@ ARG APP_GROUP
 ARG LANG
 ARG APP_NAME
 
-# Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
-# environment-specific config such as DATABASE_URL should be set at runtime.
 ENV HOME=$APP_DIR \
-LANG=$LANG \
-# Writable tmp directory for releases
-RELEASE_TMP="/run/${APP_NAME}"
+    LANG=$LANG \
+    # Writable tmp directory for releases
+    RELEASE_TMP="/run/${APP_NAME}"
 
 COPY --from=prod-base ["/rootfs", "/"]
+
+COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

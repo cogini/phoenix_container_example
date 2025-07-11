@@ -19,7 +19,6 @@ ARG PROD_OS_VER=8
 ARG SNAPSHOT_VER=""
 ARG SNAPSHOT_NAME=""
 
-# ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
 ARG NODE_MAJOR=20
 ARG YARN_VER=1.22.22
@@ -91,72 +90,73 @@ ARG APP_USER_ID
 
 # Create OS user and group to run app under
 RUN if ! grep -q "$APP_USER" /etc/passwd; \
-then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
+    then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+    useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+    rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
 ARG RUNTIME_PACKAGES
 
 # Install tools and libraries to build binary libraries
 RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-set -ex ; \
-# add config-manager plugin
-dnf install -y --nodocs dnf-plugins-core ; \
-dnf config-manager --set-enabled powertools ; \
-# dnf config-manager --set-enabled devel ; \
-dnf install -y epel-release ; \
-# /usr/bin/crb enable ; \
-dnf upgrade -y ; \
-# dnf makecache --refresh ; \
-dnf group install -y 'Development Tools' ; \
-dnf builddep erlang -y ; \
-dnf install -y --nodocs --allowerasing \
-    cmake \
-    cmake3 \
-    curl \
-    git \
-    # glibc-langpack -en \
-    gpg \
-    make \
-    # useradd and groupadd
-    shadow-utils \
-    unzip \
-    wget \
-# http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
-# https://github.com/asdf-vm/asdf-erlang
-# bin/build-install-asdf-deps-centos ; \
-# https://github.com/asdf-vm/asdf-erlang/issues/206
-# rpm --eval '%{_arch}' ; \
-    # autoconf \
-    # automake \
-    # bison \
-    # flex \
-    # gcc \
-    # gcc-c++ \
-    # fop \
-    # java-1.8.0-openjdk-devel \
-    # java-11-openjdk-devel \
-    libffi-devel \
-    libiodbc \
-    # libtool \
-    libxslt \
-    libxslt-devel \
-    libyaml \
-    # libyaml-devel \
-    lksctp-tools-devel \
-    mesa-libGL-devel \
-    ncurses-devel \
-    openssl \
-    openssl-devel \
-    readline-devel \
-    sqlite-devel \
-    unixODBC-devel \
-    wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
-    # wxBase3 \
-    # erlang-odbc
-# ; \
-# dnf clean all
-# dnf clean all ; rm -rf /var/cache/dnf
+    set -ex ; \
+    # add config-manager plugin
+    dnf install -y --nodocs dnf-plugins-core ; \
+    dnf config-manager --set-enabled powertools ; \
+    # dnf config-manager --set-enabled devel ; \
+    dnf install -y epel-release ; \
+    # /usr/bin/crb enable ; \
+    dnf upgrade -y ; \
+    # dnf makecache --refresh ; \
+    dnf group install -y 'Development Tools' ; \
+    dnf builddep erlang -y ; \
+    dnf install -y --nodocs --allowerasing \
+        cmake \
+        cmake3 \
+        curl \
+        git \
+        # glibc-langpack -en \
+        gpg \
+        make \
+        # useradd and groupadd
+        shadow-utils \
+        unzip \
+        wget \
+    # http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
+    # https://github.com/asdf-vm/asdf-erlang
+    # bin/build-install-asdf-deps-centos ; \
+    # https://github.com/asdf-vm/asdf-erlang/issues/206
+    # rpm --eval '%{_arch}' ; \
+        # autoconf \
+        # automake \
+        # bison \
+        # flex \
+        # gcc \
+        # gcc-c++ \
+        # fop \
+        # java-1.8.0-openjdk-devel \
+        # java-11-openjdk-devel \
+        libffi-devel \
+        libiodbc \
+        # libtool \
+        libxslt \
+        libxslt-devel \
+        libyaml \
+        # libyaml-devel \
+        lksctp-tools-devel \
+        mesa-libGL-devel \
+        ncurses-devel \
+        openssl \
+        openssl-devel \
+        readline-devel \
+        sqlite-devel \
+        unixODBC-devel \
+        wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
+        # wxBase3 \
+        # erlang-odbc
+        # $RUNTIME_PACKAGES \
+    # ; \
+    # dnf clean all
+    # dnf clean all ; rm -rf /var/cache/dnf
 
 # https://github.com/esl/packages/blob/master/builders/erlang_centos.Dockerfile
 
@@ -168,8 +168,8 @@ COPY  bi[n] ./bin
 
 # Set up ASDF
 RUN set -ex ; \
-export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-bin/build-install-asdf-init
+    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+    bin/build-install-asdf-init
 
 ENV ASDF_DIR="$HOME/.asdf"
 ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
@@ -185,26 +185,26 @@ ARG YARN_VER
 
 # Install using asdf
 RUN set -ex ; \
-# Install using .tool-versions versions
-asdf install ; \
-# asdf install erlang "$OTP_VER" ; \
-# asdf install elixir "$ELIXIR_VER" ; \
-# asdf install nodejs "$NODE_VER" ; \
-# asdf install yarn "$YARN_VER" ; \
-# asdf install rebar "${REBAR_VER}" ; \
-# export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
-# echo "RPM_ARCH=$RPM_ARCH" ; \
-# if [ "${RPM_ARCH}" = "x86_64" ]; then \
-#   # Install Erlang from erlang-solutions RPM
-#   bin/build-install-deps-rocky; \
-# else \
-#   # Install using asdf
-#   # bin/build-install-asdf
-#   asdf install erlang; \
-# fi ; \
-erl -version ; \
-elixir -v ; \
-node -v
+    # Install using .tool-versions versions
+    asdf install ; \
+    # asdf install erlang "$OTP_VER" ; \
+    # asdf install elixir "$ELIXIR_VER" ; \
+    # asdf install nodejs "$NODE_VER" ; \
+    # asdf install yarn "$YARN_VER" ; \
+    # asdf install rebar "${REBAR_VER}" ; \
+    # export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
+    # echo "RPM_ARCH=$RPM_ARCH" ; \
+    # if [ "${RPM_ARCH}" = "x86_64" ]; then \
+    #   # Install Erlang from erlang-solutions RPM
+    #   bin/build-install-deps-rocky; \
+    # else \
+    #   # Install using asdf
+    #   # bin/build-install-asdf
+    #   asdf install erlang; \
+    # fi ; \
+    erl -version ; \
+    elixir -v ; \
+    node -v
 
 
 # Get Elixir deps
@@ -224,35 +224,36 @@ COPY --link mix.exs mix.lock ./
 
 # Add private repo for Oban
 RUN --mount=type=secret,id=oban_license_key \
---mount=type=secret,id=oban_key_fingerprint \
-if test -s /run/secrets/oban_license_key; then \
-    mix hex.repo add oban https://getoban.pro/repo \
-	--fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
-	--auth-key "$(cat /run/secrets/oban_license_key)"; \
-fi
+    --mount=type=secret,id=oban_key_fingerprint \
+    if test -s /run/secrets/oban_license_key; then \
+        mix hex.repo add oban https://getoban.pro/repo \
+            --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+            --auth-key "$(cat /run/secrets/oban_license_key)"; \
+    fi
 
 # Run deps.get with optional authentication to access private repos
 RUN --mount=type=ssh \
---mount=type=secret,id=access_token \
-# Access private repos using ssh identity
-# https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
-# https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
-# Copying a predefined known_hosts file would be more secure, but would need to be maintained
-if test -n "$SSH_AUTH_SOCK"; then \
-    set -exu ; \
-    mkdir -p /etc/ssh ; \
-    ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
-    mix deps.get ; \
-# Access private repos using access token
-elif test -s /run/secrets/access_token; then \
-    GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
-else \
-    mix deps.get ; \
-fi
+    --mount=type=secret,id=access_token \
+    # Access private repos using ssh identity
+    # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+    # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+    # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+    if test -n "$SSH_AUTH_SOCK"; then \
+        set -exu ; \
+        mkdir -p /etc/ssh ; \
+        ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
+        mix deps.get ; \
+    # Access private repos using access token
+    elif test -s /run/secrets/access_token; then \
+        GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
+    else \
+        mix deps.get ; \
+    fi
 
 
 # Create base image for tests
 FROM build-deps-get AS test-image
+ARG LANG
 ARG APP_DIR
 
 ENV MIX_ENV=test
@@ -295,7 +296,7 @@ COPY --link test ./test
 # Load environment vars when compiling
 COPY --link .env.tes[t] ./
 RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
-mix compile --warnings-as-errors
+    mix compile --warnings-as-errors
 
 # For umbrella, using `mix cmd` ensures each app is compiled in
 # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -304,13 +305,10 @@ mix compile --warnings-as-errors
 
 # Create Elixir release
 FROM build-deps-get AS prod-release
+ARG LANG
 ARG APP_DIR
 
 WORKDIR $APP_DIR
-
-ARG MIX_ENV
-# COPY --link config ./config
-COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Build assets
 RUN mkdir -p ./assets
@@ -322,15 +320,15 @@ WORKDIR ${APP_DIR}/assets
 
 # Install JavaScript dependencies
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
-# corepack enable ; corepack enable npm ; \
-# yarn --cwd ./assets install --prod
-yarn install --prod
-# pnpm install --prod
-# npm install
-# npm run deploy
-# npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-# node node_modules/brunch/bin/brunch build
-# node node_modules/webpack/bin/webpack.js --mode production
+    # corepack enable ; corepack enable npm ; \
+    # yarn --cwd ./assets install --prod
+    yarn install --prod
+    # pnpm install --prod
+    # npm install
+    # npm run deploy
+    # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    # node node_modules/brunch/bin/brunch build
+    # node node_modules/webpack/bin/webpack.js --mode production
 
 WORKDIR $APP_DIR
 
@@ -340,9 +338,13 @@ WORKDIR $APP_DIR
 
 COPY --link .env.pro[d] ./
 
+ARG MIX_ENV
+# COPY --link config ./config
+COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
+
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-mix deps.compile
+    mix deps.compile
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -365,7 +367,7 @@ COPY --link bi[n] ./bin
 # RUN mix cmd mix compile --warnings-as-errors
 
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-mix compile --warnings-as-errors
+    mix compile --warnings-as-errors
 
 RUN mix assets.setup
 RUN mix assets.deploy
@@ -411,34 +413,33 @@ RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-ARG RUNTIME_PACKAGES
 
 # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
+ARG RUNTIME_PACKAGES
+
 RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-set -exu ; \
-# dnf makecache --refresh ; \
-dnf upgrade -y ; \
-dnf install -y --nodocs --allowerasing \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    # software-properties-common \
-    # glibc-langpack -en \
-    gpg \
-    unzip \
-    # jq \
-    lsb-release \
-    # Needed by Erlang VM
-    # Additional libs
-    libstdc++6 \
-    libgcc-s1 \
-    # locales \
-    openssl \
-    $RUNTIME_PACKAGES \
-;
-# dnf clean all
-# dnf clean all ; rm -rf /var/cache/yum
+    set -exu ; \
+    # dnf makecache --refresh ; \
+    dnf upgrade -y ; \
+    dnf install -y --nodocs --allowerasing \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        # software-properties-common \
+        # glibc-langpack -en \
+        gpg \
+        unzip \
+        # jq \
+        lsb-release \
+        # Needed by Erlang VM
+        # Additional libs
+        libstdc++6 \
+        libgcc-s1 \
+        $RUNTIME_PACKAGES \
+    ;
+    # dnf clean all
+    # dnf clean all ; rm -rf /var/cache/yum
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
@@ -457,55 +458,50 @@ ARG APP_USER_ID
 
 # Create OS user and group to run app under
 RUN if ! grep -q "$APP_USER" /etc/passwd; \
-then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-rm -f /var/log/lastlog && rm -f /var/log/faillog; fi && \
-chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+    then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+    useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+    rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-set -exu ; \
-# dnf makecache --refresh ; \
-dnf upgrade -y ; \
-dnf install -y --nodocs --allowerasing \
-    # Enable the app to make outbound SSL calls.
-    ca-certificates \
-    # Run health checks and get ECS metadata
-    curl \
-    # glibc-langpack -en \
-    jq \
-    openssl  \
-    # useradd and groupadd
-    shadow-utils \
-    wget \
-    $RUNTIME_PACKAGES
-# ; \
-# dnf clean all
-# dnf clean all ; rm -rf /var/cache/dnf
+    set -exu ; \
+    # dnf makecache --refresh ; \
+    dnf upgrade -y ; \
+    dnf install -y --nodocs --allowerasing \
+        # Enable the app to make outbound SSL calls.
+        ca-certificates \
+        # Run health checks and get ECS metadata
+        curl \
+        # glibc-langpack -en \
+        jq \
+        # useradd and groupadd
+        shadow-utils \
+        wget \
+        $RUNTIME_PACKAGES
+    # ; \
+    # dnf clean all
+    # dnf clean all ; rm -rf /var/cache/dnf
 
 ARG LANG
-# localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
-# localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
-# locale -a | grep -E 'en_US|C'
 
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.
 ENV HOME=$APP_DIR \
-LANG=$LANG \
-# Writable tmp directory for releases
-RELEASE_TMP="/run/${APP_NAME}"
+    LANG=$LANG \
+    # Writable tmp directory for releases
+    RELEASE_TMP="/run/${APP_NAME}"
 
 RUN set -exu ; \
-# Create app dirs
-mkdir -p "/run/${APP_NAME}" ; \
-# mkdir -p "/etc/foo" ; \
-# mkdir -p "/var/lib/foo" ; \
-# Make dirs writable by app
-chown -R "${APP_USER}:${APP_GROUP}" \
-    # Needed for RELEASE_TMP
-    "/run/${APP_NAME}"
-    # "/var/lib/foo"
+    # Create app dirs
+    mkdir -p "/run/${APP_NAME}" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "${APP_USER}:${APP_GROUP}" \
+        # Needed for RELEASE_TMP
+        "/run/${APP_NAME}"
+        # "/var/lib/foo"
 
 
 # Create final prod image which gets deployed
@@ -577,35 +573,41 @@ ENTRYPOINT ["bin/start-docker"]
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
+ARG LANG
+
 ARG APP_DIR
 ARG APP_GROUP
 ARG APP_NAME
 ARG APP_USER
 
+# Set environment vars used by the app
+ENV HOME=$APP_DIR \
+    LANG=$LANG
+
 RUN set -exu ; \
-# Create app dirs
-mkdir -p "/run/${APP_NAME}" ; \
-# mkdir -p "/etc/foo" ; \
-# mkdir -p "/var/lib/foo" ; \
-# Make dirs writable by app
-chown -R "${APP_USER}:${APP_GROUP}" \
-    # Needed for RELEASE_TMP
-    "/run/${APP_NAME}"
-   # "/var/lib/foo"
+    # Create app dirs
+    mkdir -p "/run/${APP_NAME}" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "${APP_USER}:${APP_GROUP}" \
+        # Needed for RELEASE_TMP
+        "/run/${APP_NAME}"
+       # "/var/lib/foo"
 
 ARG DEV_PACKAGES
 
 RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
-set -exu ; \
-dnf install -y --nodocs --allowerasing \
-    inotify-tools \
-    openssh-clients \
-    sudo \
-    # for chsh
-    util-linux-user \ 
-    $DEV_PACKAGES \
-;
-# dnf clean all
+    set -exu ; \
+    dnf install -y --nodocs --allowerasing \
+        inotify-tools \
+        openssh-clients \
+        sudo \
+        # for chsh
+        util-linux-user \
+        $DEV_PACKAGES \
+    ;
+    # dnf clean all
 
 RUN chsh --shell /bin/bash "$APP_USER"
 

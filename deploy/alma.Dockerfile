@@ -158,7 +158,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
     # dnf clean all
     # dnf clean all ; rm -rf /var/cache/dnf
 
-    # https://github.com/esl/packages/blob/master/builders/erlang_centos.Dockerfile
+# https://github.com/esl/packages/blob/master/builders/erlang_centos.Dockerfile
 
 ENV HOME=$APP_DIR
 
@@ -253,6 +253,7 @@ RUN --mount=type=ssh \
 
 # Create base image for tests
 FROM build-deps-get AS test-image
+ARG LANG
 ARG APP_DIR
 
 ENV MIX_ENV=test
@@ -304,13 +305,10 @@ RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
 
 # Create Elixir release
 FROM build-deps-get AS prod-release
+ARG LANG
 ARG APP_DIR
 
 WORKDIR $APP_DIR
-
-ARG MIX_ENV
-# COPY --link config ./config
-COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Build assets
 RUN mkdir -p ./assets
@@ -339,6 +337,10 @@ WORKDIR $APP_DIR
 # because a single line of code changed causes a complete recompile.
 
 COPY --link .env.pro[d] ./
+
+ARG MIX_ENV
+# COPY --link config ./config
+COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
@@ -411,9 +413,10 @@ RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-ARG RUNTIME_PACKAGES
 
 # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
+
+ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
     set -exu ; \
@@ -433,7 +436,6 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         # Additional libs
         libstdc++6 \
         libgcc-s1 \
-        # locales \
         $RUNTIME_PACKAGES \
     ;
     # dnf clean all
@@ -468,6 +470,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
     dnf upgrade -y ; \
     dnf install -y --nodocs --allowerasing \
         # Enable the app to make outbound SSL calls.
+        ca-certificates \
         # Run health checks and get ECS metadata
         curl \
         # glibc-langpack -en \
@@ -481,9 +484,6 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
     # dnf clean all ; rm -rf /var/cache/dnf
 
 ARG LANG
-# localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 ; \
-# localedef -i en_US -c -f UTF-8 en_US.UTF-8 ; \
-# locale -a | grep -E 'en_US|C'
 
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.

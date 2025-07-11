@@ -79,8 +79,9 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
-ARG RUNTIME_PACKAGES=""
-ARG DEV_PACKAGES=""
+# These variables must always have something defined
+ARG RUNTIME_PACKAGES="ca-certificates"
+ARG DEV_PACKAGES="inotify-tools"
 
 
 # Create build base image with OS dependencies
@@ -93,121 +94,121 @@ ARG APP_USER_ID
 
 # Create OS user and group to run app under
 RUN if ! grep -q "$APP_USER" /etc/passwd; \
-then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
+    then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+    useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+    rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
 # RUN cat /etc/redhat-release
 
 # Fix repositories to use Centos vault
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -ex ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-# sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
-yum clean all ; \
-yum makecache ; \
-yum repolist ; \
-yum install -y epel-release deltarpm ; \
-yum install -y centos-release-scl ; \
-ls -l /etc/yum.repos.d/ ; \
-# installing centos-release-scl adds the Software Collections repo to Yum's configuration,
-# so the following replacement should be used for downloading from Centos vault
-# sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-for i in `ls /etc/yum.repos.d/*.repo`; do \
-    echo ; \
-    echo "# >>>>> $i"; \
-    cat "$i"; \
-done ; \
-yum update -y
+    set -ex ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    # sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
+    yum clean all ; \
+    yum makecache ; \
+    yum repolist ; \
+    yum install -y epel-release deltarpm ; \
+    yum install -y centos-release-scl ; \
+    ls -l /etc/yum.repos.d/ ; \
+    # installing centos-release-scl adds the Software Collections repo to Yum's configuration,
+    # so the following replacement should be used for downloading from Centos vault
+    # sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    for i in `ls /etc/yum.repos.d/*.repo`; do \
+        echo ; \
+        echo "# >>>>> $i"; \
+        cat "$i"; \
+    done ; \
+    yum update -y
 
 ARG RUNTIME_PACKAGES
 
 # Install tools and libraries to build binary libraries
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -ex ; \
-yum makecache ; \
-# yum install -y epel-release deltarpm ; \
-# yum install -y cmake centos-release-scl ; \
-# yum groupinstall -y 'Development Tools' ; \
-# yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries' ; \
-yum install -y \
-    ca-certificates \
-    cmake \
-    # cmake3 \
-    curl \
-    git \
-    gpg \
-    make \
-    # useradd and groupadd
-    shadow-utils \
-    unzip \
-    wget \
-    which \
-    zip \
- ; \
-# devtoolset-10 is the latest supported by arm64
-# https://forums.centos.org/viewtopic.php?t=80435
-# https://serverfault.com/questions/709433/install-a-newer-version-of-git-on-centos-7
-yum install -y devtoolset-10-toolchain devtoolset-10-gcc-c++ ; \
-yum install -y rh-git227 ; \
-# Use cmake3
-alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
-    --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
-    --slave /usr/local/bin/cpack cpack /usr/bin/cpack \
-    --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake \
-    --family cmake ; \
-alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
-    --slave /usr/local/bin/ctest ctest /usr/bin/ctest3 \
-    --slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
-    --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
-    --family cmake ; \
-# cat /opt/rh/devtoolset-10/enable ; \
-source /opt/rh/devtoolset-10/enable ; \
-source /opt/rh/rh-git227/enable ; \
-# http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
-# https://github.com/asdf-vm/asdf-erlang
-# bin/build-install-asdf-deps-centos ; \
-# https://github.com/asdf-vm/asdf-erlang/issues/206
-# rpm --eval '%{_arch}' ; \
-yum install -y \
-    autoconf \
-    automake \
-    # bison \
-    # flex \
-    # gcc \
-    # gcc-c++ \
-    # fop \
-    # java-1.8.0-openjdk-devel \
-    # java-11-openjdk-devel \
-    libffi-devel \
-    libiodbc \
-    # libtool \
-    libxslt \
-    libxslt-devel \
-    libyaml \
-    # libyaml-devel \
-    lksctp-tools-devel \
-    mesa-libGL-devel \
-    ncurses-devel \
-    openssl \
-    openssl-devel \
-    readline-devel \
-    sqlite-devel \
-    unixODBC-devel \
-    # yum-utils \
-    # wxGTK wxGTK-devel wxGTK-gl wxGTK-media
-    wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
-    # wxBase3 \
-    # erlang-odbc
-    # $RUNTIME_PACKAGES \
-# ; \
-# yum clean all
-# yum clean all ; rm -rf /var/cache/yum
+    set -ex ; \
+    yum makecache ; \
+    # yum install -y epel-release deltarpm ; \
+    # yum install -y cmake centos-release-scl ; \
+    # yum groupinstall -y 'Development Tools' ; \
+    # yum groupinstall -y 'Development Tools' 'C Development Tools and Libraries' ; \
+    yum install -y \
+        ca-certificates \
+        cmake \
+        # cmake3 \
+        curl \
+        git \
+        gpg \
+        make \
+        # useradd and groupadd
+        shadow-utils \
+        unzip \
+        wget \
+        which \
+        zip \
+     ; \
+    # devtoolset-10 is the latest supported by arm64
+    # https://forums.centos.org/viewtopic.php?t=80435
+    # https://serverfault.com/questions/709433/install-a-newer-version-of-git-on-centos-7
+    yum install -y devtoolset-10-toolchain devtoolset-10-gcc-c++ ; \
+    yum install -y rh-git227 ; \
+    # Use cmake3
+    alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
+        --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
+        --slave /usr/local/bin/cpack cpack /usr/bin/cpack \
+        --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake \
+        --family cmake ; \
+    alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
+        --slave /usr/local/bin/ctest ctest /usr/bin/ctest3 \
+        --slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
+        --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
+        --family cmake ; \
+    # cat /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
+    # http://erlang.org/doc/installation_guide/INSTALL.html#required-utilities
+    # https://github.com/asdf-vm/asdf-erlang
+    # bin/build-install-asdf-deps-centos ; \
+    # https://github.com/asdf-vm/asdf-erlang/issues/206
+    # rpm --eval '%{_arch}' ; \
+    yum install -y \
+        autoconf \
+        automake \
+        # bison \
+        # flex \
+        # gcc \
+        # gcc-c++ \
+        # fop \
+        # java-1.8.0-openjdk-devel \
+        # java-11-openjdk-devel \
+        libffi-devel \
+        libiodbc \
+        # libtool \
+        libxslt \
+        libxslt-devel \
+        libyaml \
+        # libyaml-devel \
+        lksctp-tools-devel \
+        mesa-libGL-devel \
+        ncurses-devel \
+        openssl \
+        openssl-devel \
+        readline-devel \
+        sqlite-devel \
+        unixODBC-devel \
+        # yum-utils \
+        # wxGTK wxGTK-devel wxGTK-gl wxGTK-media
+        wxGTK3 wxGTK3-devel wxGTK3-gl wxGTK3-media
+        # wxBase3 \
+        # erlang-odbc
+        # $RUNTIME_PACKAGES \
+    # ; \
+    # yum clean all
+    # yum clean all ; rm -rf /var/cache/yum
 
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
@@ -215,8 +216,8 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 # https://curl.se/docs/caextract.html
 # https://stackoverflow.com/questions/37043442/how-to-add-certificate-authority-file-in-centos-7
 RUN set -ex ; \
-curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
-update-ca-trust
+    curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
+    update-ca-trust
 
 # https://hexdocs.pm/mix/Mix.html
 ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
@@ -230,8 +231,8 @@ COPY  bi[n] ./bin
 
 # Set up ASDF
 RUN set -ex ; \
-export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-bin/build-install-asdf-init
+    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+    bin/build-install-asdf-init
 
 ENV ASDF_DIR="$HOME/.asdf"
 ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
@@ -247,35 +248,35 @@ ARG YARN_VER
 
 # Install using asdf
 RUN set -ex ; \
-export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-source /opt/rh/devtoolset-10/enable ; \
-source /opt/rh/rh-git227/enable ; \
-# Erlang build scripts expect wx-config
-# Install Erlang Solutions binary
-# bin/build-install-deps-centos ; \
-# Erlang build scripts expect the name to be wx-config
-ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
-# Install using .tool-versions versions
-asdf install ; \
-# asdf install erlang "$OTP_VER" ; \
-# asdf install elixir "$ELIXIR_VER" ; \
-# asdf install nodejs "$NODE_VER" ; \
-# asdf install yarn "$YARN_VER" ; \
-# asdf install rebar "${REBAR_VER}" ; \
-# export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
-# echo "RPM_ARCH=$RPM_ARCH" ; \
-# if [ "${RPM_ARCH}" = "x86_64" ]; then \
-#   # Install Erlang from erlang-solutions RPM
-#   bin/build-install-deps-centos; \
-# else \
-#   # Install using asdf
-#   # bin/build-install-asdf
-#   asdf install erlang; \
-# fi ; \
-asdf reshim ; \
-erl -version ; \
-elixir -v ; \
-node -v
+    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
+    # Erlang build scripts expect wx-config
+    # Install Erlang Solutions binary
+    # bin/build-install-deps-centos ; \
+    # Erlang build scripts expect the name to be wx-config
+    ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
+    # Install using .tool-versions versions
+    asdf install ; \
+    # asdf install erlang "$OTP_VER" ; \
+    # asdf install elixir "$ELIXIR_VER" ; \
+    # asdf install nodejs "$NODE_VER" ; \
+    # asdf install yarn "$YARN_VER" ; \
+    # asdf install rebar "${REBAR_VER}" ; \
+    # export RPM_ARCH=$(rpm --eval '%{_arch}') ; \
+    # echo "RPM_ARCH=$RPM_ARCH" ; \
+    # if [ "${RPM_ARCH}" = "x86_64" ]; then \
+    #   # Install Erlang from erlang-solutions RPM
+    #   bin/build-install-deps-centos; \
+    # else \
+    #   # Install using asdf
+    #   # bin/build-install-asdf
+    #   asdf install erlang; \
+    # fi ; \
+    asdf reshim ; \
+    erl -version ; \
+    elixir -v ; \
+    node -v
 
 
 # Get Elixir deps
@@ -293,10 +294,10 @@ ARG REBAR_VER
 
 # TLS error downloading hex and rebar, so download them separately
 RUN set -ex ; \
-export MIX_DEBUG=1 ; \
-curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" ; \
-mix archive.install --force /tmp/hex.ez ; \
-mix local.rebar rebar3 /app/.asdf/installs/rebar/${REBAR_VER}/bin/rebar3
+    export MIX_DEBUG=1 ; \
+    curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" ; \
+    mix archive.install --force /tmp/hex.ez ; \
+    mix local.rebar rebar3 /app/.asdf/installs/rebar/${REBAR_VER}/bin/rebar3
 
 # COPY --link .env.defaul[t] ./
 
@@ -306,31 +307,31 @@ COPY --link mix.exs mix.lock ./
 
 # Add private repo for Oban
 RUN --mount=type=secret,id=oban_license_key \
---mount=type=secret,id=oban_key_fingerprint \
-if test -s /run/secrets/oban_license_key; then \
-    mix hex.repo add oban https://getoban.pro/repo \
-	--fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
-	--auth-key "$(cat /run/secrets/oban_license_key)"; \
-fi
+    --mount=type=secret,id=oban_key_fingerprint \
+    if test -s /run/secrets/oban_license_key; then \
+        mix hex.repo add oban https://getoban.pro/repo \
+            --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+            --auth-key "$(cat /run/secrets/oban_license_key)"; \
+    fi
 
 # Run deps.get with optional authentication to access private repos
 RUN --mount=type=ssh \
---mount=type=secret,id=access_token \
-# Access private repos using ssh identity
-# https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
-# https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
-# Copying a predefined known_hosts file would be more secure, but would need to be maintained
-if test -n "$SSH_AUTH_SOCK"; then \
-    set -exu ; \
-    mkdir -p /etc/ssh ; \
-    ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
-    mix deps.get ; \
-# Access private repos using access token
-elif test -s /run/secrets/access_token; then \
-    GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
-else \
-    mix deps.get ; \
-fi
+    --mount=type=secret,id=access_token \
+    # Access private repos using ssh identity
+    # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+    # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+    # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+    if test -n "$SSH_AUTH_SOCK"; then \
+        set -exu ; \
+        mkdir -p /etc/ssh ; \
+        ssh-keyscan github.com > /etc/ssh/ssh_known_hosts ; \
+        mix deps.get ; \
+    # Access private repos using access token
+    elif test -s /run/secrets/access_token; then \
+        GIT_ASKPASS=/run/secrets/access_token mix deps.get ; \
+    else \
+        mix deps.get ; \
+    fi
 
 
 # Create base image for tests
@@ -352,9 +353,9 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Compile deps separately from app, improving Docker caching
 RUN set -ex ; \
-source /opt/rh/devtoolset-10/enable ; \
-source /opt/rh/rh-git227/enable ; \
-mix deps.compile
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
+    mix deps.compile
 
 # Use glob pattern to deal with files which may not exist
 # Must have at least one existing file
@@ -381,7 +382,7 @@ COPY --link test ./test
 # Load environment vars when compiling
 COPY --link .env.tes[t] ./
 RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
-mix compile --warnings-as-errors
+    mix compile --warnings-as-errors
 
 # For umbrella, using `mix cmd` ensures each app is compiled in
 # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -405,15 +406,15 @@ WORKDIR ${APP_DIR}/assets
 
 # Install JavaScript dependencies
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
-# corepack enable ; corepack enable npm ; \
-# yarn --cwd ./assets install --prod
-# yarn install --prod
-# pnpm install --prod
-npm install
-# npm run deploy
-# npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-# node node_modules/brunch/bin/brunch build
-# node node_modules/webpack/bin/webpack.js --mode production
+    # corepack enable ; corepack enable npm ; \
+    # yarn --cwd ./assets install --prod
+    # yarn install --prod
+    # pnpm install --prod
+    npm install
+    # npm run deploy
+    # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    # node node_modules/brunch/bin/brunch build
+    # node node_modules/webpack/bin/webpack.js --mode production
 
 WORKDIR $APP_DIR
 
@@ -429,7 +430,7 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-mix deps.compile
+    mix deps.compile
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -452,7 +453,7 @@ COPY --link bi[n] ./bin
 # RUN mix cmd mix compile --warnings-as-errors
 
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-mix compile --warnings-as-errors
+    mix compile --warnings-as-errors
 
 # Downloading is broken on CentOS 7, so download manually
 # RUN mix assets.setup
@@ -461,18 +462,18 @@ mix compile --warnings-as-errors
 # https://curl.se/docs/caextract.html
 # https://stackoverflow.com/questions/37043442/how-to-add-certificate-authority-file-in-centos-7
 RUN set -ex ; \
-curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
-update-ca-trust
+    curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
+    update-ca-trust
 
 # https://hexdocs.pm/mix/Mix.html
 ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
 ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
 RUN set -ex ; \
-ls -l  ; \
-curl -v --location https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o /app/_build/tailwind-linux-x64 ; \
-ls -l _build/ ; \
-chmod +x /app/_build/tailwind-linux-x64 ;
+    ls -l  ; \
+    curl -v --location https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o /app/_build/tailwind-linux-x64 ; \
+    ls -l _build/ ; \
+    chmod +x /app/_build/tailwind-linux-x64 ;
 
 RUN mix assets.deploy
 
@@ -517,59 +518,51 @@ RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-ARG RUNTIME_PACKAGES
 
 # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -exu ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-# sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
-yum clean all ; \
-yum makecache ; \
-yum repolist ; \
-yum install -y epel-release deltarpm ; \
-yum install -y centos-release-scl ; \
-# ls -l /etc/yum.repos.d/ ; \
-# installing centos-release-scl adds the Software Collections repo to Yum's configuration,
-# so the following replacement should be used for downloading from Centos vault
-# sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-# for i in `ls /etc/yum.repos.d/*.repo`; do \
-#     echo ; \
-#     echo "# >>>>> $i"; \
-#     cat $i; \
-# done ; \
-yum update -y
+    set -exu ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    # sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
+    yum clean all ; \
+    yum makecache ; \
+    yum repolist ; \
+    yum install -y epel-release deltarpm ; \
+    yum install -y centos-release-scl ; \
+    # ls -l /etc/yum.repos.d/ ; \
+    # installing centos-release-scl adds the Software Collections repo to Yum's configuration,
+    # so the following replacement should be used for downloading from Centos vault
+    # sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    yum update -y
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -exu ; \
-yum install -y \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    # software-properties-common \
-    # en_US.UTF-8 locale
-    glibc-langpack-en \
-    gpg \
-    unzip \
-    lsb-release \
-    # Needed by Erlang VM
-    libtinfo6 \
-    # Additional libs
-    libstdc++6 \
-    libgcc-s1 \
-    locales \
-    $RUNTIME_PACKAGES \
-;
-# yum clean all
-# yum clean all ; rm -rf /var/cache/yum
+    set -exu ; \
+    yum install -y \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        # software-properties-common \
+        glibc-langpack-en \
+        gpg \
+        unzip \
+        # jq \
+        lsb-release \
+        # Needed by Erlang VM
+        # Additional libs
+        libstdc++6 \
+        libgcc-s1 \
+        $RUNTIME_PACKAGES \
+    ;
+    # yum clean all
+    # yum clean all ; rm -rf /var/cache/yum
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
@@ -588,78 +581,75 @@ ARG APP_USER_ID
 
 # Create OS user and group to run app under
 RUN if ! grep -q "$APP_USER" /etc/passwd; \
-then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
+    then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+    useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
+    rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
 
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -ex ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-# sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
-yum clean all ; \
-yum makecache ; \
-yum repolist ; \
-yum install -y epel-release deltarpm ; \
-yum install -y centos-release-scl ; \
-ls -l /etc/yum.repos.d/ ; \
-# installing centos-release-scl adds the Software Collections repo to Yum's configuration,
-# so the following replacement should be used for downloading from Centos vault
-# sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
-sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-for i in `ls /etc/yum.repos.d/*.repo`; do \
-    echo ; \
-    echo "# >>>>> $i"; \
-    cat $i; \
-done ; \
-yum update -y
+    set -ex ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    # sed -i -e '/^mirrorlist/d;/^#baseurl=/{s,^#,,;s,/mirror,/vault,;}' /etc/yum.repos.d/CentOS*.repo
+    yum clean all ; \
+    yum makecache ; \
+    yum repolist ; \
+    yum install -y epel-release deltarpm ; \
+    yum install -y centos-release-scl ; \
+    ls -l /etc/yum.repos.d/ ; \
+    # installing centos-release-scl adds the Software Collections repo to Yum's configuration,
+    # so the following replacement should be used for downloading from Centos vault
+    # sed -i 's|mirror.centos.org/centos|vault.centos.org/altarch|g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
+    sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
+    for i in `ls /etc/yum.repos.d/*.repo`; do \
+        echo ; \
+        echo "# >>>>> $i"; \
+        cat $i; \
+    done ; \
+    yum update -y
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -exu ; \
-# yum install -y epel-release deltarpm ; \
-# yum update -y ; \
-yum install -y \
-    # Enable the app to make outbound SSL calls.
-    ca-certificates \
-    # Run health checks and get ECS metadata
-    # curl \
-    # en_US.UTF-8 locale
-    glibc-langpack-en \
-    jq \
-    openssl  \
-    # useradd and groupadd
-    shadow-utils \
-    wget
-    # $RUNTIME_PACKAGES
-#    ; \
-# yum clean all
-# yum clean all ; rm -rf /var/cache/yum
+    set -exu ; \
+    # yum install -y epel-release deltarpm ; \
+    # yum update -y ; \
+    yum install -y \
+        # Enable the app to make outbound SSL calls.
+        ca-certificates \
+        # Run health checks and get ECS metadata
+        # curl \
+        glibc-langpack-en \
+        jq \
+        # useradd and groupadd
+        shadow-utils \
+        wget \
+        $RUNTIME_PACKAGES
+    # ; \
+    # yum clean all
+    # yum clean all ; rm -rf /var/cache/yum
 
 ARG LANG
-# ENV LANG=en_US.UTF-8
 
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.
 ENV HOME=$APP_DIR \
-LANG=$LANG \
-# Writable tmp directory for releases
-RELEASE_TMP="/run/${APP_NAME}"
+    LANG=$LANG \
+    # Writable tmp directory for releases
+    RELEASE_TMP="/run/${APP_NAME}"
 
 RUN set -exu ; \
-# Create app dirs
-mkdir -p "/run/${APP_NAME}" ; \
-# mkdir -p "/etc/foo" ; \
-# mkdir -p "/var/lib/foo" ; \
-# Make dirs writable by app
-chown -R "${APP_USER}:${APP_GROUP}" \
-    # Needed for RELEASE_TMP
-    "/run/${APP_NAME}"
-    # "/var/lib/foo"
+    # Create app dirs
+    mkdir -p "/run/${APP_NAME}" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "${APP_USER}:${APP_GROUP}" \
+        # Needed for RELEASE_TMP
+        "/run/${APP_NAME}"
+        # "/var/lib/foo"
 
 
 # Create final prod image which gets deployed
@@ -740,33 +730,33 @@ ARG APP_USER
 
 # Set environment vars used by the app
 ENV HOME=$APP_DIR \
-LANG=$LANG
+    LANG=$LANG
 
 RUN set -exu ; \
-# Create app dirs
-mkdir -p "/run/${APP_NAME}" ; \
-# mkdir -p "/etc/foo" ; \
-# mkdir -p "/var/lib/foo" ; \
-# Make dirs writable by app
-chown -R "${APP_USER}:${APP_GROUP}" \
-    # Needed for RELEASE_TMP
-    "/run/${APP_NAME}"
-   # "/var/lib/foo"
+    # Create app dirs
+    mkdir -p "/run/${APP_NAME}" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "${APP_USER}:${APP_GROUP}" \
+        # Needed for RELEASE_TMP
+        "/run/${APP_NAME}"
+       # "/var/lib/foo"
 
 ARG DEV_PACKAGES
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
-set -exu ; \
-yum install -y \
-    inotify-tools \
-    ssh \
-    sudo \
-    # for chsh
-    util-linux-user \
-    $DEV_PACKAGES \
-;
-# yum clean all
-# yum clean all ; rm -rf /var/cache/yum
+    set -exu ; \
+    yum install -y \
+        inotify-tools \
+        ssh \
+        sudo \
+        # for chsh
+        util-linux-user \
+        $DEV_PACKAGES \
+    ;
+    # yum clean all
+    # yum clean all ; rm -rf /var/cache/yum
 
 RUN chsh --shell /bin/bash "$APP_USER"
 
@@ -780,6 +770,7 @@ ARG RELEASE
 # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
 # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
 COPY --from=prod-release /app/priv/static /static
+
 
 # Default target
 FROM prod

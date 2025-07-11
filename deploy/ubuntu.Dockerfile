@@ -262,7 +262,6 @@ RUN set -exu ; \
 sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
 cat /etc/locale.gen | grep "${LANG}" ; \
 locale-gen ; \
-# localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} ; \
 localedef --list-archive ; \
 ls -l /usr/lib/locale/
 
@@ -666,11 +665,9 @@ apt-get -y install -y -qq --no-install-recommends \
 truncate -s 0 /var/log/apt/* ; \
 truncate -s 0 /var/log/dpkg.log
 
-ARG LANG
-# Copy locale file used
-# COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
-COPY --link --from=prod-install /usr/lib/locale/locale-archive /usr/lib/locale/
+COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
 
+ARG LANG
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.
 ENV HOME=$APP_DIR \
