@@ -258,6 +258,8 @@ RUN set -ex ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
+    ls -l /opt/rh/ ; \
+    source /opt/rh/rh-python38/enable ; \
     # Erlang build scripts expect wx-config
     # Install Erlang Solutions binary
     # bin/build-install-deps-centos ; \
@@ -265,7 +267,7 @@ RUN set -ex ; \
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     # Install using .tool-versions versions
-    asdf install python 3.12.11 ; \
+    # asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
