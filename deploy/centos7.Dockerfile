@@ -176,7 +176,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # https://github.com/asdf-vm/asdf-erlang/issues/206
     # rpm --eval '%{_arch}' ; \
     # https://github.com/nodejs/node/blob/main/BUILDING.md#building-nodejs-on-supported-platforms
-    yum install -y --allowerasing \
+    yum install -y \
         autoconf \
         automake \
         # bison \
