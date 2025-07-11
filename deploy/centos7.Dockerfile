@@ -199,6 +199,8 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         openssl \
         # python3 \
         # python3-pip \
+        # SCL python
+        rh-python38 \
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
         patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tk-devel libffi-devel xz-devel \
         compat-openssl11-devel \
