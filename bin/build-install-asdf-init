@@ -73,6 +73,13 @@ else
     asdf plugin-add cmake
 fi
 
+if [ -d "$ASDF_DIR/plugins/python" ]; then
+    asdf plugin-update python
+else
+    echo "===> Installing ASDF python plugin"
+    asdf plugin-add python
+fi
+
 # echo "===> Installing build deps with ASDF"
 # asdf install
 # # There may be problem with plugin return codes
