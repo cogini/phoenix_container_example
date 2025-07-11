@@ -204,7 +204,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel \
         compat-openssl10-devel \
         # openssl-devel \
-        # openssl11-devel \
+        openssl11-devel \
         readline-devel \
         sqlite-devel \
         unixODBC-devel \
