@@ -262,8 +262,8 @@ RUN set -ex ; \
     export LDFLAGS="$LDFLAGS:$(pkg-config --libs openssl11)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
-    ls -l /opt/rh/ ; \
-    yum list rh-python3\* ; \
+    # ls -l /opt/rh/ ; \
+    # yum list rh-python3\* ; \
     source /opt/rh/rh-python38/enable ; \
     # Erlang build scripts expect wx-config
     # Install Erlang Solutions binary
@@ -621,11 +621,11 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
     sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
     sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-    for i in `ls /etc/yum.repos.d/*.repo`; do \
-        echo ; \
-        echo "# >>>>> $i"; \
-        cat $i; \
-    done ; \
+    # for i in `ls /etc/yum.repos.d/*.repo`; do \
+    #     echo ; \
+    #     echo "# >>>>> $i"; \
+    #     cat $i; \
+    # done ; \
     yum update -y
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
@@ -642,6 +642,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # useradd and groupadd
         shadow-utils \
         wget \
+        openssl11-libs \
         $RUNTIME_PACKAGES
     # ; \
     # yum clean all
