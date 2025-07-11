@@ -79,6 +79,7 @@ ARG RELEASE=prod
 ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
+# These variables must always have something defined
 ARG RUNTIME_PACKAGES="libncursesw6"
 ARG DEV_PACKAGES="inotify-tools"
 
@@ -372,13 +373,10 @@ RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
 
 # Create Elixir release
 FROM build-deps-get AS prod-release
+ARG LANG
 ARG APP_DIR
 
 WORKDIR $APP_DIR
-
-ARG MIX_ENV
-# COPY --link config ./config
-COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Build assets
 RUN mkdir -p ./assets
@@ -408,6 +406,10 @@ WORKDIR $APP_DIR
 
 COPY --link .env.pro[d] ./
 
+ARG MIX_ENV
+# COPY --link config ./config
+COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
+
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
     mix deps.compile
@@ -436,6 +438,7 @@ RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
     mix compile --warnings-as-errors
 
 RUN mix assets.setup
+
 RUN mix assets.deploy
 
 # Build release
@@ -631,7 +634,7 @@ RUN if test -s /bin/make-symlinks.sh ; then \
     fi
 
 ARG LANG
-COPY --link --from=prod-install /usr/lib/locale/locale-archive /usr/lib/locale/
+COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
 
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.
