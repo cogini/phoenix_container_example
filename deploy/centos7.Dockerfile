@@ -198,8 +198,8 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         ncurses-devel \
         openssl \
         openssl-devel \
-        python3 \
-        python3-pip \
+        # python3 \
+        # python3-pip \
         readline-devel \
         sqlite-devel \
         unixODBC-devel \
@@ -259,9 +259,9 @@ RUN set -ex ; \
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
-    ASDF_NODEJS_FORCE_COMPILE=1 \
+    export ASDF_NODEJS_FORCE_COMPILE=1 \
     # Install using .tool-versions versions
-    asdf install python 3.9.23 ; \
+    asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
