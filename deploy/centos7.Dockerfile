@@ -176,7 +176,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # https://github.com/asdf-vm/asdf-erlang/issues/206
     # rpm --eval '%{_arch}' ; \
     # https://github.com/nodejs/node/blob/main/BUILDING.md#building-nodejs-on-supported-platforms
-    yum install -y \
+    yum install -y --allowerasing \
         autoconf \
         automake \
         # bison \
@@ -197,12 +197,14 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         mesa-libGL-devel \
         ncurses-devel \
         openssl \
-        openssl-devel \
         # python3 \
         # python3-pip \
         # Python build deps
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
         patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel \
+        compat-openssl10-devel \
+        # openssl-devel \
+        # openssl11-devel \
         readline-devel \
         sqlite-devel \
         unixODBC-devel \
