@@ -202,7 +202,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # SCL python
         # rh-python38 \
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
-        patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tk-devel libffi-devel xz-devel \
+        patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tcl-devel tk-devel libffi-devel xz-devel \
         compat-openssl11-devel \
         openssl-devel \
         openssl11-devel \
