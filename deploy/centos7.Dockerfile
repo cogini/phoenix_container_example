@@ -274,7 +274,7 @@ RUN set -ex ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     env ; \
     # Install using .tool-versions versions
-    asdf install python 3.12.11 ; \
+    PYENV_DEBUG=1 asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
