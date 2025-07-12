@@ -273,9 +273,11 @@ RUN set -ex ; \
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
     export TCLTK_LIBS="-ltk8.5 -ltkstub8.5 -ltcl8.5" ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
+    export ASDF_NODEJS_VERBOSE_INSTALL=1 ; \
+    export PYENV_DEBUG=1 ; \
     env ; \
     # Install using .tool-versions versions
-    PYENV_DEBUG=1 asdf install python 3.12.11 ; \
+    asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
