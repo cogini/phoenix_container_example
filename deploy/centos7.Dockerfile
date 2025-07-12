@@ -259,8 +259,12 @@ ARG YARN_VER
 RUN set -ex ; \
     # env ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-    export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11) $(pkg-conig --cflags tcl)" ; \
-    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11) $(pkg-conig --libs tcl)" ; \
+    pkg-config --cflags tcl ; \
+    pkg-config --libs tcl ; \
+    pkg-config --cflags tk ; \
+    pkg-config --libs tk ; \
+    export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11) $(pkg-config --cflags tcl)" ; \
+    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11) $(pkg-config --libs tcl)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     # ls -l /opt/rh/ ; \
@@ -271,6 +275,7 @@ RUN set -ex ; \
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
+    export TCLTK_LIBS="-ltk8.5 -ltkstub8.5 -ltcl8.5" ; \
     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
     env ; \
     # Install using .tool-versions versions
