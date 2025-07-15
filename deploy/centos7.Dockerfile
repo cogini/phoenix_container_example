@@ -591,9 +591,11 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # jq \
         lsb-release \
         # Needed by Erlang VM
+        libtinfo6 \
         # Additional libs
         libstdc++6 \
         libgcc-s1 \
+        locales \
         $RUNTIME_PACKAGES \
     ;
     # yum clean all
