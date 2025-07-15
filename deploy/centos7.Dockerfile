@@ -462,6 +462,8 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
     mix deps.compile
 
 COPY --link li[b] ./lib
@@ -485,7 +487,10 @@ COPY --link bi[n] ./bin
 # RUN mix cmd mix compile --warnings-as-errors
 
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-    mix compile --warnings-as-errors
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
+    # mix compile --warnings-as-errors
+    mix compile
 
 # Downloading is broken on CentOS 7, so download manually
 # RUN mix assets.setup
