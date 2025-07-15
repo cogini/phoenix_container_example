@@ -17,6 +17,7 @@ ARG PROD_OS_VER=8
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
+ARG SNAPSHOT_NAME=""
 
 # Newer binary releases of nodejs require a newer version of glibc not
 # available in CentOS 7, so we are stuck with 14.
@@ -142,6 +143,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # cmake3 \
         curl \
         git \
+        glibc-langpack-en \
         gpg \
         make \
         # useradd and groupadd
@@ -196,16 +198,16 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         lksctp-tools-devel \
         mesa-libGL-devel \
         ncurses-devel \
-        # openssl \
+        openssl \
         # python3 \
         # python3-pip \
         # SCL python
         # rh-python38 \
         # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
-        patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tcl-devel tk-devel libffi-devel xz-devel \
-        compat-openssl11-devel \
+        # patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel tcl-devel tk-devel libffi-devel xz-devel \
+        # compat-openssl11-devel \
         openssl-devel \
-        openssl11-devel \
+        # openssl11-devel \
         readline-devel \
         sqlite-devel \
         unixODBC-devel \
@@ -256,28 +258,47 @@ ARG REBAR_VER
 ARG YARN_VER
 
 # Install using asdf
+# Python is a dependency to build nodejs from source
+# Compile separately because it is slow
+# RUN set -ex ; \
+#     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+#     export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
+#     export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
+#     source /opt/rh/devtoolset-10/enable ; \
+#     source /opt/rh/rh-git227/enable ; \
+#     # yum list rh-python3\* ; \
+#     # source /opt/rh/rh-python38/enable ; \
+#     export TCLTK_LIBS="-ltk8.5 -ltkstub8.5 -ltcl8.5" ; \
+#     export PYENV_DEBUG=1 ; \
+#     asdf install python 3.12.11 ;
+
+# Compile separately because it is slow
+# RUN set -ex ; \
+#     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+#     export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
+#     export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
+#     source /opt/rh/devtoolset-10/enable ; \
+#     source /opt/rh/rh-git227/enable ; \
+#     # https://github.com/asdf-vm/asdf-nodejs
+#     # https://github.com/nodenv/node-build#custom-build-configuration
+#     # Force compilation from source, as binary release does not work on CentOS 7
+#     export ASDF_NODEJS_FORCE_COMPILE=1 ; \
+#     export ASDF_NODEJS_VERBOSE_INSTALL=1 ; \
+#     export MAKE_OPTS="-j$(getconf _NPROCESSORS_ONLN)" ; \
+#     # export ASDF_NODEJS_CONCURRENCY="$(getconf _NPROCESSORS_ONLN)" ; \
+#     asdf install nodejs ;
+
 RUN set -ex ; \
-    # env ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
     export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
     export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
-    # ls -l /opt/rh/ ; \
-    # yum list rh-python3\* ; \
-    # source /opt/rh/rh-python38/enable ; \
-    # Erlang build scripts expect wx-config
     # Install Erlang Solutions binary
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
-    export TCLTK_LIBS="-ltk8.5 -ltkstub8.5 -ltcl8.5" ; \
-    export ASDF_NODEJS_FORCE_COMPILE=1 ; \
-    export ASDF_NODEJS_VERBOSE_INSTALL=1 ; \
-    export PYENV_DEBUG=1 ; \
-    env ; \
     # Install using .tool-versions versions
-    asdf install python 3.12.11 ; \
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
     # asdf install elixir "$ELIXIR_VER" ; \
@@ -626,11 +647,6 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
     sed -i 's/^#.*baseurl=http/baseurl=http/g' /etc/yum.repos.d/*.repo ; \
     sed -i 's/^mirrorlist=http/#mirrorlist=http/g' /etc/yum.repos.d/*.repo ; \
-    # for i in `ls /etc/yum.repos.d/*.repo`; do \
-    #     echo ; \
-    #     echo "# >>>>> $i"; \
-    #     cat $i; \
-    # done ; \
     yum update -y
 
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
@@ -647,9 +663,8 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         # useradd and groupadd
         shadow-utils \
         wget \
-        openssl11-libs \
+        # openssl11-libs \
         $RUNTIME_PACKAGES
-    # ; \
     # yum clean all
     # yum clean all ; rm -rf /var/cache/yum
 
