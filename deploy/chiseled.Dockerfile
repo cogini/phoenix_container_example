@@ -14,12 +14,6 @@ ARG OTP_VER=27.3.4
 ARG BUILD_OS_VER=jammy-20250404
 ARG PROD_OS_VER=jammy
 
-# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
-# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
-# ARG SNAPSHOT_VER=20230612
-ARG SNAPSHOT_VER=""
-ARG SNAPSHOT_NAME=""
-
 ARG NODE_VER=24.0.1
 ARG NODE_MAJOR=24
 ARG YARN_VER=1.22.22
@@ -101,26 +95,6 @@ RUN set -exu ; \
     rm -f /etc/apt/apt.conf.d/docker-clean ; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
-
-ARG SNAPSHOT_VER
-ARG SNAPSHOT_NAME
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    if test -n "$SNAPSHOT_VER" ; then \
-        set -exu ; \
-        apt-get update -qq ; \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends \
-            ca-certificates \
-        ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
-    fi ; \
-    truncate -s 0 /var/log/apt/* ; \
-    truncate -s 0 /var/log/dpkg.log
-
 
 ARG NODE_VER
 ARG NODE_MAJOR
@@ -484,26 +458,6 @@ RUN set -exu ; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-ARG SNAPSHOT_VER
-ARG SNAPSHOT_NAME
-
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    if test -n "$SNAPSHOT_VER" ; then \
-        set -exu ; \
-        apt-get update -qq ; \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends \
-            ca-certificates \
-        ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
-    fi ; \
-    truncate -s 0 /var/log/apt/* ; \
-    truncate -s 0 /var/log/dpkg.log
-
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -592,26 +546,6 @@ RUN set -exu ; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-ARG SNAPSHOT_VER
-ARG SNAPSHOT_NAME
-
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    if test -n "$SNAPSHOT_VER" ; then \
-        set -exu ; \
-        apt-get update -qq ; \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends \
-            ca-certificates \
-        ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
-    fi ; \
-    truncate -s 0 /var/log/apt/* ; \
-    truncate -s 0 /var/log/dpkg.log
-
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -627,6 +561,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # Libraries used by hexpm
         # Enable the app to make outbound SSL calls.
         ca-certificates \
+        # curl \
         # Allow app to listen on HTTPS
         libssl3 \
         # libodbc1 \

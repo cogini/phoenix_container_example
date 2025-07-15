@@ -13,14 +13,8 @@ ARG OTP_VER=27.3.4
 ARG BUILD_OS_VER=8
 ARG PROD_OS_VER=8
 
-# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
-# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
-# ARG SNAPSHOT_VER=20230612
-ARG SNAPSHOT_VER=""
-ARG SNAPSHOT_NAME=""
-
-ARG NODE_VER=lts
-ARG NODE_MAJOR=20
+ARG NODE_VER=24.0.1
+ARG NODE_MAJOR=24
 ARG YARN_VER=1.22.22
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
@@ -223,8 +217,7 @@ COPY --link mix.exs mix.lock ./
 # COPY --link config ./config
 
 # Add private repo for Oban
-RUN --mount=type=secret,id=oban_license_key \
-    --mount=type=secret,id=oban_key_fingerprint \
+RUN --mount=type=secret,id=oban_license_key --mount=type=secret,id=oban_key_fingerprint \
     if test -s /run/secrets/oban_license_key; then \
         mix hex.repo add oban https://getoban.pro/repo \
             --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
@@ -232,8 +225,7 @@ RUN --mount=type=secret,id=oban_license_key \
     fi
 
 # Run deps.get with optional authentication to access private repos
-RUN --mount=type=ssh \
-    --mount=type=secret,id=access_token \
+RUN --mount=type=ssh --mount=type=secret,id=access_token \
     # Access private repos using ssh identity
     # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
     # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
@@ -370,6 +362,7 @@ RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
     mix compile --warnings-as-errors
 
 RUN mix assets.setup
+
 RUN mix assets.deploy
 
 # Build release
