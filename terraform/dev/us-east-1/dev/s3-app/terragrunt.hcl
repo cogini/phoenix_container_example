@@ -3,6 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//s3-app"
 }
+include "root" {
+  path = find_in_parent_folders()
+}
 # dependency "kms" {
 #   config_path = "../kms"
 # }
@@ -10,9 +13,6 @@ terraform {
 #   config_path = "../route53-public"
 #   # config_path = "../route53-cdn" # separate CDN domain
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 inputs = {
   comp = "app"
