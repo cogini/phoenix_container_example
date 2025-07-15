@@ -555,6 +555,7 @@ RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
+ARG LANG
 
 # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
