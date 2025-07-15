@@ -315,6 +315,8 @@ RUN set -ex ; \
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
+ARG LANG
+
 ARG APP_DIR
 ENV HOME=$APP_DIR
 
