@@ -623,6 +623,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # Libraries used by hexpm
         # Enable the app to make outbound SSL calls.
         ca-certificates \
+        # curl \
         # Allow app to listen on HTTPS
         libssl3 \
         # libodbc1 \
