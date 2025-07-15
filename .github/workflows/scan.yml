@@ -6,6 +6,9 @@ on:
     - cron: '0 0 * * *'
     # Once an hour
     # - cron: '0 * * * *'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 env:
   # Name of image
   IMAGE_NAME: foo-app
@@ -40,15 +43,21 @@ env:
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
   ECS_CONTAINER: foo-app
+  ECS_CPU: 256
+  ECS_RAM: 2048
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
   TASKDEF: ecs/task-definition.json
   ECS_SERVICE_WORKER: foo-worker
   ECS_CONTAINER_WORKER: foo-worker
+  ECS_CPU_WORKER: 256
+  ECS_RAM_WORKER: 2048
   TASKDEF_WORKER: ecs/task-definition.worker.json
   APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
+  # APPSIGNAL_APP_NAME: bounce
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
   # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
@@ -69,35 +78,93 @@ jobs:
     name: Set up build matrix
     runs-on: ubuntu-latest
     outputs:
+      # Elixir/Erlang/OS combinations for tests
+      # Generally this will match prod
       test-matrix: ${{ steps.common-matrix.outputs.result }}
+      # Combinations for prod images
+      # Used for the final deploy image as well as external tests
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
+      # Combinations to deploy to prod (or staging)
+      # Generally this will only be a single variant
       deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
+      # Combinations used to build assets
+      # Generally this will only be a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
     steps:
       - uses: actions/github-script@v7
         id: common-matrix
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+                # {
+                #   os: "alma",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "10",
+                #   prod_os_ver: "10"
+                # },
+                # {
+                #   os: "alpine",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "3.21.3",
+                #   prod_os_ver: "3.21.3"
+                # },
+                # {
+                #   os: "distroless",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "bookworm-20250630-slim",
+                #   prod_os_ver: "bookworm-slim"
+                # },
+                # {
+                #   os: "rocky",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "9",
+                #   prod_os_ver: "9"
+                # },
+                # {
+                #   os: "ubuntu",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "jammy-20250619",
+                #   prod_os_ver: "jammy"
+                # },
+                # {
+                #   os: "chiseled",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "jammy-20250619",
+                #   prod_os_ver: "jammy"
+                # },
+                # {
+                #   os: "ubuntu",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "noble-20250619",
+                #   prod_os_ver: "noble"
+                # },
         with:
           script: |
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
-                  prod_os_ver: "bookworm-slim",
-                  os: "debian"
+                  os: "centos7",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "7",
+                  prod_os_ver: "7"
                 },
                 {
-                  elixir: "1.16.3",
-                  otp: "26.2.5",
-                  build_os_ver: "bullseye-20240513",
-                  prod_os_ver: "bullseye-slim",
-                  os: "debian"
-                }
+                  os: "debian",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
+                  prod_os_ver: "bookworm-slim"
+                },
               ]
             }
+
       # druzan/setup-matrix is slow, taking about 15 seconds to initialize
       #  - name: Define matrix for test containers
       #    id: test-matrix
@@ -111,6 +178,48 @@ jobs:
       #            prod_os_ver: bullseye-slim
       #            os: debian
 
+                # {
+                #   os: "alma",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "10",
+                #   prod_os_ver: "10"
+                # },
+                # {
+                #   os: "alpine",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "3.21.3",
+                #   prod_os_ver: "3.21.3"
+                # },
+                # {
+                #   os: "rocky",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "9",
+                #   prod_os_ver: "9"
+                # },
+                # {
+                #   os: "ubuntu",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "jammy-20250619",
+                #   prod_os_ver: "jammy"
+                # },
+                # {
+                #   os: "chiseled",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "jammy-20250619",
+                #   prod_os_ver: "jammy"
+                # },
+                # {
+                #   os: "ubuntu",
+                #   elixir: "1.18.4",
+                #   otp: "28.0.1",
+                #   build_os_ver: "noble-20250619",
+                #   prod_os_ver: "noble"
+                # },
       - uses: actions/github-script@v7
         id: prod-matrix
         with:
@@ -118,19 +227,12 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
-                  prod_os_ver: "bookworm-slim",
-                  os: "debian"
+                  os: "debian",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
+                  prod_os_ver: "bookworm-slim"
                 },
-                {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
-                  prod_os_ver: "bookworm-slim",
-                  os: "distroless"
-                }
               ]
             }
 
@@ -141,12 +243,12 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  os: "debian",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim",
-                  os: "debian"
-                }
+                },
               ]
             }
 
@@ -159,12 +261,12 @@ jobs:
             return {
               include: [
                 {
-                  elixir: "1.17.1",
-                  otp: "27.0",
-                  build_os_ver: "bookworm-20240612",
+                  os: "debian",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "bookworm-20250630-slim",
                   prod_os_ver: "bookworm-slim",
-                  os: "debian"
-                }
+                },
               ]
             }
 
@@ -256,7 +358,7 @@ jobs:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      # - name: Scan image with snyk
+      # - name: Scan image with Snyk
       #   # if: github.event_name != 'pull_request'
       #   uses: snyk/actions/docker@master
       #   continue-on-error: true
