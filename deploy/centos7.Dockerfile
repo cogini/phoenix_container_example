@@ -13,12 +13,6 @@ ARG OTP_VER=27.3.3
 ARG BUILD_OS_VER=8
 ARG PROD_OS_VER=8
 
-# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
-# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
-# ARG SNAPSHOT_VER=20230612
-ARG SNAPSHOT_VER=""
-ARG SNAPSHOT_NAME=""
-
 # Newer binary releases of nodejs require a newer version of glibc not
 # available in CentOS 7, so we are stuck with 14.
 ARG NODE_MAJOR=14
@@ -290,8 +284,6 @@ ARG YARN_VER
 
 RUN set -ex ; \
     export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
-    export CFLAGS="$CFLAGS -O2 -g $(pkg-config --cflags openssl11)" ; \
-    export LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
     # Install Erlang Solutions binary
@@ -348,8 +340,7 @@ COPY --link mix.exs mix.lock ./
 # COPY --link config ./config
 
 # Add private repo for Oban
-RUN --mount=type=secret,id=oban_license_key \
-    --mount=type=secret,id=oban_key_fingerprint \
+RUN --mount=type=secret,id=oban_license_key --mount=type=secret,id=oban_key_fingerprint \
     if test -s /run/secrets/oban_license_key; then \
         mix hex.repo add oban https://getoban.pro/repo \
             --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
@@ -357,8 +348,7 @@ RUN --mount=type=secret,id=oban_license_key \
     fi
 
 # Run deps.get with optional authentication to access private repos
-RUN --mount=type=ssh \
-    --mount=type=secret,id=access_token \
+RUN --mount=type=ssh --mount=type=secret,id=access_token \
     # Access private repos using ssh identity
     # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
     # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
@@ -512,9 +502,7 @@ ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
 ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
 RUN set -ex ; \
-    ls -l  ; \
     curl -v --location https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o /app/_build/tailwind-linux-x64 ; \
-    ls -l _build/ ; \
     chmod +x /app/_build/tailwind-linux-x64 ;
 
 RUN mix assets.deploy
