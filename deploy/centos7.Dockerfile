@@ -320,6 +320,8 @@ ARG LANG
 ARG APP_DIR
 ENV HOME=$APP_DIR
 
+RUN env
+
 WORKDIR $APP_DIR
 
 # This mix task fails with a TLS error, so download and install manually
