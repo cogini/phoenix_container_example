@@ -75,7 +75,7 @@ ARG APP_PORT=4000
 
 # Allow additional packages to be injected into builds
 # These variables must always have something defined
-ARG RUNTIME_PACKAGES="libncursesw6"
+ARG RUNTIME_PACKAGES="ca-certificates"
 ARG DEV_PACKAGES="inotify-tools"
 
 
