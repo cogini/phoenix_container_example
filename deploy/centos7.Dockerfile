@@ -139,6 +139,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
         git \
         glibc-langpack-en \
         gpg \
+        # locales \
         make \
         # useradd and groupadd
         shadow-utils \
@@ -319,8 +320,6 @@ ARG LANG
 
 ARG APP_DIR
 ENV HOME=$APP_DIR
-
-RUN env
 
 WORKDIR $APP_DIR
 
