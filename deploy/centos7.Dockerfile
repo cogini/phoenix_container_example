@@ -606,6 +606,8 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # yum clean all
     # yum clean all ; rm -rf /var/cache/yum
 
+    RUN yum list glibc-langpack-\*
+
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
 # https://www.mankier.com/8/microdnf
