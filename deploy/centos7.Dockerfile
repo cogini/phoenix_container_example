@@ -332,6 +332,8 @@ ARG REBAR_VER
 
 # TLS error downloading hex and rebar, so download them separately
 RUN set -ex ; \
+    source /opt/rh/devtoolset-10/enable ; \
+    source /opt/rh/rh-git227/enable ; \
     export MIX_DEBUG=1 ; \
     # curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" ; \
     # mix archive.install --force /tmp/hex.ez ; \
