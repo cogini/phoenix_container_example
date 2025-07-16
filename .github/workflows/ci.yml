@@ -167,6 +167,13 @@ jobs:
             return {
               include: [
                 {
+                  os: "alma",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "8",
+                  prod_os_ver: "8"
+                },
+                {
                   os: "centos7",
                   elixir: "1.18.4",
                   otp: "28.0.1",
@@ -244,6 +251,13 @@ jobs:
           script: |
             return {
               include: [
+                {
+                  os: "alma",
+                  elixir: "1.18.4",
+                  otp: "28.0.1",
+                  build_os_ver: "8",
+                  prod_os_ver: "8"
+                },
                 {
                   os: "centos7",
                   elixir: "1.18.4",
