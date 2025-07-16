@@ -109,6 +109,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         curl \
         git \
         # glibc-langpack -en \
+        glibc-minimal-langpack \
         gpg \
         make \
         # useradd and groupadd
@@ -421,6 +422,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         gnupg-agent \
         # software-properties-common \
         # glibc-langpack -en \
+        glibc-minimal-langpack \
         gpg \
         unzip \
         # jq \
@@ -467,6 +469,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         # Run health checks and get ECS metadata
         curl \
         # glibc-langpack -en \
+        glibc-minimal-langpack \
         jq \
         # useradd and groupadd
         shadow-utils \
