@@ -60,8 +60,8 @@ ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-ARG LANG=C.UTF-8
-# ARG LANG=en_US.UTF-8
+# ARG LANG=C.UTF-8
+ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -215,7 +215,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # yum clean all
     # yum clean all ; rm -rf /var/cache/yum
 
-# RUN localedef -i en_US -f UTF-8 en_US.UTF-8
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 # Use latest CA certs from Mozilla for hex
 # https://curl.se/docs/caextract.html
