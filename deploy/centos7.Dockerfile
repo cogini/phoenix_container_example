@@ -333,8 +333,9 @@ ARG REBAR_VER
 # TLS error downloading hex and rebar, so download them separately
 RUN set -ex ; \
     export MIX_DEBUG=1 ; \
-    curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" ; \
-    mix archive.install --force /tmp/hex.ez ; \
+    # curl -o /tmp/hex.ez "https://builds.hex.pm/installs/1.16.0/hex-${HEX_VER}.ez" ; \
+    # mix archive.install --force /tmp/hex.ez ; \
+    mix archive.install github hexpm/hex branch latest ; \
     mix local.rebar rebar3 /app/.asdf/installs/rebar/${REBAR_VER}/bin/rebar3
 
 # COPY --link .env.defaul[t] ./
