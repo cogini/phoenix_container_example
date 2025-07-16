@@ -20,7 +20,7 @@ ARG NODE_VER=14.21.3
 ARG YARN_VER=1.22.22
 
 ARG REBAR_VER=3.24.0
-ARG HEX_VER=2.1.1
+ARG HEX_VER=2.2.1
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
