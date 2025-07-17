@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 CURDIR=$PWD
 BINDIR=$(dirname -- "$0")
@@ -8,4 +8,5 @@ cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 
 "$BINDIR/prod" eval 'PhoenixContainerExample.Release.create_repos()'
 "$BINDIR/prod" eval 'PhoenixContainerExample.Release.migrate()'
+
 PHX_SERVER=true exec "$BINDIR/prod" start
