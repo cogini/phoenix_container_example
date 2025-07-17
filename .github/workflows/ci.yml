@@ -21,6 +21,8 @@ on:
       # Handled by otel.yml GitHub Action
       - 'deploy/aws-otel-collector.Dockerfile'
       - 'otel/*'
+      # Handled by newman.yml GitHub Action
+      - 'deploy/newman.Dockerfile'
   pull_request:
     # branches: [main]
     types: [opened,synchronize,reopened,labeled,unlabeled]
