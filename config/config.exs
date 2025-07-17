@@ -28,7 +28,6 @@ config :opentelemetry,
   propagators: [:opentelemetry_xray_propagator, :baggage]
 
 config :phoenix, :json_library, Jason
-
 config :phoenix, logger: false
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
@@ -55,7 +54,7 @@ config :phoenix_container_example,
   foo: "default"
 
 config :tailwind,
-  version: "3.3.2",
+  version: "3.4.3",
   default: [
     args: ~w(
       --config=tailwind.config.js
