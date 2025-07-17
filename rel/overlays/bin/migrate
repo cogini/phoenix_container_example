@@ -1,3 +1,10 @@
 #!/bin/sh
-cd -P -- "$(dirname -- "$0")"
-exec ./phoenix_container_example eval PhoenixContainerExample.Release.migrate
+
+set -ex
+
+CURDIR=$PWD
+BINDIR=$(dirname -- "$0")
+cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
+
+"$BINDIR/prod" eval 'PhoenixContainerExample.Release.create_repos()'
+"$BINDIR/prod" eval 'PhoenixContainerExample.Release.migrate()'
