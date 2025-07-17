@@ -1571,7 +1571,7 @@ jobs:
         with:
           task-definition: ${{ env.TASKDEF }}
           container-name: ${{ env.ECS_CONTAINER }}
-          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -1602,7 +1602,7 @@ jobs:
         with:
           task-definition: ${{ env.TASKDEF_WORKER }}
           container-name: ${{ env.ECS_CONTAINER_WORKER }}
-          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS (worker)
         if: env.AWS_ENABLED == 1
