@@ -431,8 +431,8 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         # Additional libs
         libstdc++6 \
         libgcc-s1 \
-        $RUNTIME_PACKAGES \
-    ;
+        # locales \
+        $RUNTIME_PACKAGES
     # dnf clean all
     # dnf clean all ; rm -rf /var/cache/yum
 
@@ -475,7 +475,6 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         shadow-utils \
         wget \
         $RUNTIME_PACKAGES
-    # ; \
     # dnf clean all
     # dnf clean all ; rm -rf /var/cache/dnf
 
@@ -601,8 +600,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         sudo \
         # for chsh
         util-linux-user \
-        $DEV_PACKAGES \
-    ;
+        $DEV_PACKAGES
     # dnf clean all
 
 RUN chsh --shell /bin/bash "$APP_USER"
