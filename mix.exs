@@ -123,7 +123,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:styler, "~> 1.4.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
-      {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_metrics_prometheus, "~> 1.1"},
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
