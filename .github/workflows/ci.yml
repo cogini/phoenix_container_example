@@ -1576,6 +1576,7 @@ jobs:
       - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
+        if: env.AWS_ENABLED == 1
         with:
           task-definition: ${{ env.TASKDEF }}
           container-name: ${{ env.ECS_CONTAINER }}
