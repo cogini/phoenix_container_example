@@ -237,8 +237,7 @@ RUN set -exu ; \
     sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
     cat /etc/locale.gen | grep "${LANG}" ; \
     locale-gen ; \
-    localedef --list-archive ; \
-    ls -l /usr/lib/locale/
+    localedef --list-archive ;
 
 RUN set -ex ; corepack enable ; corepack enable npm ;
     # npm install -g yarn
@@ -514,8 +513,7 @@ RUN set -exu ; \
     sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
     grep -v '^#' /etc/locale.gen ; \
     locale-gen ; \
-    localedef --list-archive ; \
-    ls -l /usr/lib/locale/
+    localedef --list-archive ;
 
 
 # Create base image for prod with everything but the code release
