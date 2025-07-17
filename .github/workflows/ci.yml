@@ -883,10 +883,12 @@ jobs:
         env:
           cache-name: cache-elixir-deps-${{ github.ref_name }}
         with:
-          path: deps
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          path: |
+            **/deps
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache compiled build
         id: cache-build
@@ -894,10 +896,13 @@ jobs:
         env:
           cache-name: cache-compiled-build-${{ github.ref_name }}
         with:
-          path: _build
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          path: |
+            **/_build
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles( '**/lib/**/*.{ex,eex}', '**/config/*.exs', '**/mix.exs' ) }}
           restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache node-modules
         id: node-modules
@@ -906,9 +911,10 @@ jobs:
           cache-name: cache-node-modules-${{ github.ref_name }}
         with:
           path: assets/node_modules
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Install build tools
         run: mix do local.rebar --force, local.hex --force
