@@ -23,9 +23,10 @@ defmodule PhoenixContainerExampleWeb do
     quote do
       use Phoenix.Router, helpers: false
 
-      # Import common connection and controller functions to use in pipelines
       import Phoenix.Controller
       import Phoenix.LiveView.Router
+
+      # Import common connection and controller functions to use in pipelines
       import Plug.Conn
     end
   end
@@ -82,11 +83,13 @@ defmodule PhoenixContainerExampleWeb do
 
   defp html_helpers do
     quote do
+      # Translation
       use Gettext, backend: PhoenixContainerExampleWeb.Gettext
+
       # HTML escaping functionality
       import Phoenix.HTML
 
-      # Core UI components and translation
+      # Core UI components
       import PhoenixContainerExampleWeb.CoreComponents
 
       # Shortcut for generating JS commands
@@ -107,7 +110,7 @@ defmodule PhoenixContainerExampleWeb do
   end
 
   @doc """
-  When used, dispatch to the appropriate controller/view/etc.
+  When used, dispatch to the appropriate controller/live_view/etc.
   """
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
