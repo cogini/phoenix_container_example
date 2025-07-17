@@ -109,6 +109,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         curl \
         git \
         # glibc-langpack -en \
+        glibc-minimal-langpack \
         gpg \
         make \
         # useradd and groupadd
@@ -406,6 +407,7 @@ RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
+ARG LANG
 
 # https://groups.google.com/g/cloudlab-users/c/Re6Jg7oya68?pli=1
 
@@ -421,6 +423,7 @@ RUN --mount=type=cache,id=dnf-cache,target=/var/cache/dnf,sharing=locked \
         gnupg-agent \
         # software-properties-common \
         # glibc-langpack -en \
+        glibc-minimal-langpack \
         gpg \
         unzip \
         # jq \
