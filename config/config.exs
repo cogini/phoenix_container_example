@@ -1,6 +1,5 @@
 import Config
 
-# Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
   default: [
@@ -28,18 +27,8 @@ config :opentelemetry,
   id_generator: :opentelemetry_xray_id_generator,
   propagators: [:opentelemetry_xray_propagator, :baggage]
 
-# Use Jason for JSON parsing in Phoenix
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
 config :phoenix, :json_library, Jason
 
-# Disable normal Phoenix.Logger, as we are using uinta
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-# https://github.com/podium/uinta
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
 config :phoenix, logger: false
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
@@ -65,11 +54,9 @@ config :phoenix_container_example,
 config :phoenix_container_example,
   foo: "default"
 
-# Configure tailwind (the version is required)
 config :tailwind,
   version: "3.3.2",
   default: [
-    # resource_detectors: [:otel_resource_env_var, :otel_resource_app_env]
     args: ~w(
       --config=tailwind.config.js
       --input=css/app.css

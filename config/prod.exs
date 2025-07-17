@@ -70,7 +70,6 @@ config :swoosh, :api_client, false
 #   }
 # }
 
-# Configures Swoosh API Client
 # config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: PhoenixContainerExample.Finch
 
 # Disable Swoosh Local Memory Storage
