@@ -422,7 +422,7 @@ jobs:
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
       # - name: Configure AWS credentials
-      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   if: env.AWS_ENABLED == 1
       #   uses: aws-actions/configure-aws-credentials@v4
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -807,19 +807,19 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == 1
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == 1
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == 1
         run: |
           echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
           echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
@@ -956,6 +956,7 @@ jobs:
       # Copying is faster than syncing. With digested files, multiple versions
       # can coexist on the server, and the app will choose the right ones.
       - name: Copy assets to S3
+        if: env.AWS_ENABLED == 1
         run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
 
       # - name: Sync to S3
@@ -1103,7 +1104,7 @@ jobs:
         uses: actions/checkout@v4
 
       # - name: Configure AWS credentials
-      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   if: env.AWS_ENABLED == 1
       #   uses: aws-actions/configure-aws-credentials@v4
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -1356,7 +1357,7 @@ jobs:
   #         password: ${{ secrets.GITHUB_TOKEN }}
   #
   #     - name: Configure AWS credentials
-  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       if: env.AWS_ENABLED == 1
   #       uses: aws-actions/configure-aws-credentials@v4
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -1496,7 +1497,7 @@ jobs:
   #       run: mix assets.deploy
 
   #     - name: Configure AWS credentials
-  #       if: ${{ env.AWS_ENABLED == 1 }}
+  #       if: env.AWS_ENABLED == 1
   #       uses: aws-actions/configure-aws-credentials@v4
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -1510,7 +1511,6 @@ jobs:
 
   deploy-ecs:
     name: Deploy to AWS ECS
-    # if: ${{ env.AWS_ENABLED == 1 }}
     # needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
     needs: [test-prod, test, test-dialyzer, setup-matrix]
     permissions:
@@ -1528,13 +1528,14 @@ jobs:
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == 1
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
+        if: env.AWS_ENABLED == 1
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -1574,6 +1575,7 @@ jobs:
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        if: env.AWS_ENABLED == 1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
@@ -1603,6 +1605,7 @@ jobs:
           image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS (worker)
+        if: env.AWS_ENABLED == 1
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
@@ -1631,6 +1634,7 @@ jobs:
           APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
           REVISION: ${{ env.GITHUB_SHA_SHORT }}
           # REVISION: ${{ env.GITHUB_SHA }}
+        if: env.AWS_ENABLED == 1
         run: |
           printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
           export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
