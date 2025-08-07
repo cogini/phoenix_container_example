@@ -28,6 +28,10 @@ config :logger, :default_handler,
     }
   }
 
+# config :logger, :default_formatter,
+#   format: "$time $metadata[$level] $message\n",
+#   metadata: [:file, :line]
+
 config :logger,
   level: :debug,
   always_evaluate_messages: true
@@ -63,10 +67,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 
 # Enable dev routes for dashboard and mailbox
 config :phoenix_container_example, dev_routes: true
-
-# config :logger, :default_formatter,
-#   format: "$time $metadata[$level] $message\n",
-#   metadata: [:file, :line]
 
 if System.get_env("OTEL_DEBUG") == "true" do
   config :opentelemetry, :processors,
