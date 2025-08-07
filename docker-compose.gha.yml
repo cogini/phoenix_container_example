@@ -9,6 +9,9 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
+      # platforms:
+      #   - linux/amd64
+      #   - linux/arm64
       context: .
       # secrets:
       #   - oban_license_key
