@@ -162,9 +162,8 @@ if config_env() == :prod do
       config :libcluster, topologies: []
 
     "gossip" ->
-      # Local testing with docker compose
       # Use multicast UDP to form a cluster between nodes gossiping a heartbeat
-      # This does not work inside ECS
+      # Used for local testing with docker compose. It does not work inside ECS.
       config :libcluster,
         topologies: [
           app: [
@@ -173,7 +172,7 @@ if config_env() == :prod do
         ]
 
     "local" ->
-      # Use epmd to connect to discovered nodes on the local host
+      # Use epmd to connect to discover nodes on local host
       config :libcluster,
         topologies: [
           app: [
