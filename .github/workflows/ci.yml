@@ -1277,7 +1277,7 @@ jobs:
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
-        run: cat trivy.sarif | jq .
+        run: cat trivy-results.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
@@ -1287,7 +1287,7 @@ jobs:
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         with:
-          sarif_file: 'trivy.sarif'
+          sarif_file: 'trivy-results.sarif'
           category: trivy
 
       - name: Scan image with Grype
