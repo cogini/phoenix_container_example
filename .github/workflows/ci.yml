@@ -1,6 +1,6 @@
 ---
 name: CI
-# Build and run tests in containers
+# Build and run tests in containers.
 # Store test and prod images to GitHub Container Registry (GHCR)
 # Build prod image and push to AWS ECR
 # Run tests and quality checks on test image
@@ -52,7 +52,7 @@ env:
   # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
   # S3_BUCKET_CI: cogini-prod-foo-ci
-  # Health check port for app
+  # Target port for prod image tests
   APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
@@ -730,7 +730,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: trivy
 
-      - name: Scan code with grype
+      - name: Scan code with Grype
         uses: anchore/scan-action@v6
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
@@ -770,11 +770,11 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
-  #     # Upload JUnit report files
-  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-  #     checks: write
-  #     pull-requests: write
-  #     issues: read
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      # checks: write
+      # pull-requests: write
+      # issues: read
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
