@@ -613,9 +613,9 @@ jobs:
         # run: docker compose run test mix do ecto.setup
 
       - name: Run tests
+        continue-on-error: true
         # run: docker compose run test mix test --cover
         # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
-        continue-on-error: true
         run: docker compose run test mix test
 
       - name: Run quality checks
@@ -680,8 +680,8 @@ jobs:
     name: Security scan code
     needs: [build-test]
     permissions:
-      contents: read
       # Read from ghcr.io repository
+      contents: read
       packages: read
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
@@ -1257,14 +1257,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+        run: docker pull ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          image-ref: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -1273,7 +1273,7 @@ jobs:
           # format: 'sarif'
           format: 'table'
           # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
-          # output: 'trivy.sarif'
+          # output: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'trivy-results.sarif' }}
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
@@ -1295,7 +1295,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
           # output-format: 'sarif'
