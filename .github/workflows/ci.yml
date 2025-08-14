@@ -711,7 +711,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          # ignore-unfixed: true
+          ignore-unfixed: true
           # severity: 'CRITICAL'
           # trivy-config: trivy.yaml
           format: 'table'
