@@ -322,7 +322,7 @@ jobs:
       RELEASE_TAG: build-${{ github.run_number }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # - name: Tag repository
       #   run: |
@@ -369,7 +369,7 @@ jobs:
       #     echo "environment: ${{ github.event.deployment.environment }}"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set variables
         run: |
@@ -577,7 +577,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Pull repos
         run: |
@@ -666,7 +666,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Pull repos
         run: |
@@ -701,7 +701,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # with:
         #   # Fetch all history for all branches and tags for Gitleaks
         #   fetch-depth: 0
@@ -835,7 +835,7 @@ jobs:
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set variables
         id: vars
@@ -1113,7 +1113,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # - name: Configure AWS credentials
       #   if: env.AWS_ENABLED == 1
@@ -1376,7 +1376,7 @@ jobs:
   #         aws-region: ${{ vars.AWS_REGION }}
   #
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v5
   #
   #     - name: Set up Docker buildx
   #       id: buildx
@@ -1435,7 +1435,7 @@ jobs:
   #     MIX_ENV: prod
   #   steps:
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v5
 
   #     - uses: actions/setup-node@v4
   #       with:
@@ -1557,7 +1557,7 @@ jobs:
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
@@ -1706,7 +1706,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       # - name: Check out source
-      #   uses: actions/checkout@v4
+      #   uses: actions/checkout@v5
 
       - name: Tag ECR release as latest
         if: ${{ env.AWS_ENABLED == 1 }}
@@ -1759,7 +1759,7 @@ jobs:
   #         aws-region: ${{ vars.AWS_REGION }}
   #
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v5
   #
   #     - name: Set variables
   #       id: vars
