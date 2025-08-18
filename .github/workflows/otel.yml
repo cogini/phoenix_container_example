@@ -73,7 +73,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker buildx
         id: buildx
