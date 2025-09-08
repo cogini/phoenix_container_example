@@ -869,7 +869,7 @@ jobs:
       # We do it here instead of a separate task, as we need
       # priv/static/cache_manifest.json in the build.
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 18
 
@@ -1437,7 +1437,7 @@ jobs:
   #     - name: Check out source
   #       uses: actions/checkout@v4
 
-  #     - uses: actions/setup-node@v4
+  #     - uses: actions/setup-node@v5
   #       with:
   #         node-version: 18
 
