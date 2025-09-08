@@ -91,7 +91,7 @@ jobs:
       # Generally this will only be a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: common-matrix
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
@@ -220,7 +220,7 @@ jobs:
                 #   build_os_ver: "noble-20250619",
                 #   prod_os_ver: "noble"
                 # },
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: prod-matrix
         with:
           script: |
@@ -236,7 +236,7 @@ jobs:
               ]
             }
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: deploy-matrix
         with:
           script: |
@@ -252,7 +252,7 @@ jobs:
               ]
             }
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: assets-matrix
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
