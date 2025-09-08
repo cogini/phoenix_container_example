@@ -58,7 +58,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
