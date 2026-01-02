@@ -1653,7 +1653,7 @@ jobs:
           image: ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS (worker)
-        if: env.AWS_ENABLED == 1
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
