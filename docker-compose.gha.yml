@@ -9,14 +9,15 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
+      # --platform linux/amd64
       # platforms:
       #   - linux/amd64
       #   - linux/arm64
       context: .
       # secrets:
+      #   - access_token
       #   - oban_license_key
       #   - oban_key_fingerprint
-      #   - access_token
     environment:
       - DATABASE_DB
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
@@ -53,18 +54,22 @@ services:
       #   - linux/amd64
       #   - linux/arm64
       # secrets:
+      #   - access_token
       #   - oban_license_key
       #   - oban_key_fingerprint
-      #   - access_token
       context: .
     environment:
+      # Talk to postgres database container
       - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
+      # - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - LOG_CONSOLE=${LOG_CONSOLE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - POOL_SIZE=${POOL_SIZE:-50}
       - PORT=4000
+      # mix phx.gen.secret
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
       # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
+      # Send traces to the AWS OTEL collector container
       # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
