@@ -1329,7 +1329,7 @@ jobs:
   #   name: Build and upload assets to CDN
   #   needs: [setup-matrix]
   #   # Build assets in host instead of Docker for better performance.
-  #   if: github.event_name != 'pull_request'
+  #   if: ${{ github.event_name != 'pull_request' }}
   #   permissions:
   #     # Interact with GitHub OIDC Token endpoint for AWS
   #     id-token: write
@@ -1351,20 +1351,20 @@ jobs:
   #   steps:
   #     - name: Check out source
   #       uses: actions/checkout@v4
-
+  #
   #     - uses: actions/setup-node@v4
   #       with:
   #         node-version: 18
-
+  #
   #     - name: Enable corepack
   #       run: corepack enable
-
+  #
   #     - name: Install Erlang and Elixir
   #       uses: erlef/setup-beam@v1
   #       with:
   #         otp-version: ${{ matrix.otp }}
   #         elixir-version: ${{ matrix.elixir }}
-
+  #
   #     - name: Cache deps
   #       id: cache-deps
   #       uses: actions/cache@v4
@@ -1375,7 +1375,7 @@ jobs:
   #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
   #         restore-keys: |
   #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-
+  #
   #     - name: Cache compiled build
   #       id: cache-build
   #       uses: actions/cache@v4
@@ -1386,7 +1386,7 @@ jobs:
   #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
   #         restore-keys: |
   #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-
+  #
   #     - name: Cache node-modules
   #       id: node-modules
   #       uses: actions/cache@v4
@@ -1397,10 +1397,10 @@ jobs:
   #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
   #         restore-keys: |
   #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-
+  #
   #     - name: Install build tools
   #       run: mix do local.rebar --force, local.hex --force
-
+  #
   #     # Force full recompile on builds that are retried.
   #     - name: Clean deps to avoid flaky incremental builds
   #       if: github.run_attempt != '1'
@@ -1408,36 +1408,37 @@ jobs:
   #         mix deps.clean --all
   #         mix clean
   #       shell: sh
-
+  #
   #     - name: Get Elixir deps
   #       run: mix deps.get
-
+  #
   #     - name: Compile
   #       run: mix compile
-
+  #
   #     # - name: Install JavaScript libs
   #     #   # working-directory: assets
   #     #   # run: npm install && npm run deploy
   #     #   run: yarn --cwd ./assets install --prod
-
+  #
   #     - name: Deploy assets
   #       run: mix assets.deploy
-
+  #
   #     - name: Configure AWS credentials
   #       if: env.AWS_ENABLED == 1
   #       uses: aws-actions/configure-aws-credentials@v4
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   #         aws-region: ${{ vars.AWS_REGION }}
-
+  #
   #     - name: Sync to S3
   #       run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
-
+  #
   #     - name: Create CloudFront invalidation
   #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
   deploy-ecs:
     name: Deploy to AWS ECS
+    # if: github.event_name != 'pull_request'
     # needs: [test-prod, test, test-dialyzer, upload-assets, setup-matrix]
     needs: [test-prod, test, test-dialyzer, setup-matrix]
     permissions:
@@ -1461,14 +1462,17 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: env.AWS_ENABLED == 1
+        if: ${{ env.AWS_ENABLED == 1 }}
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
-        run: |
-          echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+
+      - name: Set vars
+        shell: bash
+        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v4
