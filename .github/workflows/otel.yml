@@ -1,5 +1,6 @@
 ---
 name: OpenTelemetry
+# Build AWS OpenTelemetry Collector Docker image and push to Amazon ECR
 on:
   push:
     branches:
