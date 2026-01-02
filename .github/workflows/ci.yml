@@ -518,9 +518,9 @@ jobs:
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       contents: read
+      issues: read
       checks: write
       pull-requests: write
-      issues: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
