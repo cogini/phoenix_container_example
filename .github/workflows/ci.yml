@@ -889,7 +889,7 @@ jobs:
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
-        if: github.run_attempt != '1'
+        if: ${{ github.run_attempt != '1' }}
         run: |
           mix deps.clean --all
           mix clean
@@ -930,7 +930,7 @@ jobs:
       # Copying is faster than syncing. With digested files, multiple versions
       # can coexist on the server, and the app will choose the right ones.
       - name: Copy assets to S3
-        if: env.AWS_ENABLED == 1
+        if: ${{ env.AWS_ENABLED == 1 }}
         run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
 
       # - name: Sync to S3
