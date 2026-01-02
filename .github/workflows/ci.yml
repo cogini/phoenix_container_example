@@ -1192,8 +1192,8 @@ jobs:
           # severity: 'CRITICAL,HIGH'
           # cache-dir: /var/cache
           # format: 'sarif'
-          format: 'table'
-          # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
+          # format: 'table'
+          format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           # output: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'trivy-results.sarif' }}
 
       - name: Display scan results
