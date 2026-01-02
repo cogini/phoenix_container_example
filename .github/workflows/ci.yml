@@ -141,6 +141,8 @@ jobs:
       # Combinations used to build assets
       # Generally this will only be a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
+      environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
+      # environment: staging
     steps:
       - uses: actions/github-script@v7
         id: common-matrix
@@ -381,8 +383,7 @@ jobs:
       # Push to ghcr.io repository
       packages: write
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+    environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
@@ -397,7 +398,7 @@ jobs:
       #   run: |
       #     echo "ref: ${{ github.ref }}"
       #     echo "ref_name: ${{ github.ref_name }}"
-      #     echo "environment: ${{ github.event.deployment.environment }}"
+      #     echo "environment: ${{ needs.setup-matrix.outputs.environment }}"
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -424,6 +425,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Debug environment
+      #   # env.ACTIONS_STEP_DEBUG == 'true'
+      #   run: |
+      #     echo "environment: ${{ needs.setup-matrix.outputs.environment }}"
+      #     echo -n "AWS_ACCOUNT_ID: "
+      #     echo ${{ secrets.AWS_ACCOUNT_ID }} | sed 's/./& /g'
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
@@ -808,8 +816,7 @@ jobs:
       # pull-requests: write
       # issues: read
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+    environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -823,9 +830,10 @@ jobs:
 
       - name: Debug environment
         run: |
+          echo "github.event_name: ${{ github.event_name }}"
           echo "ref: ${{ github.ref }}"
           echo "ref_name: ${{ github.ref_name }}"
-          echo "environment: ${{ github.event.deployment.environment }}"
+          echo "environment: ${{ needs.setup-matrix.outputs.environment }}"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -1126,8 +1134,7 @@ jobs:
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+    environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
@@ -1379,8 +1386,7 @@ jobs:
   #     pull-requests: write
   #     issues: read
   #   runs-on: ubuntu-latest
-  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+  #   environment: ${{ needs.setup-matrix.outputs.environment }}
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
@@ -1457,8 +1463,7 @@ jobs:
   #     pull-requests: write
   #     issues: read
   #   runs-on: ubuntu-latest
-  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+  #   environment: ${{ needs.setup-matrix.outputs.environment }}
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJson(needs.setup-matrix.outputs.assets-matrix) }}
@@ -1561,8 +1566,7 @@ jobs:
       id-token: write
       contents: read
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+    environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
