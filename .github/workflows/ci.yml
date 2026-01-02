@@ -885,7 +885,7 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Install build tools
-        run: mix do local.rebar --force, local.hex --force
+        run: mix 'do' local.rebar --force, local.hex --force
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
