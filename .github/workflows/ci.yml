@@ -19,6 +19,7 @@ on:
       - '.vscode'
       - '.gitignore'
       # Handled by otel.yml GitHub Action
+      - .github/workflows/otel.yml
       - 'deploy/aws-otel-collector.Dockerfile'
       - 'otel/*'
       # Handled by newman.yml GitHub Action
