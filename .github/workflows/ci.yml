@@ -1130,7 +1130,7 @@ jobs:
       # - name: Publish unit test results to GitHub
       #   uses: EnricoMi/publish-unit-test-result-action@v2
       #   # Run even if tests fail
-      #   if: always()
+      #   if: (!cancelled())
       #   with:
       #     # Volume mounted from local filesystem into build
       #     junit_files: ./junit-reports/*.xml
