@@ -74,6 +74,8 @@ services:
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
       - '4000:4000'
+      - '9568:9568' # Prometheus metrics
+      - '9111:9111' # Prometheus metrics
     # healthcheck:
     #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:${PORT}/healthz"]
     #   start_period: 2s
