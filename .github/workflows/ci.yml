@@ -1178,7 +1178,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+        run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
