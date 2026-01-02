@@ -95,7 +95,7 @@ RUN if ! grep -q "$APP_USER" /etc/passwd; \
 
 # RUN cat /etc/redhat-release
 
-# Fix repositories to use Centos vault
+# Fix repositories to use CentOS vault
 RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     set -ex ; \
     sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo ; \
@@ -216,6 +216,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # yum clean all
     # yum clean all ; rm -rf /var/cache/yum
 
+ARG LANG
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 # Use latest CA certs from Mozilla for hex
@@ -227,7 +228,8 @@ RUN set -ex ; \
 
 # https://hexdocs.pm/mix/Mix.html
 ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
-ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
+# Make Erlang VM use certs
+# ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
 ENV HOME=$APP_DIR
 
@@ -237,11 +239,11 @@ COPY  bi[n] ./bin
 
 # Set up ASDF
 RUN set -ex ; \
-    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
+    export LD_LIBRARY_PATH="/usr/lib64:${LD_LIBRARY_PATH:-}" ; \
     bin/build-install-asdf-init
 
 ENV ASDF_DIR="$HOME/.asdf"
-ENV PATH=$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH
+ENV PATH="$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH"
 
 COPY .tool-versions ./
 
@@ -251,6 +253,7 @@ ARG NODE_VER
 ARG OTP_VER
 ARG REBAR_VER
 ARG YARN_VER
+ARG CMAKE_VER
 
 # Install using asdf
 # Python is a dependency to build nodejs from source
@@ -284,13 +287,17 @@ ARG YARN_VER
 #     asdf install nodejs ;
 
 RUN set -ex ; \
-    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
+    export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH" ; \
     # Install Erlang Solutions binary
     # bin/build-install-deps-centos ; \
     # Erlang build scripts expect the name to be wx-config
     ln -s /usr/bin/wx-config-3.0 /usr/bin/wx-config ; \
+    # https://github.com/kerl/kerl?tab=readme-ov-file#kerl-options
+    export KERL_DEBUG="yes" ; \
+    export KERL_BUILD_DOCS="no" ; \
+    export KERL_CONFIGURE_OPTIONS="--with-wx --with-odbc --with-ssl --without-javac" ; \
     # Install using .tool-versions versions
     asdf install ; \
     # asdf install erlang "$OTP_VER" ; \
@@ -359,6 +366,7 @@ RUN --mount=type=ssh --mount=type=secret,id=access_token \
     # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
     # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
     # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+    export MIX_DEBUG=1 ; \
     if test -n "$SSH_AUTH_SOCK"; then \
         set -exu ; \
         mkdir -p /etc/ssh ; \
@@ -470,6 +478,9 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
     source /opt/rh/devtoolset-10/enable ; \
     source /opt/rh/rh-git227/enable ; \
+    export DEBUG=1 ; \
+    # export DIAGNOSTIC=1 ; \
+    env | sort ; \
     mix deps.compile
 
 COPY --link li[b] ./lib
@@ -504,13 +515,13 @@ RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
 # Use latest CA certs from Mozilla for hex
 # https://curl.se/docs/caextract.html
 # https://stackoverflow.com/questions/37043442/how-to-add-certificate-authority-file-in-centos-7
-RUN set -ex ; \
-    curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
-    update-ca-trust
+# RUN set -ex ; \
+#     curl https://curl.se/ca/cacert.pem -o /etc/pki/ca-trust/source/anchors/ca-bundle.crt ; \
+#     update-ca-trust
 
-# https://hexdocs.pm/mix/Mix.html
-ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
-ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
+# # https://hexdocs.pm/mix/Mix.html
+# ENV HEX_CACERTS_PATH=/etc/pki/ca-trust/source/anchors/ca-bundle.crt
+# ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
 RUN set -ex ; \
     curl -v --location https://github.com/tailwindlabs/tailwindcss/releases/download/v3.3.2/tailwindcss-linux-x64 -o /app/_build/tailwind-linux-x64 ; \
@@ -608,7 +619,7 @@ RUN --mount=type=cache,id=yum-cache,target=/var/cache/yum,sharing=locked \
     # yum clean all
     # yum clean all ; rm -rf /var/cache/yum
 
-    RUN yum list glibc-langpack-\*
+RUN yum list glibc-langpack-\*
 
 # Creating minimal CentOS docker image from scratch
 # https://gist.github.com/silveraid/e6bdf78441c731a30a66fc6adca6f4b5
@@ -699,7 +710,11 @@ ARG APP_DIR
 ARG APP_USER
 ARG APP_GROUP
 
+COPY --from=prod-release /etc/pki/ca-trust/source/anchors/ca-bundle.crt /etc/pki/ca-trust/source/anchors/ca-bundle.crt
+
 # This could be put in a separate target, but it's faster to do it from prod test
+
+# ENV ERL_AFLAGS="-public_key cacerts_path '\"/etc/pki/ca-trust/source/anchors/ca-bundle.crt\"'"
 
 # Copy CodeDeploy revision into prod image for publishing later
 # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
