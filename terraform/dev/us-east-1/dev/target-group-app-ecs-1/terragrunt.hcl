@@ -30,14 +30,16 @@ inputs = {
 
   port     = 4000
   protocol = "HTTP"
+  # port     = 4001
+  # protocol = "HTTPS"
 
   health_check = {
+    # protocol = "HTTPS" # default HTTP
     path = "/healthz"
     # interval = 30 # default 30
     # timeout = 10 # default 5
     healthy_threshold   = 2 # default 3
     unhealthy_threshold = 2 # default 3
-    # matcher = "200"
     matcher = "200,302"
   }
 
