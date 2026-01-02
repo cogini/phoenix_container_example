@@ -678,6 +678,12 @@ jobs:
         #   # Fetch all history for all branches and tags for Gitleaks
         #   fetch-depth: 0
 
+      # - name: Manual Trivy Setup
+      #   uses: aquasecurity/setup-trivy@v0.2.1
+      #   with:
+      #     cache: true
+      #     version: v0.52.2
+
       - name: Scan code with trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/marketplace/actions/aqua-security-trivy
@@ -685,12 +691,13 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           ignore-unfixed: true
-          # severity: 'CRITICAL'
+          severity: 'CRITICAL'
           # trivy-config: trivy.yaml
           format: 'table'
           # format: 'sarif'
           # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
           # output: 'trivy-results.sarif'
+          # skip-setup-trivy: true
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
