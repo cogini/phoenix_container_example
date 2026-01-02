@@ -1583,7 +1583,8 @@ jobs:
         if: env.AWS_ENABLED == 1
         run: |
           printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
-          export APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
+          APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
+          export APPSIGNAL_URL
           # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
