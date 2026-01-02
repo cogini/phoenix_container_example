@@ -1,33 +1,5 @@
 import Config
 
-config :logger, :default_handler,
-  filters: [
-    # Elixir default filter
-    remote_gl: {&:logger_filters.remote_gl/2, :stop},
-    # Format trace_id for X-Ray
-    opentelemetry_trace_id: {&:opentelemetry_xray_logger_filter.trace_id/2, %{}}
-  ],
-  formatter: {
-    :logger_formatter_json,
-    %{
-      template: [
-        :msg,
-        # :time,
-        :level,
-        :file,
-        :line,
-        # :mfa,
-        :pid,
-        :request_id,
-        :otel_trace_id,
-        :otel_span_id,
-        :otel_trace_flags,
-        :xray_trace_id,
-        :rest
-      ]
-    }
-  }
-
 # config :logger, :default_formatter,
 #   format: "$time $metadata[$level] $message\n",
 #   metadata: [:file, :line]
@@ -68,7 +40,11 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :phoenix_container_example, dev_routes: true
 
+# https://hexdocs.pm/opentelemetry_exporter/readme.html
 if System.get_env("OTEL_DEBUG") == "true" do
+  # Set via environment vars because server name is different in docker compose vs ECS:
+  #   OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+  #   OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
   config :opentelemetry, :processors,
     otel_batch_processor: %{
       exporter: {:otel_exporter_stdout, []}
@@ -77,15 +53,15 @@ else
   config :opentelemetry, traces_exporter: :none
 end
 
-# Initialize plugs at runtime for faster development compilation
+# Initialize plugs at runtime for faster compilation
 config :phoenix, :plug_init_mode, :runtime
 
-# Set a higher stacktrace during development. Avoid configuring such
-# in production as building large stacktraces may be expensive.
+# Set higher stacktrace during development.
+# Avoid in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20
 
 # Include HEEx debug annotations as HTML comments in rendered markup
 config :phoenix_live_view, debug_heex_annotations: true
 
-# Disable swoosh api client as it is only required for production adapters.
+# Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

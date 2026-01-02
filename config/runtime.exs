@@ -18,7 +18,6 @@ end
 
 # Optionally set values from OS environment vars
 env_config = [
-  # {"FOO", :phoenix_container_example, :foo},
   {"BUGSNAG_API_KEY", :bugsnag, :api_key},
   {"BUGSNAG_APP_VERSION", :bugsnag, :app_version},
   {"BUGSNAG_RELEASE_STAGE", :bugsnag, :release_stage}
