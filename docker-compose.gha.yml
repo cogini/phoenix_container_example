@@ -50,6 +50,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: ${MIX_ENV:-prod}
+        RELEASE: ${RELEASE:-prod}
         REGISTRY: ${REGISTRY:-docker.io/}
       # platforms:
       #   - linux/amd64
