@@ -3,6 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//target-group"
 }
+include "root" {
+  path = find_in_parent_folders()
+}
 dependency "vpc" {
   config_path = "../vpc"
 }
@@ -12,9 +15,6 @@ dependency "lb" {
 dependency "zone" {
   config_path = "../route53-public"
   # config_path = "../route53-cdn" # separate CDN domain
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

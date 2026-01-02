@@ -3,6 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//sg"
 }
+include "root" {
+  path = find_in_parent_folders()
+}
 dependency "vpc" {
   config_path = "../vpc"
 }
@@ -10,9 +13,6 @@ dependencies {
   paths = [
     "../sg-lb-public",
   ]
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

@@ -3,6 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//rds"
 }
+include "root" {
+  path = find_in_parent_folders()
+}
 # dependency "kms" {
 #   config_path = "../kms"
 # }
@@ -14,9 +17,6 @@ dependency "sg" {
 }
 dependency "vpc" {
   config_path = "../vpc"
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {
