@@ -460,8 +460,8 @@ jobs:
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
       # - name: Configure AWS credentials
-      #   if: env.AWS_ENABLED == 1
-      #   uses: aws-actions/configure-aws-credentials@v4
+      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   uses: aws-actions/configure-aws-credentials@v5
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       #   with:
