@@ -53,10 +53,11 @@ module "db" {
   # name = var.app_name
   username = var.rds_master_user
   password = var.rds_master_pass
-  db_name  = var.db_name
-
-  # password = data.aws_ssm_parameter.db_master_password
+  # password = data.aws_ssm_parameter.db_master_password.value
   # password = data.aws_secretsmanager_secret.db_master_password
+  # create_random_password = false
+
+  db_name  = var.db_name
 
   monitoring_interval    = var.monitoring_interval
   monitoring_role_name   = var.monitoring_role_name
