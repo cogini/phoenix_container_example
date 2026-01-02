@@ -167,6 +167,12 @@ locals {
   configure_cloudwatch_logs = length(local.cloudwatch_logs) > 0
 }
 
+# Send data to to AWS X-Ray and Prometheus
+locals {
+  write_xray       = var.xray
+  write_prometheus = var.prometheus
+}
+
 # Allow writing to CloudWatch metrics
 # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
 # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
@@ -490,6 +496,12 @@ resource "aws_iam_role" "this" {
 #   operations        = ["Decrypt", "DescribeKey"]
 # }
 
+resource "aws_iam_role_policy_attachment" "cloudwatch-metrics" {
+  count      = local.configure_cloudwatch_metrics ? 1 : 0
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.cloudwatch-metrics[0].arn
+}
+
 resource "aws_iam_role_policy_attachment" "ecs-discovery" {
   count      = var.enable_ecs_discovery ? 1 : 0
   role       = aws_iam_role.this.name
@@ -501,12 +513,6 @@ resource "aws_iam_role_policy_attachment" "s3" {
   count      = local.configure_s3 ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = aws_iam_policy.s3[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "cloudwatch-metrics" {
-  count      = local.configure_cloudwatch_metrics ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudwatch-metrics[0].arn
 }
 
 resource "aws_iam_role_policy_attachment" "ssm" {
@@ -521,12 +527,6 @@ resource "aws_iam_role_policy_attachment" "ssmmessages" {
   policy_arn = aws_iam_policy.ssmmessages[0].arn
 }
 
-resource "aws_iam_role_policy_attachment" "transcribe" {
-  count      = var.enable_transcribe ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.transcribe[0].arn
-}
-
 resource "aws_iam_role_policy_attachment" "sqs" {
   count      = local.configure_sqs ? 1 : 0
   role       = aws_iam_role.this.name
@@ -539,12 +539,26 @@ resource "aws_iam_role_policy_attachment" "ses" {
   policy_arn = aws_iam_policy.ses[0].arn
 }
 
+resource "aws_iam_role_policy_attachment" "transcribe" {
+  count      = var.enable_transcribe ? 1 : 0
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.transcribe[0].arn
+}
+
 # Allow uploading segment documents and telemetry to the X-Ray API
 # https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
 resource "aws_iam_role_policy_attachment" "xray" {
-  count      = var.xray ? 1 : 0
+  count      = local.write_xray ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
+# Grant write only access to AWS Managed Prometheus workspaces
+# https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
+resource "aws_iam_role_policy_attachment" "prometheus" {
+  count      = local.write_prometheus ? 1 : 0
+  role       = aws_iam_role.this.name
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "kms" {
