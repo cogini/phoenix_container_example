@@ -10,8 +10,8 @@ defmodule PhoenixContainerExample.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       dialyzer: [
-        # plt_add_deps: :project,
         plt_add_apps: [:mix, :ex_unit]
+        # plt_add_deps: :project,
         # plt_add_deps: true,
         # flags: ["-Werror_handling", "-Wrace_conditions"],
         # flags: ["-Wunmatched_returns", :error_handling, :race_conditions, :underspecs],
@@ -56,6 +56,7 @@ defmodule PhoenixContainerExample.MixProject do
     [
       prod: [
         reboot_system_after_config: true,
+        # validate_compile_env: false,
         include_executables_for: [:unix],
         # Don't need to tar if we are just going to copy it
         steps: [:assemble, :tar],
