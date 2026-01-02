@@ -1521,7 +1521,7 @@ jobs:
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        if: env.AWS_ENABLED == 1
+        if: ${{ env.AWS_ENABLED == 1 }}
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
