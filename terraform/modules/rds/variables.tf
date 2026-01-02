@@ -93,8 +93,15 @@ variable "engine" {
 }
 
 variable "engine_version" {
-  description = "The engine version to use"
+  description = "Engine version to use"
   type        = string
+  default     = null
+}
+
+variable "major_engine_version" {
+  description = "Major engine version to use"
+  type        = string
+  default     = null
 }
 
 # DB parameter group
