@@ -1708,8 +1708,7 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
-    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
+    environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.deploy-matrix) }}
