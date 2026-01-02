@@ -567,9 +567,7 @@ jobs:
         if: failure()
         run: |
           echo postgres
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
-          echo redis
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q redis) | jq
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
 
       - name: Debug env
         if: failure()
