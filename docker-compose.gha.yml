@@ -22,6 +22,7 @@ services:
       - DATABASE_DB
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+      - OTEL_DEBUG=${OTEL_DEBUG:-false}
     volumes:
       - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
@@ -72,6 +73,7 @@ services:
       # Send traces to the AWS OTEL collector container
       # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_DEBUG=${OTEL_DEBUG:-false}
     ports:
       - '4000:4000'
       - '9568:9568' # Prometheus metrics
