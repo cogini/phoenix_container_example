@@ -25,12 +25,13 @@ module "db" {
   source  = "terraform-aws-modules/rds/aws"
   version = "~> 6.1.1"
 
-  identifier         = local.name
-  engine             = var.engine
-  engine_version     = var.engine_version
-  port               = var.port
-  instance_class     = var.instance_class
-  ca_cert_identifier = var.ca_cert_identifier
+  identifier           = local.name
+  engine               = var.engine
+  engine_version       = var.engine_version
+  major_engine_version = var.major_engine_version
+  port                 = var.port
+  instance_class       = var.instance_class
+  ca_cert_identifier   = var.ca_cert_identifier
 
   replicate_source_db = var.replicate_source_db
 
