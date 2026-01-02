@@ -1493,16 +1493,31 @@ jobs:
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
           CPU: ${{ env.ECS_CPU }}
           RAM: ${{ env.ECS_RAM }}
+          APP_IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+          # OTEL_IMAGE: "public.ecr.aws/aws-observability/aws-otel-collector:${{ vars.AWS_OTEL_VER }}"
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
-        if: env.AWS_ENABLED == 1
+        if: ${{ env.AWS_ENABLED == 1 }}
+        env:
+          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
         with:
+          # https://github.com/aws-actions/amazon-ecs-render-task-definition
           task-definition: ${{ env.TASKDEF }}
+          # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
+          # task-definition-family: ${{ env.ECS_FAMILY }}
           container-name: ${{ env.ECS_CONTAINER }}
-          image: ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
+          # This should match the image tag used in build-prod
+          image: ${{env.IMAGE}}
+          log-configuration-options: |
+            awslogs-create-group=true
+            awslogs-group=/ecs/${{ env.ECS_SERVICE }}
+            awslogs-region=${{ env.AWSLOGS_REGION }}
+            awslogs-stream-prefix=${{ env.ECS_SERVICE }}
+          # environment-variables: |
+          #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
