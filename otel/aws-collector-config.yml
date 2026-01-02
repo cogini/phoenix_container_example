@@ -27,6 +27,7 @@ processors:
     send_batch_size: 50
   batch/metrics:
     timeout: 60s
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
   resourcedetection:
     # detectors: [env, cs, ec2, gcp, azure, system]
     detectors: [env, ecs]
@@ -37,8 +38,8 @@ exporters:
     namespace: ECS/AWSOTel/Application
     log_group_name: '/aws/ecs/application/metrics'
 
-# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md
 extensions:
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md
   health_check:
 
 service:
