@@ -1136,10 +1136,10 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
-      # - name: Push CodeBuild release files
+      # - name: Copy CodeDeploy release files from container
       #   run: |
       #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="codebuild-revision-${{ env.VAR }}.zip"
+      #     NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
       #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
       #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
       #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
