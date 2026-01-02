@@ -947,57 +947,6 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Create .buildx-cache
-        run: mkdir -p ${{ runner.temp }}/.buildx-cache
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/.buildx-cache
-          key: ${{ github.workflow }}-buildx-build-os-deps-prod-${{ env.VAR }}-${{ github.ref_name }}
-
-      # https://github.com/docker/build-push-action
-      # https://github.com/moby/buildkit#export-cache
-      - name: Build target build-os-deps
-        uses: docker/build-push-action@v6
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: build-os-deps
-          build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: false
-          # cache-from: type=gha,scope=${{ github.workflow }}-build-os-deps-${{ env.VAR }}-${{ github.ref_name }}
-          # cache-to: type=gha,scope=${{ github.workflow }}-build-os-deps-${{ env.VAR }}-${{ github.ref_name }},mode=max
-          cache-from: type=local,src=${{ runner.temp }}/.buildx-cache
-          cache-to: type=local,dest=${{ runner.temp }}/.buildx-cache,mode=max
-          no-cache: ${{ github.run_attempt != '1' }}
-
-      - name: Build target build-deps-get
-        uses: docker/build-push-action@v6
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: build-deps-get
-          build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: false
-          # type=gha,scope=${{ github.workflow }}-build-os-deps-${{ env.VAR }}-${{ github.ref_name }}
-          cache-from: |
-            type=local,src=${{ runner.temp }}/.buildx-cache
-            type=gha,scope=${{ github.workflow }}-build-deps-get-prod-${{ env.VAR }}-${{ github.ref_name }}
-          cache-to: type=gha,scope=${{ github.workflow }}-build-deps-get-prod-${{ env.VAR }}-${{ github.ref_name }},mode=max
-          no-cache: ${{ github.run_attempt != '1' }}
-          # ssh: default
-
       - name: Build prod image and push
         uses: docker/build-push-action@v6
         with:
@@ -1011,15 +960,11 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          # cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          # cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # cache-from: type=local,src=${{ runner.temp }}/.buildx-cache
-          # cache-to: type=local,dest=${{ runner.temp }}/.buildx-cache-new,mode=max
           cache-from: |
-            type=local,src=${{ runner.temp }}/.buildx-cache
-            type=gha,scope=${{ github.workflow }}-build-deps-get-prod-${{ env.VAR }}-${{ github.ref_name }}
-            type=gha,scope=${{ github.workflow }}-prod-${{ env.VAR }}-${{ github.ref_name }}
-          cache-to: type=gha,scope=${{ github.workflow }}-prod-${{ env.VAR }}-${{ github.ref_name }},mode=max
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
           # ssh: default
           # https://github.com/opencontainers/image-spec/blob/main/annotations.md
@@ -1028,15 +973,15 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.created=${{ env.NOW }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.run_number }}
           tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
