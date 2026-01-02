@@ -11,6 +11,7 @@ defmodule PhoenixContainerExample.Application do
   def start(_type, _args) do
     # :opentelemetry_cowboy.setup()
     OpentelemetryBandit.setup()
+    # OpentelemetryPhoenix.setup(adapter: :bandit)
     OpentelemetryPhoenix.setup(adapter: :cowboy2)
     OpentelemetryLiveView.setup()
     OpentelemetryEcto.setup([@app, :repo])
