@@ -1,5 +1,28 @@
 import Config
 
+config :phoenix_container_example,
+  ecto_repos: [PhoenixContainerExample.Repo],
+  generators: [timestamp_type: :utc_datetime]
+
+config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
+
+config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
+  url: [host: "localhost"],
+  # adapter: Phoenix.Endpoint.Cowboy2Adapter,
+  adapter: Bandit.PhoenixAdapter,
+  render_errors: [
+    formats: [
+      html: PhoenixContainerExampleWeb.ErrorHTML,
+      json: PhoenixContainerExampleWeb.ErrorJSON
+    ],
+    layout: false
+  ],
+  pubsub_server: PhoenixContainerExample.PubSub,
+  live_view: [signing_salt: "Mywi6aA5"]
+
+config :phoenix_container_example,
+  foo: "default"
+
 config :esbuild,
   version: "0.17.11",
   default: [
@@ -28,30 +51,8 @@ config :opentelemetry,
   propagators: [:opentelemetry_xray_propagator, :baggage]
 
 config :phoenix, :json_library, Jason
+
 config :phoenix, logger: false
-
-config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
-
-config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
-  url: [host: "localhost"],
-  # adapter: Phoenix.Endpoint.Cowboy2Adapter,
-  adapter: Bandit.PhoenixAdapter,
-  render_errors: [
-    formats: [
-      html: PhoenixContainerExampleWeb.ErrorHTML,
-      json: PhoenixContainerExampleWeb.ErrorJSON
-    ],
-    layout: false
-  ],
-  pubsub_server: PhoenixContainerExample.PubSub,
-  live_view: [signing_salt: "Mywi6aA5"]
-
-config :phoenix_container_example,
-  ecto_repos: [PhoenixContainerExample.Repo],
-  generators: [timestamp_type: :utc_datetime]
-
-config :phoenix_container_example,
-  foo: "default"
 
 config :tailwind,
   version: "3.4.3",
@@ -63,5 +64,7 @@ config :tailwind,
     ),
     cd: Path.expand("../assets", __DIR__)
   ]
+
+config :tzdata, :autoupdate, :disabled
 
 import_config "#{config_env()}.exs"
