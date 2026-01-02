@@ -750,11 +750,6 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      # checks: write
-      # pull-requests: write
-      # issues: read
     runs-on: ubuntu-latest
     environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
@@ -763,7 +758,7 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-      MIX_ENV: prod
+      # MIX_ENV: prod
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
