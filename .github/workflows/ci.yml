@@ -1601,11 +1601,6 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
     runs-on: ubuntu-latest
     environment: ${{ needs.setup-matrix.outputs.environment }}
     strategy:
