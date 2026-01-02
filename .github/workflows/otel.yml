@@ -71,10 +71,25 @@ jobs:
 
       - name: Set vars
         if: ${{ env.AWS_ENABLED == 1 }}
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+
+      - name: Set vars
+        run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Get branch name
+        shell: bash
+        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
 
       - name: Set up Docker buildx
         id: buildx
@@ -82,18 +97,28 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build image and push to AWS ECR
+      - name: Build image and push
         if: ${{ env.AWS_ENABLED == 1 }}
         uses: docker/build-push-action@v6
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
+          AWS_REGION: ${{ vars.AWS_REGION }}
         with:
           file: ${{ env.DOCKER_FILE }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-otel
-          cache-to: type=gha,scope=${{ github.workflow }}-otel,mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }}
+          cache-to: type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
+          # ssh: default
+          # https://github.com/opencontainers/image-spec/blob/main/annotations.md
+          # https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.created=${{ env.NOW }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.run_number }}
           tags: |
-            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
