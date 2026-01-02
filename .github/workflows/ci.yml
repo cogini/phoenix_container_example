@@ -44,6 +44,7 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ''
+  MAIN_BRANCH: main
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
   # GitHub Environment secrets and variables
