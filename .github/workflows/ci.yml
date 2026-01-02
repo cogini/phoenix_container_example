@@ -577,8 +577,7 @@ jobs:
           # docker compose run test env PGPASSWORD=postgres /usr/lib/postgresql/13/bin/pg_isready -h postgres -p 5432 -d postgres -U postgres
 
       - name: Initialize test database
-        run: docker compose run test mix do ecto.create, ecto.migrate
-        # run: docker compose run test mix do ecto.setup
+        run: docker compose run test mix 'do' ecto.setup
 
       - name: Run tests
         continue-on-error: true
