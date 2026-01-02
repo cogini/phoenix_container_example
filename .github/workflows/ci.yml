@@ -580,14 +580,14 @@ jobs:
         run: docker compose run test mix 'do' ecto.setup
 
       - name: Run tests
-        continue-on-error: true
+        # continue-on-error: true
         # run: docker compose run test mix test --cover
         # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
         run: docker compose run test mix test
 
       - name: Run quality checks
-        # run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --mute-exit-status --all, hex.audit, deps.audit, sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
-        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+        # run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --mute-exit-status --all, hex.audit, deps.audit, sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
+        run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
