@@ -314,7 +314,7 @@ services:
     #     REGISTRY: ${REGISTRY:-docker.io/}
     # command: -c 'max_connections=120'
     ports:
-      - '5432'
+      - '5432:5432'
     user: postgres
     environment:
       - POSTGRES_DB=postgres
