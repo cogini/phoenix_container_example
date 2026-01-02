@@ -1067,9 +1067,9 @@ jobs:
           echo "prod logs"
           docker compose logs --timestamps prod
           echo "postgres health"
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
           echo "prod health"
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q prod)" | jq
 
       # - name: Debug env
       #   if: failure()
@@ -1087,7 +1087,7 @@ jobs:
 
       # Basic smoke test to make sure service came up
       - name: Run health check
-        run: for i in 1 2 3 4 5 6 7 8 9 10; do curl -v http://localhost:${{ env.APP_PORT }}/healthz && break || sleep 1; done
+        run: for _i in 1 2 3 4 5 6 7 8 9 10; do curl -v "http://localhost:${APP_PORT}/healthz" && break || sleep 1; done
 
       - name: Display logs
         if: failure()
@@ -1095,11 +1095,11 @@ jobs:
           echo "postgres logs"
           docker compose logs --timestamps postgres
           echo "postgres health"
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
           echo "prod logs"
           docker compose logs --timestamps prod
           echo "prod health"
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q prod)" | jq
           echo "ps"
           docker compose ps --format json | jq .
 
