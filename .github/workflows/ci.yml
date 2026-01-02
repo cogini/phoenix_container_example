@@ -1055,7 +1055,7 @@ jobs:
           LOG_LEVEL: debug
         run: |
           env | sort
-        run: docker compose up --wait prod
+          docker compose up --wait prod
 
       - name: Display logs
         if: failure()
