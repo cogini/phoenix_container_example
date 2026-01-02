@@ -1,6 +1,6 @@
 ---
 name: CI
-# Build and run tests in containers.
+# Build and run tests in containers
 # Store test and prod images to GitHub Container Registry (GHCR)
 # Build prod image and push to AWS ECR
 # Run tests and quality checks on test image
@@ -36,7 +36,7 @@ env:
   IMAGE_OWNER: ${{ github.repository_owner }}
   # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
-  # Tag for release images
+  # Tag for release images, used to find the latest deployed image.
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
@@ -46,12 +46,41 @@ env:
   PUBLIC_REGISTRY: ''
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
-  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
-  # AWS_REGION: us-east-1
-  # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
-  # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
-  # S3_BUCKET_CI: cogini-prod-foo-ci
+  # GitHub Environment secrets and variables
+  # Docker Hub credentials to pull base images without rate limits
+  #   secrets.DOCKERHUB_USERNAME
+  #   secrets.DOCKERHUB_TOKEN
+  # AWS Account
+  #   secrets.AWS_ACCOUNT_ID
+  # AWS default region
+  #   vars.AWS_REGION
+  # AWS role allowing GitHub Actions to access resources and deploy
+  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
+  # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
+  #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
+  # S3 bucket with data for testing
+  #   vars.S3_BUCKET_CI: cogini-prod-foo-ci
+  # SSH key to access private repos during build
+  #   secrets.SSH_PRIVATE_KEY
+  # GitHub access token to access other repositories during build
+  #   secrets.DEVOPS_ACCESS_TOKEN
+  # AWS ECS deployment role names to put in task definition
+  #   secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  #   secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
+  # AWS Systems Manager Parameter Store prefix for config keys
+  #   vars.AWS_PS_PREFIX
+  # AWS CloudFront distribution ID to invalidate cache after deploy
+  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
+  # AppSignal API key for error reporting
+  # DataDog API key for reporting test results
+  #   secrets.ACTIONS_DD_API_KEY
+  #   secrets.APPSIGNAL_PUSH_API_KEY
+  #   secrets.DD_API_KEY
+  # Oban Pro license
+  #   secrets.OBAN_KEY_FINGERPRINT
+  #   secrets.OBAN_LICENSE_KEY
+  # secrets.GITLEAKS_LICENSE
+  # secrets.SNYK_TOKEN
   # Target port for prod image tests
   APP_PORT: 4000
   # Datadog
@@ -80,8 +109,8 @@ env:
   # APPSIGNAL_APP_NAME: bounce
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
-  # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
-  # EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
+  # secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  # secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # GitHub Advanced Security, free for open source, otherwise a paid feature
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
