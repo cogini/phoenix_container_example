@@ -1631,30 +1631,40 @@ jobs:
 
       - name: Set vars
         if: ${{ env.AWS_ENABLED == 1 }}
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+
+      - name: Get branch name
+        shell: bash
+        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
+
+      # - name: Set vars
+      #   env:
+      #     IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || env.BRANCH }}
+      #   run: echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       # - name: Check out source
       #   uses: actions/checkout@v4
 
-      - name: Tag ECR release as latest
-        if: ${{ env.AWS_ENABLED == 1 }}
-        run: |
-          export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
-            --image-ids imageTag=${{ env.VAR }}${{ env.IMAGE_VER }} \
-            --output json | jq --raw-output --join-output '.images[0].imageManifest')
-          aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
-            --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
-          # Requires higher permissions
-          # aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}"
-
       - name: Tag GHCR release as latest
         run: |
           skopeo copy \
-            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}} \
-            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
+            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG}"
           # skopeo copy --multi-arch=index-only \
-          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}} \
-          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+          #        "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
+          #        "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+      - name: Tag ECR release as latest
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: |
+          MANIFEST=$(aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
+            --image-ids imageTag="${VAR}${IMAGE_VER}" \
+            --output json | jq --raw-output --join-output '.images[0].imageManifest')
+          export MANIFEST
+          aws ecr put-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
+            --image-tag "$IMAGE_TAG" --image-manifest "$MANIFEST"
+          # Requires higher permissions
+          # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
 
   # deploy-codedeploy:
   #   name: Deploy using CodeDeploy
