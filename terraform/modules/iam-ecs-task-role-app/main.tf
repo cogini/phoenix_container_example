@@ -1,6 +1,6 @@
 # Create IAM ECS task role for app
 
-# Example
+# Example config:
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-role-app"
 # }
@@ -40,11 +40,15 @@
 #   cloudwatch_logs = ["*"]
 #   # cloudwatch_logs = ["log-group:*"]
 #   # cloudwatch_logs = ["log-group:*:log-stream:*"]
+#   # cloudwatch_logs_prefix = "arn:${var.aws_partition}:logs:*:*"
 #
 #   # Enable writing metrics to any namespace
 #   cloudwatch_metrics_namespace = "*"
 #   # Allow writing to specific namespace
 #   # cloudwatch_metrics_namespace = "Foo"
+#
+#   Allow writing to AWS Managed Prometheus workspaces
+#   prometheus = true
 #
 #   # Enable writing to AWS X-Ray
 #   xray = true
