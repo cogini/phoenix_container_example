@@ -595,7 +595,7 @@ jobs:
         if: (!cancelled())
         with:
           # Volume mounted from local filesystem into build by docker compose
-          junit_files: junit-reports/*.xml
+          files: junit-reports/*.xml
 
       # - name: Upload test results to Datadog
       #   if: (!cancelled())
