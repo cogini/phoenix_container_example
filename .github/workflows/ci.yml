@@ -941,7 +941,6 @@ jobs:
       # - name: Create CloudFront invalidation
       #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
-      # Build prod image
       - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
