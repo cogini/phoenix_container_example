@@ -3,6 +3,9 @@
 terraform {
   source = "${dirname(find_in_parent_folders())}/modules//codedeploy-deployment-ecs"
 }
+include "root" {
+  path = find_in_parent_folders()
+}
 dependency "cluster" {
   config_path = "../ecs-cluster"
 }
@@ -26,14 +29,6 @@ dependency "tg-1" {
 }
 dependency "tg-2" {
   config_path = "../target-group-app-ecs-2"
-}
-# dependencies {
-#   paths = [
-#     "../asg-app"
-#   ]
-# }
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {
