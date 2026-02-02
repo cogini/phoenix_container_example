@@ -16,10 +16,30 @@ receivers:
         endpoint: 127.0.0.1:4318
         # endpoint: 0.0.0.0:4318
         # endpoint: 0.0.0.0:55681
-  # awsxray:
-  #   endpoint: 127.0.0.1:2000
-  #   endpoint: 0.0.0.0:2000
-  #   transport: udp
+  prometheus:
+    config:
+      global:
+        scrape_interval: 15s
+        scrape_timeout: 10s
+      scrape_configs:
+      - job_name: ${env:COMPONENT}
+        static_configs:
+        # telemetry_metrics_prometheus default port
+        # - targets: [ 127.0.0.1:9568 ]
+        # prom_ex on main app /metrics
+        # - targets: [ 127.0.0.1:4000 ]
+        # prom_ex separate server
+        - targets: [ 127.0.0.1:9111 ]
+        # running in docker compose
+        # - targets: [ prod:9111 ]
+  awsxray:
+    endpoint: 127.0.0.1:2000
+    # endpoint: 0.0.0.0:2000
+    transport: udp
+
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver
+  awsecscontainermetrics:
+    collection_interval: 20s
 
 processors:
   batch/traces:
@@ -27,35 +47,165 @@ processors:
     send_batch_size: 50
   batch/metrics:
     timeout: 60s
+
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/internal/aws/ecs/documentation.md
   resourcedetection:
-    # detectors: [env, cs, ec2, gcp, azure, system]
+    # detectors: [env, cs, ec2, ecs, gcp, azure, system]
     detectors: [env, ecs]
+    # ECS attributes:
+    #   aws.ecs.cluster.arn
+    #   aws.ecs.launchtype
+    #   aws.ecs.task.arn
+    #   aws.ecs.task.family
+    #   aws.ecs.task.id
+    #   aws.ecs.task.revision
+    #   aws.log.group.arns
+    #   aws.log.group.names
+    #   aws.log.stream.arns
+    #   aws.log.stream.names
+    #   cloud.account.id
+    #   cloud.availability_zone
+    #   cloud.platform
+    #   cloud.provider
+    #   cloud.region
+
+  filter/ecs:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+          - ecs.task.memory.utilized
+          - ecs.task.memory.reserved
+          - ecs.task.cpu.utilized
+          - ecs.task.cpu.reserved
+          - ecs.task.network.rate.rx
+          - ecs.task.network.rate.tx
+          - ecs.task.storage.read_bytes
+          - ecs.task.storage.write_bytes
+
+  resource/ecs:
+    attributes:
+      - key: job
+        from_attribute: aws.ecs.task.family
+        action: upsert
+      - key: instance
+        from_attribute: aws.ecs.task.id
+        action: upsert
+      # - key: task_rev
+      #   action: upsert
+      #   from_attribute: aws.ecs.task.revision
+      # - key: service.name
+      #   action: upsert
+      #   from_attribute: aws.ecs.task.family
+      # - key: service.instance.id
+      #   action: upsert
+      #   from_attribute: aws.ecs.task.id
+      # Delete unused resource attributes
+      # This is dumb, but there is no "keep only" action
+      - key: server.port
+        action: delete
+      - key: service.instance.id
+        action: delete
+      - key: url.scheme
+        action: delete
+
+      - key: aws.ecs.cluster.arn
+        action: delete
+      - key: aws.ecs.launchtype
+        action: delete
+      - key: aws.ecs.task.arn
+        action: delete
+      - key: aws.ecs.task.family
+        action: delete
+      - key: aws.ecs.task.id
+        action: delete
+      - key: aws.ecs.task.revision
+        action: delete
+      - key: aws.log.group.arns
+        action: delete
+      - key: aws.log.group.names
+        action: delete
+      - key: aws.log.stream.arns
+        action: delete
+      - key: aws.log.stream.names
+        action: delete
+      - key: cloud.account.id
+        action: delete
+      - key: cloud.availability_zone
+        action: delete
+      - key: cloud.platform
+        action: delete
+      - key: cloud.provider
+        action: delete
+      # - key: cloud.region
+      #   action: delete
+
+      # From awsecscontainermetrics
+      - key: aws.ecs.cluster.name
+        action: delete
+      # - key: aws.ecs.service.name
+      #   action: delete
+      - key: aws.ecs.task.known.status
+        action: delete
+      - key: aws.ecs.task.launch.type
+        action: delete
+      - key: aws.ecs.task.pull.started_at
+        action: delete
+      - key: aws.ecs.task.pull.stopped_at
+        action: delete
+      - key: aws.ecs.task.version
+        action: delete
 
 exporters:
   awsxray:
-  awsemf:
-    namespace: ECS/AWSOTel/Application
-    log_group_name: '/aws/ecs/application/metrics'
+  # awsemf:
+  #   namespace: ECS/AWSOTel/Application
+  #   log_group_name: '/aws/ecs/application/metrics'
+  # debug:
+  #   # detailed, normal, basic
+  #   verbosity: normal
 
 extensions:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md
   health_check:
+    endpoint: "localhost:13133"
+  zpages:
+    endpoint: 127.0.0.1:55679
+  sigv4auth:
+    region: ${env:AWS_REGION}
+    service: aps
 
 service:
+  extensions: [health_check, zpages, sigv4auth]
+  telemetry:
+    # metrics:
+    #   address: ":9888"
+    logs:
+      # debug, info, warn, error
+      level: info
   pipelines:
+    # Traces
     traces:
       receivers: [otlp]
       processors: [batch/traces, resourcedetection]
       # exporters: [datadog/api]
       exporters: [awsxray]
+    # App metrics
     metrics:
-      receivers: [otlp]
-      processors: [batch/metrics]
-      exporters: [awsemf]
+      receivers: [prometheus]
+      processors: [resourcedetection, resource/ecs, batch/metrics]
+      exporters: [prometheusremotewrite, debug]
+      # exporters: [awsemf]
 
-  extensions: [health_check]
+    # ECS container metrics
+    metrics/ecs:
+      receivers: [awsecscontainermetrics]
+      processors: [resourcedetection, resource/ecs, filter/ecs, batch/metrics]
+      exporters: [prometheusremotewrite/ecs, debug]
 
-  telemetry:
-    logs:
-      level: warn
+    # Prometheus scrapable endpoint
+    # metrics:
+    #   receivers: [prometheus]
+    #   processors: [resourcedetection, attributes/debug]
+    #   exporters: [prometheus]
