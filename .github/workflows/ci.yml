@@ -912,6 +912,7 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
 
+          # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
 
