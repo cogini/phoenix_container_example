@@ -1365,7 +1365,8 @@ jobs:
 
   deploy-ecs:
     name: Deploy to AWS ECS
-    # if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
+    # if: contains(github.ref, 'refs/heads/main')
     # needs: [test-prod, test, test-dialyzer, upload-assets, config]
     needs: [test-prod, test, test-dialyzer, config]
     permissions:
