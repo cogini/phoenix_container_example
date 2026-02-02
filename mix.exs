@@ -145,7 +145,7 @@ defmodule PhoenixContainerExample.MixProject do
         "format --check-formatted",
         "credo",
         # "credo --mute-exit-status",
-        # mix deps.clean --unlock --unused
+        # Run `mix deps.clean --unlock --unused` to clean things identified below
         "deps.unlock --check-unused",
         # mix deps.update
         # "hex.outdated",
