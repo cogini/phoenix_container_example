@@ -6,7 +6,7 @@
 # https://github.com/aws-actions/aws-codebuild-run-build
 # https://aws.amazon.com/blogs/security/use-iam-roles-to-connect-github-actions-to-actions-in-aws/
 
-# Example:
+# Example config:
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//iam-github-action"
 # }
