@@ -96,12 +96,14 @@ data "aws_caller_identity" "current" {}
 locals {
   aws_account_id    = var.aws_account_id == "" ? data.aws_caller_identity.current.account_id : var.aws_account_id
   name              = var.name == "" ? "${var.org}-${var.app_name}-${var.env}-${var.comp}" : var.name
+  role_name         = var.role_name == "" ? "${local.name}-github-action" : var.role_name
+  policy_name       = var.policy_name == "" ? "${local.name}-github-action" : var.policy_name
   enable_s3         = length(var.s3_buckets) > 0
   enable_cloudfront = var.enable_cloudfront
   enable_ecr        = length(var.ecr_arns) > 0
   enable_ecs        = length(var.ecs) > 0
   enable_codebuild  = var.codebuild_project_name != ""
-  kms_key_id        = var.kms_key_id
+  kms_key_arn       = var.kms_key_id
   subs              = var.subs == null ? [var.sub] : var.subs
 
   ecs_task_roles      = [for r in var.ecs : r.task_role_arn]
@@ -128,42 +130,8 @@ locals {
   enable_codedeploy = length(local.ec2_codedeploy_arns) > 0
 }
 
-data "aws_iam_policy_document" "assume" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type = "Federated"
-      identifiers = [
-        "arn:${var.aws_partition}:iam::${local.aws_account_id}:oidc-provider/token.actions.githubusercontent.com"
-      ]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-
-    # Use subject (sub) condition key for iam
-    # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html#available-keys-for-iam
-    condition {
-      test     = "ForAnyValue:StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = var.subs
-    }
-  }
-}
-
-resource "aws_iam_role" "this" {
-  name               = "${local.name}-github-action"
-  description        = "Allow GitHub Action to call AWS services"
-  assume_role_policy = data.aws_iam_policy_document.assume.json
-}
-
-# Give access to S3 buckets
-data "aws_iam_policy_document" "s3" {
-  count = local.enable_s3 ? 1 : 0
-
+data "aws_iam_policy_document" "this" {
+  # Give access to S3 buckets
   # Allow actions on buckets
   dynamic "statement" {
     for_each = var.s3_buckets
@@ -192,178 +160,126 @@ data "aws_iam_policy_document" "s3" {
     }
   }
 
-  statement {
-    actions = [
-      "s3:ListObjects"
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "s3" {
-  count = local.enable_s3 ? 1 : 0
-
-  name_prefix = "${local.name}-github-action-s3-"
-  description = "Allow access to S3 buckets"
-  policy      = data.aws_iam_policy_document.s3[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "github-action-s3" {
-  count = local.enable_s3 ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.s3[0].arn
-}
-
-
-# Add permissions to create CloudFront invalidation
-data "aws_iam_policy_document" "cloudfront" {
-  count = local.enable_cloudfront ? 1 : 0
-
-  statement {
-    actions = [
-      "acm:ListCertificates",
-      "cloudfront:GetDistribution",
-      "cloudfront:GetStreamingDistribution",
-      "cloudfront:GetDistributionConfig",
-      "cloudfront:ListDistributions",
-      "cloudfront:ListCloudFrontOriginAccessIdentities",
-      "cloudfront:CreateInvalidation",
-      "cloudfront:GetInvalidation",
-      "cloudfront:ListInvalidations",
-      "elasticloadbalancing:DescribeLoadBalancers",
-      "iam:ListServerCertificates",
-      "sns:ListSubscriptionsByTopic",
-      "sns:ListTopics",
-      "waf:GetWebACL",
-      "waf:ListWebACLs",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "cloudfront" {
-  count = local.enable_cloudfront ? 1 : 0
-
-  name_prefix = "${local.name}-github-action-cloudfront"
-  description = "Allow GitHub Action to access CloudFront"
-  policy      = data.aws_iam_policy_document.cloudfront[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "github-action-cloudfront" {
-  count = local.enable_cloudfront ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudfront[0].arn
-}
-
-
-# Add permissions to access ECR
-data "aws_iam_policy_document" "ecr" {
-  count = local.enable_ecr ? 1 : 0
-
-  statement {
-    actions = [
-      "ecr:BatchGetImage",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:CompleteLayerUpload",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:InitiateLayerUpload",
-      "ecr:PutImage",
-      "ecr:UploadLayerPart",
-    ]
-    resources = var.ecr_arns
+  # This seems excessive
+  dynamic "statement" {
+    for_each = local.enable_s3 ? tolist([1]) : []
+    content {
+      actions = [
+        "s3:ListObjects"
+      ]
+      resources = ["*"]
+    }
   }
 
-  statement {
-    actions = [
-      "ecr:GetAuthorizationToken",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "ecr" {
-  count = local.enable_ecr ? 1 : 0
-
-  name_prefix = "${local.name}-github-action-ecr-"
-  description = "Allow GitHub Action to access ECR"
-  policy      = data.aws_iam_policy_document.ecr[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "github-action-ecr" {
-  count = local.enable_ecr ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ecr[0].arn
-}
-
-
-# Run CodeBuild and get resulting log messages
-# https://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html
-# https://docs.aws.amazon.com/codebuild/latest/userguide/auth-and-access-control-iam-access-control-identity-based.html
-data "aws_iam_policy_document" "codebuild" {
-  count = local.enable_codebuild ? 1 : 0
-
-  statement {
-    actions = [
-      # Required to start running builds
-      "codebuild:StartBuild",
-      # Required to get information about builds
-      "codebuild:BatchGetBuilds"
-    ]
-    resources = ["arn:${var.aws_partition}:codebuild:${var.aws_region}:${local.aws_account_id}:project/${var.codebuild_project_name}"]
+  # Allow creating CloudFront invalidation
+  dynamic "statement" {
+    for_each = local.enable_cloudfront ? tolist([1]) : []
+      content {
+        actions = [
+          "acm:ListCertificates",
+          "cloudfront:GetDistribution",
+          "cloudfront:GetStreamingDistribution",
+          "cloudfront:GetDistributionConfig",
+          "cloudfront:ListDistributions",
+          "cloudfront:ListCloudFrontOriginAccessIdentities",
+          "cloudfront:CreateInvalidation",
+          "cloudfront:GetInvalidation",
+          "cloudfront:ListInvalidations",
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "iam:ListServerCertificates",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "waf:GetWebACL",
+          "waf:ListWebACLs",
+        ]
+          resources = ["*"]
+      }
   }
 
-  statement {
-    actions = [
-      "logs:GetLogEvents",
-    ]
-    resources = ["arn:${var.aws_partition}:logs:${var.aws_region}:${local.aws_account_id}:log-group:/aws/codebuild/${var.codebuild_project_name}:*"]
+  # Access ECR
+  dynamic "statement" {
+    for_each = local.enable_ecr ? tolist([1]) : []
+    content {
+      actions = [
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+      ]
+      resources = var.ecr_arns
+    }
   }
-}
 
-resource "aws_iam_policy" "codebuild" {
-  count = local.enable_codebuild ? 1 : 0
+  dynamic "statement" {
+    for_each = local.enable_ecr ? tolist([1]) : []
+    content {
+      actions = [
+        "ecr:GetAuthorizationToken",
+      ]
+      resources = ["*"]
+    }
+  }
 
-  name_prefix = "${local.name}-github-action-codebuild-"
-  description = "Allow GitHub Action to run CodeBuild"
-  policy      = data.aws_iam_policy_document.codebuild[0].json
-}
+  # Run CodeBuild and get resulting log messages
+  # https://docs.aws.amazon.com/codebuild/latest/userguide/setting-up.html
+  # https://docs.aws.amazon.com/codebuild/latest/userguide/auth-and-access-control-iam-access-control-identity-based.html
+  dynamic "statement" {
+    for_each = local.enable_codebuild ? tolist([1]) : []
+    content {
+      actions = [
+        # Required to start running builds
+        "codebuild:StartBuild",
+        # Required to get information about builds
+        "codebuild:BatchGetBuilds"
+      ]
+      resources = ["arn:${var.aws_partition}:codebuild:${var.aws_region}:${local.aws_account_id}:project/${var.codebuild_project_name}"]
+    }
+  }
 
-resource "aws_iam_role_policy_attachment" "github-action" {
-  count = local.enable_codebuild ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.codebuild[0].arn
-}
-
+  dynamic "statement" {
+    for_each = local.enable_codebuild ? tolist([1]) : []
+    content {
+      actions = [
+        "logs:GetLogEvents",
+      ]
+      resources = ["arn:${var.aws_partition}:logs:${var.aws_region}:${local.aws_account_id}:log-group:/aws/codebuild/${var.codebuild_project_name}:*"]
+    }
+  }
 
 # Deploy via ECS
 # https://github.com/aws-actions/amazon-ecs-deploy-task-definition
-data "aws_iam_policy_document" "ecs" {
-  count = local.enable_ecs ? 1 : 0
-
-  statement {
-    actions = [
-      "ecs:RegisterTaskDefinition"
-    ]
-    resources = ["*"]
+  dynamic "statement" {
+    for_each = local.enable_ecs ? tolist([1]) : []
+    content {
+      actions = [
+        "ecs:RegisterTaskDefinition"
+      ]
+      resources = ["*"]
+    }
   }
 
-  statement {
-    actions = [
-      "iam:PassRole"
-    ]
-    resources = concat(local.ecs_task_roles, local.ecs_execution_roles)
+  dynamic "statement" {
+    for_each = local.enable_ecs ? tolist([1]) : []
+    content {
+      actions = [
+        "iam:PassRole"
+      ]
+      resources = concat(local.ecs_task_roles, local.ecs_execution_roles)
+    }
   }
 
-  statement {
-    actions = [
-      "ecs:UpdateService",
-      "ecs:DescribeServices"
-    ]
-    resources = local.ecs_service_arns
+  dynamic "statement" {
+    for_each = local.enable_ecs ? tolist([1]) : []
+    content {
+      actions = [
+        "ecs:UpdateService",
+        "ecs:DescribeServices"
+      ]
+      resources = local.ecs_service_arns
+    }
   }
 
   # When using CodeDeploy, "ecs:UpdateService" is not needed
@@ -392,6 +308,7 @@ data "aws_iam_policy_document" "ecs" {
   #   }
   # }
 
+  # Create CodeDeploy deployment
   dynamic "statement" {
     for_each = local.enable_codedeploy ? tolist([1]) : []
     content {
@@ -400,32 +317,12 @@ data "aws_iam_policy_document" "ecs" {
         "codedeploy:CreateDeployment",
         "codedeploy:GetDeployment",
         "codedeploy:GetDeploymentConfig",
+        "codedeploy:GetApplicationRevision",
         "codedeploy:RegisterApplicationRevision"
       ]
       resources = local.ecs_codedeploy_arns
     }
   }
-}
-
-resource "aws_iam_policy" "ecs" {
-  count = local.enable_ecs ? 1 : 0
-
-  name_prefix = "${local.name}-github-action-ecs-"
-  description = "Deploy to ECS"
-  policy      = data.aws_iam_policy_document.ecs[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "ecs" {
-  count = local.enable_ecs ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ecs[0].arn
-}
-
-
-# Create CodeDeploy deployment
-data "aws_iam_policy_document" "codedeploy-app-deploy" {
-  count = local.enable_codedeploy ? 1 : 0
 
   dynamic "statement" {
     for_each = local.enable_codedeploy ? tolist([1]) : []
@@ -455,72 +352,75 @@ data "aws_iam_policy_document" "codedeploy-app-deploy" {
   #   actions   = ["s3:ListAllMyBuckets"]
   #   resources = ["*"]
   # }
-}
 
-resource "aws_iam_policy" "codedeploy-app-deploy" {
-  count = local.enable_codedeploy ? 1 : 0
-
-  name        = "${local.name}-codedeploy-app-deploy"
-  description = "Create CodeDeploy revision for app and deploy to app-deploy S3 bucket"
-  policy      = data.aws_iam_policy_document.codedeploy-app-deploy[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "codedeploy-app-deploy" {
-  count = local.enable_codedeploy ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.codedeploy-app-deploy[0].arn
-}
-
-# Allow access to S3 bucket encrypted with CMK
-# resource "aws_kms_grant" "github-action" {
-#   count             = var.kms_key_id != null ? 1 : 0
-#   name              = "${var.name}-github-action"
-#   key_id            = var.kms_key_id
-#   grantee_principal = aws_iam_role.this.arn
-#   operations        = ["Encrypt", "Decrypt", "GenerateDataKey", "DescribeKey"]
-# }
-
-# KMS
-# https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
-# https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
-# https://repost.aws/knowledge-center/s3-access-denied-error-kms
-data "aws_iam_policy_document" "kms" {
-  count = local.kms_key_id != null ? 1 : 0
-
-  statement {
-    sid = "AllowKeyUsage"
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey",
-    ]
-    resources = [var.kms_key_id]
-
-    dynamic "condition" {
-      for_each = length(var.kms_key_aliases) > 0 ? tolist([1]) : []
-      content {
-        test     = "ForAnyValue:StringEquals"
-        variable = "kms:ResourceAliases"
-        values   = var.kms_key_aliases
+  # KMS
+  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
+  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  # https://repost.aws/knowledge-center/s3-access-denied-error-kms
+  dynamic "statement" {
+    for_each = local.kms_key_arn == null ? [] : tolist([1])
+    content {
+      sid = "AllowKeyUsage"
+      actions = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
+      ]
+      resources = [local.kms_key_arn]
+      dynamic "condition" {
+        for_each = length(var.kms_key_aliases) > 0 ? tolist([1]) : []
+        content {
+          test     = "ForAnyValue:StringEquals"
+          variable = "kms:ResourceAliases"
+          values   = var.kms_key_aliases
+        }
       }
     }
   }
 }
 
-resource "aws_iam_policy" "kms" {
-  count = local.kms_key_id != null ? 1 : 0
+data "aws_iam_policy_document" "assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type = "Federated"
+      identifiers = [
+        "arn:${var.aws_partition}:iam::${local.aws_account_id}:oidc-provider/token.actions.githubusercontent.com"
+      ]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
 
-  name_prefix = "${local.name}-kms-"
-  description = "Enable access to KMS"
-  policy      = data.aws_iam_policy_document.kms[0].json
+    # Use subject (sub) condition key for iam
+    # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html#available-keys-for-iam
+    condition {
+      test     = "ForAnyValue:StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = var.subs
+    }
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "kms" {
-  count = local.kms_key_id != null ? 1 : 0
+# Base IAM role
+resource "aws_iam_role" "this" {
+  name               = local.role_name
+  description        = "Allow GitHub Action to call AWS services"
+  assume_role_policy = data.aws_iam_policy_document.assume.json
+}
 
+resource "aws_iam_policy" "this" {
+  name = local.policy_name
+  # name_prefix = "${local.name}-${var.comp}-ecs-task-"
+  description = "Access resources from GitHub Action"
+  policy      = data.aws_iam_policy_document.this.json
+}
+
+resource "aws_iam_role_policy_attachment" "this" {
   role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.kms[0].arn
+  policy_arn = aws_iam_policy.this.arn
 }
