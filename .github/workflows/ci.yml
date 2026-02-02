@@ -886,6 +886,7 @@ jobs:
             OTP_VER=${{ matrix.otp }}
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
+            BUILD_NUM=${{ github.run_number }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
