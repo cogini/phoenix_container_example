@@ -904,6 +904,9 @@ jobs:
             org.opencontainers.image.created=${{ env.NOW }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ github.run_number }}
+            app.kubernetes.io/name=foo-app
+            app.kubernetes.io/part-of=${{ github.repository }}
+            app.kubernetes.io/version=${{ github.run_number }}
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
