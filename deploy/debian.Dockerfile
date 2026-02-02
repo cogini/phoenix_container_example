@@ -47,7 +47,7 @@ ARG MIX_ENV=prod
 ARG RELEASE=prod
 
 # Build number to embed into release for tracking
-ARG BUILD_NUM=1
+# ARG BUILD_NUM=1
 
 # Support injecting additional packages into build stages.
 # These variables must always have something defined, so default values are redundant.
