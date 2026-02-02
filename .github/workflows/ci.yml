@@ -491,9 +491,7 @@ jobs:
   test:
     name: Run tests
     needs: [build-test, config]
-    # permissions: write-all
     permissions:
-      # Read from ghcr.io repository
       packages: read
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
@@ -633,11 +631,8 @@ jobs:
     name: Security scan code
     needs: [build-test]
     permissions:
-      # Read from ghcr.io repository
       contents: read
       packages: read
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
@@ -971,13 +966,9 @@ jobs:
     name: Run external API tests
     needs: [build-prod, config]
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
-      # Read from ghcr.io repository
       packages: read
       contents: read
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       issues: read
       checks: write
       pull-requests: write
@@ -1023,6 +1014,7 @@ jobs:
       #     unzip -o test-data.zip -d test-data
 
       - name: Pull repos
+        # Pull images separately to make timing clearer
         # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
         # docker compose pull --quiet newman
         # docker images --no-trunc
@@ -1130,13 +1122,9 @@ jobs:
     name: Security scan prod image
     needs: [build-prod, config]
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Read from ghcr.io repository
       packages: read
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
@@ -1576,10 +1564,8 @@ jobs:
     needs: [deploy-ecs, config]
     # needs: [test-prod, test, test-dialyzer]
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Push to ghcr.io repository
       packages: write
     runs-on: ubuntu-latest
     environment: ${{ needs.config.outputs.environment }}
@@ -1619,7 +1605,7 @@ jobs:
 
       # - name: Set vars
       #   env:
-      #     IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || env.BRANCH }}
+      #     IMAGE_TAG: ${{ needs.config.outputs.image-tag }}
       #   run: echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       # - name: Check out source
