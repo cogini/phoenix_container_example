@@ -57,16 +57,17 @@ inputs = {
   deployment_ready_option_action_on_timeout    = "CONTINUE_DEPLOYMENT"
   deployment_ready_option_wait_time_in_minutes = 0
 
+  # ECS
   deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
 
-  # ASG
+  # EC2 ASG
   # provisioning_action = "DISCOVER_EXISTING"
   # provisioning_action = "COPY_AUTO_SCALING_GROUP"
 
   # deployment_config_name = "CodeDeployDefault.AllAtOnce"
   # deployment_config_name = "CodeDeployDefault.OneAtATime"
 
-  # In place
+  # EC2 in-place
   # deployment_type   = "IN_PLACE"
   # deployment_option = "WITHOUT_TRAFFIC_CONTROL"
   # deployment_config_name = "CodeDeployDefault.OneAtATime"
