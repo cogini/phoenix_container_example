@@ -1,5 +1,5 @@
 # Create IAM instance profile for app or other special purpose instances,
-# e.g. devops, bastion
+# e.g., devops, bastion
 
 # Example config:
 # terraform {
@@ -41,15 +41,30 @@
 #     }
 #   }
 #
+#   # Give access to CodeDeploy S3 buckets
+#   enable_codedeploy = true
+#   artifacts_bucket_arn = dependency.s3-codepipeline.outputs.buckets["deploy"].arn
+#
 #   # Allow writing to any log group and stream
 #   cloudwatch_logs = ["*"]
 #   # cloudwatch_logs = ["log-group:*"]
 #   # cloudwatch_logs = ["log-group:*:log-stream:*"]
 #   # cloudwatch_logs_prefix = "arn:${var.aws_partition}:logs:*:*"
 #
+#   # Enable writing metrics to any namespace
+#   cloudwatch_metrics_namespace = "*"
+#   # Allow writing to specific namespace
+#   # cloudwatch_metrics_namespace = "Foo"
+#
 #   # Give access to CodeDeploy S3 buckets
 #   enable_codedeploy = true
 #   artifacts_bucket_arn = dependency.s3-codepipeline.outputs.buckets["deploy"].arn
+#
+#   Allow writing to AWS Managed Prometheus workspaces
+#   prometheus = true
+#
+#   # Enable writing to AWS X-Ray
+#   xray = true
 #
 #   # Enable management via SSM
 #   enable_ssm_management = true
@@ -57,8 +72,13 @@
 #   # Give acess to all SSM Parameter Store params under /org/app/env/comp
 #   # ssm_ps_params = ["*"]
 #   # Specify prefix and params
-#   ssm_ps_param_prefix = "/cogini/foo/dev"
-#   ssm_ps_params = ["app/*", "worker/*"]
+#   # Give acess to all SSM Parameter Store params under /org/app/env
+#   # ssm_ps_param_prefix = "cogini/foo/dev"
+#   # Give acess to specific params under prefix
+#   # ssm_ps_params = ["app/*", "worker/*"]
+#
+#   # Allow sending email via AWS SES
+#   enable_ses = true
 #
 #   # Give access to KMS CMK
 #   kms_key_arn = dependency.kms.outputs.key_arn
