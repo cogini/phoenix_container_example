@@ -132,7 +132,7 @@ locals {
       for name, attrs in buckets : {
         bucket = attrs["bucket"]
         actions = [for action in attrs["actions"] : action
-        if !contains(["s3:ListBucket", "s3:GetEncryptionConfiguration"], action)]
+        if !contains(["s3:ListBucket", "s3:ListAllMyBuckets", "s3:ListJobs", "s3:CreateJobs", "s3:GetEncryptionConfiguration"], action)]
       }
     ]
   ])
@@ -141,7 +141,7 @@ locals {
       for name, attrs in buckets : {
         bucket = attrs["bucket"]
         actions = [for action in attrs["actions"] : action
-        if contains(["s3:ListBucket", "s3:GetEncryptionConfiguration"], action)]
+        if contains(["s3:ListBucket", "s3:ListAllMyBuckets", "s3:ListJobs", "s3:CreateJobs", "s3:GetEncryptionConfiguration"], action)]
       }
     ]
   ])
@@ -156,11 +156,12 @@ locals {
   ssm_ps_arn          = "arn:${var.aws_partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter"
   ssm_ps_param_prefix = var.ssm_ps_param_prefix == "" ? "${var.org}/${var.app_name}/${var.env}/${var.comp}" : var.ssm_ps_param_prefix
   ssm_ps_resources    = [for name in var.ssm_ps_params : "${local.ssm_ps_arn}/${local.ssm_ps_param_prefix}/${name}"]
-  configure_ssm       = length(local.ssm_ps_resources) > 0 || var.enable_ssm_management
+  configure_ssm_ps    = length(local.ssm_ps_resources) > 0
+  configure_sqs       = length(var.sqs_queues) > 0
 }
 
 locals {
-  name = var.name == "" ? "${var.app_name}" : var.name
+  name = var.name == "" ? "${var.app_name}-${var.comp}" : var.name
 }
 
 # Configure access to CloudWatch metrics
@@ -192,75 +193,161 @@ locals {
 locals {
   write_xray       = var.xray
   write_prometheus = var.prometheus
+  query_prometheus = var.prometheus_query
+  prometheus_query_arns = var.prometheus_query_arns
 }
 
-# Allow writing to CloudWatch metrics
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
-# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
-data "aws_iam_policy_document" "cloudwatch-metrics" {
-  count = local.configure_cloudwatch_metrics ? 1 : 0
+locals {
+  # Prometheus server
+  enable_ec2_readonly = var.enable_ec2_readonly
+  # ECS Prometheus discovery plugin
+  enable_ecs_readonly = var.enable_ecs_readonly
 
-  statement {
-    actions = [
-      "cloudwatch:PutMetricData",
-    ]
-    resources = ["*"]
-    dynamic "condition" {
-      for_each = local.cloudwatch_metrics_namespaces
-      content {
-        test     = "StringEquals"
-        variable = "cloudwatch:namespace"
-        values   = [condition.value]
+  # CloudWatch Agent
+  enable_ec2_describe_tags = var.enable_ec2_describe_tags
+
+  # Custom Elasticsearch needs "ec2:DescribeInstances" to query metadata of other instances
+  enable_ec2_describe_instances = var.enable_ec2_describe_instances
+}
+
+data "aws_iam_policy_document" "this" {
+  # Allow writing to CloudWatch metrics
+  # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_metrics ? tolist([1]) : []
+    content {
+      actions = [
+        "cloudwatch:PutMetricData",
+      ]
+      resources = ["*"]
+      dynamic "condition" {
+        for_each = local.cloudwatch_metrics_namespaces
+        content {
+          test     = "StringEquals"
+          variable = "cloudwatch:namespace"
+          values   = [condition.value]
+        }
       }
     }
   }
-}
 
-resource "aws_iam_policy" "cloudwatch-metrics" {
-  count       = local.configure_cloudwatch_metrics ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-cloudwatch-metrics-"
-  description = "Enable logging to CloudWatch metrics"
-  policy      = data.aws_iam_policy_document.cloudwatch-metrics[0].json
-}
-
-# Allow writing to CloudWatch Logs
-# https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
-data "aws_iam_policy_document" "cloudwatch-logs" {
-  count = local.configure_cloudwatch_logs ? 1 : 0
-
-  statement {
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-    ]
-    resources = local.cloudwatch_logs
-  }
-
+  # Allow writing to CloudWatch Logs
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
+  #
   # In addition, you may want to allow writing directly to a S3 bucket for logs
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Sending-Logs-Directly-To-S3.html
   # Configure that with "buckets", above
-}
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_logs ? tolist([1]) : []
+    content {
+      actions = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutRetentionPolicy",
+      ]
+      resources = local.cloudwatch_logs
+    }
+  }
 
-resource "aws_iam_policy" "cloudwatch-logs" {
-  count       = local.configure_cloudwatch_logs ? 1 : 0
-  name        = "${local.name}-${var.comp}-cloudwatch-logs"
-  description = "Enable logging to CloudWatch Logs"
-  policy      = data.aws_iam_policy_document.cloudwatch-logs[0].json
-}
+  # Allow querying AWS Prometheus workspaces
+  # This is typically used by Grafana server running in an EC2 instance
+  # This is based on the AWS Managed Policy AmazonPrometheusQueryAccess but
+  # expanded here to avoid limits on number of policies attached to role
+  # https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonPrometheusQueryAccess.html
+  dynamic "statement" {
+    for_each = local.query_prometheus ? tolist([1]) : []
+    content {
+        #  "aps:*"
+      actions = [
+        "aps:DescribeWorkspace",
+        "aps:GetLabels",
+        "aps:GetMetricMetadata",
+        "aps:GetSeries",
+        "aps:QueryMetrics",
+      ]
+      resources = local.prometheus_query_arns
+    }
+  }
 
-# Give access to S3 buckets
-data "aws_iam_policy_document" "s3" {
-  count = local.configure_s3 ? 1 : 0
+  dynamic "statement" {
+    for_each = local.enable_ecs_readonly ? tolist([1]) : []
+    content {
+      actions = [
+        "ecs:Describe*",
+        "ecs:List*",
+      ]
+      resources = ["*"]
+    }
+  }
 
-  # CodeDeploy
+  dynamic "statement" {
+    for_each = local.enable_ec2_describe_instances ? tolist([1]) : []
+    content {
+      actions = [
+        "ec2:DescribeInstances"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.enable_ec2_describe_tags ? tolist([1]) : []
+    content {
+      actions   = [
+        "ec2:DescribeTags"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  # General S3 access configuration
+
+  # Allow S3 ListBucket actions on buckets
+  dynamic "statement" {
+    for_each = local.bucket_actions
+    content {
+      actions   = statement.value["actions"]
+      resources = [statement.value["bucket"].arn]
+    }
+  }
+
+  # Allow S3 other actions on buckets
+  dynamic "statement" {
+    for_each = local.bucket_actions_content
+    content {
+      actions   = statement.value["actions"]
+      resources = ["${statement.value["bucket"].arn}/*"]
+    }
+  }
+
+  # Allow read only access to SSM Parameter Store params
+  dynamic "statement" {
+    for_each = local.configure_ssm_ps ? tolist([1]) : []
+    content {
+      actions = [
+        "ssm:DescribeParameters",
+        "ssm:GetParameters",
+        "ssm:GetParameter*"
+      ]
+      resources = local.ssm_ps_resources
+    }
+  }
+
+  # statement {
+  #   actions = [
+  #     "s3:GetEncryptionConfiguration"
+  #   ]
+  #   resources = ["*"]
+  # }
+
+  # Allow access to CodeDeploy agent
   # https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-create-iam-instance-profile.html
   # https://docs.aws.amazon.com/codedeploy/latest/userguide/auth-and-access-control.html
   # https://docs.aws.amazon.com/codedeploy/latest/userguide/instances-on-premises.html
-
-  # Allow access to CodeDeploy agent
   dynamic "statement" {
     for_each = var.enable_codedeploy ? tolist([1]) : []
     content {
@@ -307,42 +394,10 @@ data "aws_iam_policy_document" "s3" {
     }
   }
 
-  # General S3 access configuration
-
-  # Allow ListBucket actions on buckets
-  dynamic "statement" {
-    for_each = local.bucket_actions
-    content {
-      actions   = statement.value["actions"]
-      resources = [statement.value["bucket"].arn]
-    }
-  }
-
-  # Allow other actions on buckets
-  dynamic "statement" {
-    for_each = local.bucket_actions_content
-    content {
-      actions   = statement.value["actions"]
-      resources = ["${statement.value["bucket"].arn}/*"]
-    }
-  }
-}
-
-resource "aws_iam_policy" "s3" {
-  count       = local.configure_s3 ? 1 : 0
-  name        = "${local.name}-${var.comp}-s3"
-  description = "Allow access to S3 buckets"
-  policy      = data.aws_iam_policy_document.s3[0].json
-}
-
-# Allow access to SSM for management
-# https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
-# https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-instance-profile.html
-# https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonSSMManagedInstanceCore.html
-
-data "aws_iam_policy_document" "ssm" {
-  count = local.configure_ssm ? 1 : 0
-
+  # Allow access to SSM for management
+  # https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+  # https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-instance-profile.html
+  # https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonSSMManagedInstanceCore.html
   dynamic "statement" {
     for_each = var.enable_ssm_management ? tolist([1]) : []
     content {
@@ -369,6 +424,7 @@ data "aws_iam_policy_document" "ssm" {
         "ssm:PutConfigurePackageResult",
         "ssm:UpdateAssociationStatus",
         "ssm:UpdateInstanceAssociationStatus",
+        "ssm:UpdateInstanceInformation",
       ]
       resources = ["*"]
     }
@@ -391,58 +447,35 @@ data "aws_iam_policy_document" "ssm" {
     }
   }
 
-  # statement {
-  #   actions = [
-  #     "s3:GetEncryptionConfiguration"
-  #   ]
-  #   resources = ["*"]
-  # }
-
-  # Allow read only access to SSM Parameter Store params
+  #   Allow sending email via SES
   dynamic "statement" {
-    for_each = local.ssm_ps_resources
+    for_each = var.enable_ses ? tolist([1]) : []
+
     content {
       actions = [
-        "ssm:DescribeParameters",
-        "ssm:GetParameters",
-        "ssm:GetParameter*"
+        "ses:SendRawEmail"
       ]
-      resources = local.ssm_ps_resources
+      resources = ["*"]
     }
   }
-}
 
-resource "aws_iam_policy" "ssm" {
-  count       = local.configure_ssm ? 1 : 0
-  name        = "${local.name}-${var.comp}-ssm"
-  description = "Enable instances to access SSM"
-  policy      = data.aws_iam_policy_document.ssm[0].json
-}
-
-# KMS
-# https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
-# https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
-data "aws_iam_policy_document" "kms" {
-  count = var.kms_key_arn != null ? 1 : 0
-
-  statement {
-    sid = "AllowKeyUsage"
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey",
-    ]
-    resources = [var.kms_key_arn]
+  # KMS
+  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
+  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  dynamic "statement" {
+    for_each = var.kms_key_arn == null ? [] : tolist([1])
+    content {
+      sid = "AllowKeyUsage"
+      actions = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
+      ]
+      resources = [var.kms_key_arn]
+    }
   }
-}
-
-resource "aws_iam_policy" "kms" {
-  count       = var.kms_key_arn != null ? 1 : 0
-  name        = "${local.name}-${var.comp}-kms"
-  description = "Enable instances to access KMS CMK"
-  policy      = data.aws_iam_policy_document.kms[0].json
 }
 
 # KMS for SSM PS
@@ -468,8 +501,8 @@ resource "aws_iam_policy" "kms" {
 #   }
 # }
 
-# Base IAM role
-data "aws_iam_policy_document" "instance-assume-role-policy" {
+# Allow role to be assumed by AWS
+data "aws_iam_policy_document" "assume-role-policy" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -480,16 +513,23 @@ data "aws_iam_policy_document" "instance-assume-role-policy" {
         # "codedeploy.amazonaws.com",
       ]
     }
+
+    dynamic "principals" {
+      for_each = var.assume_role_policy_principals
+      content {
+        type = principals.value.type
+        identifiers = principals.value.identifiers
+      }
+    }
   }
 }
 
 # Base IAM role
 # https://github.com/hashicorp/terraform/issues/2761
 resource "aws_iam_role" "this" {
-  name        = "${local.name}-${var.comp}"
-  description = "${local.name} ${var.comp} instance profile"
-  # path               = "/system/"
-  assume_role_policy = data.aws_iam_policy_document.instance-assume-role-policy.json
+  name_prefix = "${local.name}-"
+  description = "${local.name} instance profile"
+  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
 
   # https://github.com/hashicorp/terraform/issues/2761
   force_detach_policies = true
@@ -497,6 +537,18 @@ resource "aws_iam_role" "this" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_iam_policy" "this" {
+  name_prefix = "${local.name}-instance-profile-"
+  description = "Enable access to resources from instance role"
+  policy      = data.aws_iam_policy_document.this.json
+}
+
+# Allow access to S3 buckets
+resource "aws_iam_role_policy_attachment" "this" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.this.arn
 }
 
 # Allow access to secrets encrypted by the app custom KMS key,
@@ -509,70 +561,27 @@ resource "aws_iam_role" "this" {
 #   operations        = ["Decrypt", "DescribeKey"]
 # }
 
-# Allow access to S3 buckets
-resource "aws_iam_role_policy_attachment" "s3" {
-  count      = local.configure_s3 ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.s3[0].arn
-}
-
 # Allow CodeDeploy to deploy
 # resource "aws_iam_role_policy_attachment" "codedeploy-service-policy" {
 #   role       = aws_iam_role.this.name
 #   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/service-role/AWSCodeDeployRole"
 # }
 
-# Allow use of CloudWatch Logs
-resource "aws_iam_role_policy_attachment" "cloudwatch-logs" {
-  count      = local.configure_cloudwatch_logs ? 1 : 0
+# Allow readonly access to cloudwatch logs
+# Needed for Prometheus server
+resource "aws_iam_role_policy_attachment" "cwlogs-read-only" {
+  count      = var.enable_cwl_readonly ? 1 : 0
   role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudwatch-logs[0].arn
-}
-
-# Allow use of CloudWatch metrics
-resource "aws_iam_role_policy_attachment" "cloudwatch-metrics" {
-  count      = local.configure_cloudwatch_metrics ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudwatch-metrics[0].arn
-}
-
-# Allow management via SSM
-resource "aws_iam_role_policy_attachment" "ssm" {
-  count      = local.configure_ssm ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ssm[0].arn
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/CloudWatchReadOnlyAccess"
 }
 
 # Allow management via SSM
 # https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonSSMManagedInstanceCore.html
 # resource "aws_iam_role_policy_attachment" "ssm" {
 #   count = var.enable_ssm_management ? 1 : 0
-#
 #   role       = aws_iam_role.this.name
 #   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 # }
-
-# Allow uploading segment documents and telemetry to the X-Ray API
-# https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
-resource "aws_iam_role_policy_attachment" "xray" {
-  count      = local.write_xray ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
-}
-
-# Grant write only access to AWS Managed Prometheus workspaces
-# https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
-resource "aws_iam_role_policy_attachment" "prometheus" {
-  count      = local.write_prometheus ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "kms" {
-  count      = var.kms_key_arn != null ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.kms[0].arn
-}
 
 # Allow component to read parameters from SSM
 # This requires fewer permissions than the full SSM management permissions
@@ -583,83 +592,35 @@ resource "aws_iam_role_policy_attachment" "kms" {
 #   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonSSMReadOnlyAccess"
 # }
 
-# Allow listing EC2 instances
-# Needed for Prometheus server
 resource "aws_iam_role_policy_attachment" "ec2-read-only" {
-  count      = var.enable_ec2_readonly ? 1 : 0
+  count      = local.enable_ec2_readonly ? 1 : 0
+
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
 
-data "aws_iam_policy_document" "ecs-read-only" {
-  count = var.enable_ecs_readonly ? 1 : 0
-  statement {
-    actions   = ["ecs:Describe*", "ecs:List*"]
-    resources = ["*"]
-  }
-}
+# Grant write only access to AWS Managed Prometheus workspaces
+# https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
+resource "aws_iam_role_policy_attachment" "prometheus" {
+  count      = local.write_prometheus ? 1 : 0
 
-resource "aws_iam_policy" "ecs-read-only" {
-  count       = var.enable_ecs_readonly ? 1 : 0
-  name        = "${local.name}-ECSReadOnly"
-  description = "Needed for ECS Prometheus discovery plugin"
-  policy      = data.aws_iam_policy_document.ecs-read-only[count.index].json
-}
-
-resource "aws_iam_role_policy_attachment" "ecs-read-only" {
-  count      = var.enable_ecs_readonly ? 1 : 0
   role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ecs-read-only[count.index].arn
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
-# Allow instances to query metadata of other instances
-# Needed by custom Elasticsearch
-data "aws_iam_policy_document" "describe-instances" {
-  statement {
-    actions   = ["ec2:DescribeInstances"]
-    resources = ["*"]
-  }
-}
+# Allow uploading segment documents and telemetry to the X-Ray API
+# https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
+resource "aws_iam_role_policy_attachment" "xray" {
+  count      = local.write_xray ? 1 : 0
 
-resource "aws_iam_policy" "describe-instances" {
-  count       = var.enable_ec2_describe_instances ? 1 : 0
-  name        = "${local.name}-${var.comp}-describe-instances"
-  description = "Enable instances to query for instance's metadata"
-  policy      = data.aws_iam_policy_document.describe-instances.json
-}
-
-# Needed by CloudWatch Agent
-data "aws_iam_policy_document" "describe-tags" {
-  statement {
-    actions   = ["ec2:DescribeTags"]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "describe-tags" {
-  count       = var.enable_ec2_describe_tags ? 1 : 0
-  name        = "${local.name}-${var.comp}-describe-tags"
-  description = "Enable instances to query for instance's metadata"
-  policy      = data.aws_iam_policy_document.describe-tags.json
-}
-
-resource "aws_iam_role_policy_attachment" "ec2-describe-tags" {
-  count      = var.enable_ec2_describe_tags ? 1 : 0
   role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.describe-tags[count.index].arn
-}
-
-# Allow readonly access to cloudwatch logs
-# Needed for Prometheus server
-resource "aws_iam_role_policy_attachment" "cwlogs-read-only" {
-  count      = var.enable_cwl_readonly ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/CloudWatchReadOnlyAccess"
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 # Create instance profile for role
 resource "aws_iam_instance_profile" "this" {
   count = var.create_instance_profile ? 1 : 0
-  name  = aws_iam_role.this.name
-  role  = aws_iam_role.this.name
+
+  name_prefix = aws_iam_role.this.name
+  role        = aws_iam_role.this.name
 }
