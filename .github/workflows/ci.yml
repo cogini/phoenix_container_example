@@ -354,10 +354,14 @@ jobs:
       # - name: Debug environment
       #   # env.ACTIONS_STEP_DEBUG == 'true'
       #   run: |
+      #     # echo "github.event_name: ${{ github.event_name }}"
+      #     # echo "ref: ${{ github.ref }}"
+      #     # echo "ref_name: ${{ github.ref_name }}"
       #     # echo "environment: ${{ needs.config.outputs.environment }}"
       #     # echo "components: ${{ needs.config.outputs.components }}"
-      #     echo -n "AWS_ACCOUNT_ID: "
-      #     echo ${{ secrets.AWS_ACCOUNT_ID }} | sed 's/./& /g'
+      #     # echo -n "AWS_ACCOUNT_ID: "
+      #     # echo ${{ secrets.AWS_ACCOUNT_ID }} | sed 's/./& /g'
+      #     # echo "AWS_REGION var: ${{ vars.AWS_REGION }}"
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
