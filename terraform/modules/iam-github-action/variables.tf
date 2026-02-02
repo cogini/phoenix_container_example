@@ -77,6 +77,16 @@ variable "kms_key_aliases" {
 }
 
 variable "name" {
+  description = "Base name"
+  default     = ""
+}
+
+variable "policy_name" {
+  description = "Policy name"
+  default     = ""
+}
+
+variable "role_name" {
   description = "Role name"
   default     = ""
 }
