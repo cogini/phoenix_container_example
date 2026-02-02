@@ -732,6 +732,7 @@ ARG RELEASE
 COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
 # App listen ports
+# App port
 EXPOSE 4000
 
 # Prometheus metrics port
