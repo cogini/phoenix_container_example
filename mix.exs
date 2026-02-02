@@ -125,8 +125,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
       {:tailwind, "~> 0.3.0", runtime: Mix.env() == :dev},
-      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_metrics_prometheus, "~> 1.1"},
+      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:uinta, "~> 0.15.0"}
     ]
