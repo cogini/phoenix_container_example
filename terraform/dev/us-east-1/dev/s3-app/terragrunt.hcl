@@ -34,12 +34,8 @@ inputs = {
     # }
     # Data files
     # data = {
-    #  encrypt = true
-    #  # versioning = true
-    # }
-    # SSM log files
-    # ssm = {
     #   encrypt = true
+    #   # versioning = true
     # }
     # Log files
     # logs = {
@@ -52,6 +48,10 @@ inputs = {
     # App web files with controlled access, e.g. user data
     # protected_web = {
     #   name = "protected.${dependency.route53.outputs.name_nodot}"
+    # }
+    # SSM log files
+    # ssm = {
+    #   encrypt = true
     # }
 
     # CodeBuild cache
