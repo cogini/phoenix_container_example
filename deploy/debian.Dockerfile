@@ -711,9 +711,6 @@ FROM prod-base AS prod
 # Setting it before makes it owned by root, which is more secure.
 WORKDIR /app
 
-# When using a startup script, copy to /app/bin
-# COPY --link bi[n] ./bin
-
 USER nonroot:nonroot
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
