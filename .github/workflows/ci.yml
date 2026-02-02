@@ -128,74 +128,27 @@ jobs:
     name: Configure build
     runs-on: ubuntu-latest
     outputs:
-      # Elixir/Erlang/OS combinations for tests
+      # Combinations of Elixir/Erlang/OS to run internal tests on
       # Generally this will match prod
       test-matrix: ${{ steps.common-matrix.outputs.result }}
+      test-matrix-parallel: ${{ steps.test-matrix-parallel.outputs.result }}
       # Combinations for prod images
       # Used for the final deploy image as well as external tests
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
-      # Combinations to deploy to prod (or staging)
+      # Combinations to deploy to prod (or another environment)
       # Generally this will only be a single variant
       deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
       # Combinations used to build assets
       # Generally this will only be a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
+      # Select environment to deploy to based on git branch/tag: staging, production
       environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
       # environment: staging
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: common-matrix
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
-                # {
-                #   os: "alma",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "10",
-                #   prod_os_ver: "10"
-                # },
-                # {
-                #   os: "alpine",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "3.21.3",
-                #   prod_os_ver: "3.21.3"
-                # },
-                # {
-                #   os: "distroless",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.2",
-                #   build_os_ver: "bookworm-20250630-slim",
-                #   prod_os_ver: "bookworm-slim"
-                # },
-                # {
-                #   os: "rocky",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "9",
-                #   prod_os_ver: "9"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "chiseled",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.2",
-                #   build_os_ver: "noble-20250619",
-                #   prod_os_ver: "noble"
-                # },
         with:
           script: |
             return {
@@ -224,6 +177,33 @@ jobs:
               ]
             }
 
+      - uses: actions/github-script@v8
+        id: test-matrix-parallel
+        # Specify versions of Erlang, Elixir, and base OS
+        # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+        with:
+          script: |
+            let platforms = [
+              {
+                os: "debian",
+                elixir: "1.15.8",
+                otp: "26.0.2",
+                build_os_ver: "bookworm-20250811-slim",
+                prod_os_ver: "bookworm-slim"
+              },
+            ]
+            let ci_nodes = [1, 2]
+            let ci_node_total = ci_nodes.length
+
+            let matrix = []
+            for (let i = 0; i < platforms.length; i++) {
+              for (let j = 0; j < ci_nodes.length; j++) {
+                matrix.push(Object.assign({}, platforms[i], {ci_node_total: ci_node_total, ci_node_index: ci_nodes[j]}) )
+              }
+            }
+
+            return { include: matrix }
+            #
       # druzan/setup-matrix is slow, taking about 15 seconds to initialize
       #  - name: Define matrix for test containers
       #    id: test-matrix
