@@ -144,6 +144,11 @@ jobs:
       # Select environment to deploy to based on git branch/tag: staging, production
       environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
       # environment: staging
+      # Whether to deploy to AWS. Only standard tags/branches deploy, not other dev branches.
+      deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
+      image-tag: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
+      # Give access to AWS
+      aws-enabled: true
     steps:
       - uses: actions/github-script@v8
         id: common-matrix
@@ -203,7 +208,7 @@ jobs:
             }
 
             return { include: matrix }
-            #
+
       # druzan/setup-matrix is slow, taking about 15 seconds to initialize
       #  - name: Define matrix for test containers
       #    id: test-matrix
