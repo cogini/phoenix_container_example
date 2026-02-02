@@ -72,6 +72,9 @@ inputs = {
   # deployment_option = "WITHOUT_TRAFFIC_CONTROL"
   # deployment_config_name = "CodeDeployDefault.OneAtATime"
 
+  # How long to wait to terminate old instances after successful deployment
+  termination_wait_time_in_minutes = 2
+
   codedeploy_app_name         = dependency.codedeploy-app.outputs.app_name
   codedeploy_service_role_arn = dependency.iam-codedeploy.outputs.codedeploy_service_role_arn
 
