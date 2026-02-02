@@ -231,8 +231,11 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     truncate -s 0 /var/log/dpkg.log
 
 # Install rust
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal -y
-# ENV PATH="/root/.cargo/bin:${PATH}"
+# ENV CARGO_HOME=/usr/local/cargo \
+#     RUSTUP_HOME=/usr/local/rust
+#
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y
+# ENV PATH="/usr/local/cargo/bin:${PATH}"
 
 ARG LANG
 RUN set -exu ; \
@@ -292,8 +295,6 @@ FROM build-deps-get AS test-image
 ARG LANG
 
 ENV MIX_ENV=test
-
-# RUN rustup default stable
 
 WORKDIR /app
 
@@ -367,8 +368,6 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
 # Create Elixir release
 FROM build-deps-get AS prod-release
 ARG LANG
-
-# RUN rustup default stable
 
 # WORKDIR /app
 
