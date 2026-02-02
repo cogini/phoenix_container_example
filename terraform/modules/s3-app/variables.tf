@@ -19,6 +19,10 @@ variable "buckets" {
                           expose_headers  = optional(list(string)),
                           max_age_seconds = optional(number),
                           })),
+              logging = optional(object({
+                          target_bucket = optional(string),
+                          target_prefix = optional(string, "")
+                          })),
               public_access_block = optional(object({
                           block_public_acls = optional(bool),
                           block_public_policy = optional(bool),
