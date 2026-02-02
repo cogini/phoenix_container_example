@@ -120,7 +120,8 @@ variable "monitoring" {
 
 variable "user_data" {
   description = "User data to provide when launching the instance"
-  default     = ""
+  type        = string
+  default     = null
 }
 
 variable "root_volume_size" {
