@@ -66,19 +66,23 @@ services:
       # - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - LOG_CONSOLE=${LOG_CONSOLE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Talk to rabbitmq container
+      # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
+      # - MQ_PASSWORD=${MQ_PASSWORD:-guest}
+      # - MQ_USERNAME=${MQ_USERNAME:-guest}
       - POOL_SIZE=${POOL_SIZE:-50}
       - PORT=4000
       # mix phx.gen.secret
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
       # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
       # Send traces to the AWS OTEL collector container
-      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
+      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://aws-otel-collector:4317
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_DEBUG=${OTEL_DEBUG:-false}
     ports:
       - '4000:4000'
-      - '9568:9568' # Prometheus metrics
-      - '9111:9111' # Prometheus metrics
+      - '9111:9111'   # Prometheus PromEx server port
+      - '9568:9568'   # Prometheus telemetry_metrics_prometheus default port
     # healthcheck:
     #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:${PORT}/healthz"]
     #   start_period: 2s
@@ -87,6 +91,7 @@ services:
     #   retries: 20
     healthcheck:
       test: ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
+      # test: ["CMD", "curl", "--fail", "http://localhost:4000/healthz"]
       start_period: 2s
       interval: 1s
       timeout: 2s
@@ -98,6 +103,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
       # otel-collector:
       #   condition: service_started
       # aws-otel-collector:
@@ -350,12 +357,22 @@ services:
       timeout: 3s
       retries: 10
 
+  # https://hub.docker.com/_/rabbitmq
   rabbitmq:
-    image: rabbitmq:3-management
+    image: "${PUBLIC_REGISTRY:-docker.io/}rabbitmq:3-management"
     restart: always
     ports:
-      - '5672:5672'
-      - '8080:15672'
+      - '5671:5671' # AMQPS port (TLS)
+      - '5672:5672' # AMQP port
+      - '15672:15672' # Management UI port
+    # https://www.rabbitmq.com/docs/configure#supported-environment-variables
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-guest}
+    volumes:
+      - ./deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - rabbitmq_lib:/var/lib/rabbitmq
+      # - rabbitmq_log:/var/log/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       timeout: 5s
@@ -389,6 +406,8 @@ volumes:
   mysql_data:
     driver: local
   postgres_data:
+    driver: local
+  rabbitmq_lib:
     driver: local
   zookeeper_data:
     driver: local
