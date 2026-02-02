@@ -23,6 +23,16 @@ variable "cloudwatch_metrics_namespace" {
   default     = ""
 }
 
+variable "efs" {
+  description = "EFS access"
+  type = list(object({
+    file_system_arn = string
+    actions = list(string)
+    access_point_arn = optional(string)
+  }))
+  default = []
+}
+
 variable "enable_ecs_discovery" {
   description = "Allow calling ECS APIs to discover service info"
   default     = false
