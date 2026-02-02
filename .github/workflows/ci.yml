@@ -1404,6 +1404,10 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Set vars for runtime info
+        run: |
+          echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
+
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
       #   env:
