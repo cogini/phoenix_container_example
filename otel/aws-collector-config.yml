@@ -1,10 +1,10 @@
 ---
 # https://opentelemetry.io/docs/collector/configuration/
 # https://docs.datadoghq.com/tracing/setup_overview/open_standards/
-
 # https://github.com/aws-observability/aws-otel-collector/blob/main/config.yaml
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/datadogexporter
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/example/config.yaml
+# https://docs.aws.amazon.com/prometheus/latest/userguide/AMP-onboard-ingest-metrics-OpenTelemetry-ECS.html
 
 receivers:
   otlp:
