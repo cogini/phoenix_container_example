@@ -38,7 +38,6 @@ env:
   # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
   # Tag for release images, used to find the latest deployed image.
-  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
   # Registry for test images
