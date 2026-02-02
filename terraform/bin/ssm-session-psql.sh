@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-psql -h localhost -p 25432 -U postgres "${DB_NAME}"
+# Connect to remote PostgreSQL database via SSM session tunnel
+
+psql -h localhost -p "${RDS_LOCAL_PORT:-25432}" -U postgres "${DB_NAME}"
