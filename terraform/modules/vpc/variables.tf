@@ -21,6 +21,7 @@ variable "dhcp_options_domain_name" {
 
 variable "dhcp_options_domain_name_servers" {
   description = "DHCP domain name servers"
+  type        = list(string)
   default     = ["127.0.0.1", "10.10.0.2"]
 }
 
@@ -105,6 +106,18 @@ variable "customer_gateways" {
   default     = {}
 }
 
+variable "enable_dns_support" {
+  description = "Enable/disable DNS support"
+  type        = bool
+  default     = null
+}
+
+variable "enable_dns_hostnames" {
+  description = "Enable/disable DNS hostnames"
+  type        = bool
+  default     = null
+}
+
 #variable "enable_dynamodb_endpoint" {
 #  description = "Provision a DynamoDB endpoint to the VPC"
 #  default     = false
@@ -164,3 +177,13 @@ variable "elasticache_subnet_tags" {
   description = "Additional tags for the elasticache subnets"
   default     = {}
 }
+
+# variable "private_dns_domain" {
+#   description = "Private DNS domain, e.g. foo.local"
+#   default     = ""
+# }
+
+# variable "enable_route53" {
+#   description = "Whether or not to enable route53 zone creation"
+#   default     = true
+# }
