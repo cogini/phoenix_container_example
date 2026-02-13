@@ -640,7 +640,7 @@ jobs:
           category: trivy
 
       - name: Scan code with Grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
@@ -1139,7 +1139,7 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
