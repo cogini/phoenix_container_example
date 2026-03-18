@@ -82,8 +82,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:finch, "~> 0.14"},
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, "~> 1.0"},
-      {:gettext, "~> 0.26"},
-      {:hackney, "~> 1.9"},
+      {:gettext, "~> 1.0"},
+      {:hackney, "~> 1.17"},
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
       {:jason, "~> 1.2"},
@@ -121,14 +121,14 @@ defmodule PhoenixContainerExample.MixProject do
       {:recon, "~> 2.5"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ssl_verify_fun, "~> 1.1"},
-      {:styler, "~> 1.7.0", only: [:dev, :test], runtime: false},
+      {:styler, "~> 1.11.0", only: [:dev, :test], runtime: false},
       {:sweet_xml, "~> 0.6"},
       {:swoosh, "~> 1.5"},
-      {:tailwind, "~> 0.3.0", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.4.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics_prometheus, "~> 1.1"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:uinta, "~> 0.15.0"}
+      {:uinta, "~> 0.16.0"}
     ]
   end
 
