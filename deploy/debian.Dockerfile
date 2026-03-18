@@ -740,7 +740,9 @@ COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/$
 EXPOSE 4000
 
 # Prometheus metrics port
+# PromEx server port
 EXPOSE 9111
+# telemetry_metrics_prometheus default port
 EXPOSE 9568
 
 # Erlang EPMD port
