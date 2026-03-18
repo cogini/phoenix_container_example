@@ -185,10 +185,6 @@ jobs:
         uses: actions/github-script@v8
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
-        with:
-          script: |
-            return {
-              include: [
                 # {
                 #   os: "alma",
                 #   elixir: "1.18.4",
@@ -203,6 +199,10 @@ jobs:
                 #   build_os_ver: "7.9.2009",
                 #   prod_os_ver: "7.9.2009"
                 # },
+        with:
+          script: |
+            return {
+              include: [
                 {
                   os: "debian",
                   elixir: "1.18.4",
