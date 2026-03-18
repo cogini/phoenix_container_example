@@ -55,6 +55,8 @@ ARG RUNTIME_PACKAGES="ca-certificates"
 # Packages used for interactive development
 ARG DEV_PACKAGES="inotify-tools"
 
+# Whether to build Dialyzer PLT files for deps.
+ARG DIALYZER="false"
 
 # Create build base image with OS dependencies
 FROM ${PUBLIC_REGISTRY}hexpm/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
@@ -313,8 +315,13 @@ RUN mix deps.compile
 # Must have at least one existing file
 COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
+ARG DIALYZER
 # Generate Dialyzer files for deps
-RUN mix dialyzer --plt
+# This only changes when deps change, so doing it here
+# caches it to save time during testing
+RUN if [ "$DIALYZER" = "true" ]; then \
+      mix dialyzer --plt ; \
+    fi
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
