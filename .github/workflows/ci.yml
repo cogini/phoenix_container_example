@@ -242,10 +242,6 @@ jobs:
       - name: Configure prod-matrix
         id: prod-matrix
         uses: actions/github-script@v8
-        with:
-          script: |
-            return {
-              include: [
                 # {
                 #   os: "alma",
                 #   elixir: "1.18.4",
@@ -260,6 +256,10 @@ jobs:
                 #   build_os_ver: "7",
                 #   prod_os_ver: "7"
                 # },
+        with:
+          script: |
+            return {
+              include: [
                 {
                   os: "debian",
                   elixir: "1.18.4",
