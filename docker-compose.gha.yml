@@ -23,6 +23,7 @@ services:
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
       - OTEL_DEBUG=${OTEL_DEBUG:-false}
+      # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
     volumes:
       - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
@@ -61,12 +62,16 @@ services:
       #   - oban_key_fingerprint
       context: .
     environment:
+      # # Use minio container for S3
+      # - AWS_S3_HOST=${AWS_S3_HOST:-minio}
+      # - AWS_S3_PORT=${AWS_S3_PORT:-9000}
+      # - AWS_S3_SCHEME=${AWS_S3_SCHEME:-http}
       # Talk to postgres database container
       - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
       # - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - LOG_CONSOLE=${LOG_CONSOLE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      # Talk to rabbitmq container
+      # Use rabbitmq running in container
       # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
       # - MQ_PASSWORD=${MQ_PASSWORD:-guest}
       # - MQ_USERNAME=${MQ_USERNAME:-guest}
@@ -75,10 +80,12 @@ services:
       # mix phx.gen.secret
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
       # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
-      # Send traces to the AWS OTEL collector container
+      # Send traces to AWS OTEL collector running in container
       # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://aws-otel-collector:4317
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_DEBUG=${OTEL_DEBUG:-false}
+      # - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-foo}
+      # - OTEL_RESOURCE_ATTRIBUTES=service.namespace=ai,deployment.environment=local
     ports:
       - '4000:4000'
       - '9111:9111'   # Prometheus PromEx server port
@@ -148,7 +155,13 @@ services:
   # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
   aws-otel-collector:
     # image: public.ecr.aws/aws-observability/aws-otel-collector:latest
-    image: "${PUBLIC_REGISTRY:-docker.io/}amazon/aws-otel-collector:latest"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${AWS_OTEL_COLLECTOR_REPO_ORG:-amazon}/aws-otel-collector:${AWS_OTEL_COLLECTOR_TAG:-latest}"
+    build:
+      dockerfile: deploy/aws-otel-collector.Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
     environment:
       - AWS_REGION=${AWS_REGION:-us-east-1}
     ports:
@@ -272,6 +285,16 @@ services:
     depends_on:
       - zookeeper
 
+  minio:
+    image: "${PUBLIC_REGISTRY:-docker.io/}minio/minio"
+    ports:
+      - '9000:9000'
+      - '9001:9001' # console
+    hostname: minio
+    volumes:
+      - minio_storage:/data
+    command: server --console-address ":9001" /data
+
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
@@ -319,6 +342,7 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     # build:
     #   context: .
@@ -359,7 +383,7 @@ services:
 
   # https://hub.docker.com/_/rabbitmq
   rabbitmq:
-    image: "${PUBLIC_REGISTRY:-docker.io/}rabbitmq:3-management"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${RABBITMQ_REPO_ORG:-}rabbitmq:3-management"
     restart: always
     ports:
       - '5671:5671' # AMQPS port (TLS)
@@ -402,6 +426,8 @@ services:
 
 volumes:
   kafka_data:
+    driver: local
+  minio_storage:
     driver: local
   mysql_data:
     driver: local
