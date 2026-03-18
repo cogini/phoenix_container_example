@@ -143,8 +143,8 @@ defmodule PhoenixContainerExample.MixProject do
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"],
       quality: [
         "format --check-formatted",
-        "credo",
-        # "credo --mute-exit-status",
+        # "credo",
+        "credo --mute-exit-status",
         # Run `mix deps.clean --unlock --unused` to clean things identified below
         "deps.unlock --check-unused",
         # mix deps.update
