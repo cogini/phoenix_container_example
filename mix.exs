@@ -83,7 +83,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 1.0"},
-      {:hackney, "~> 1.17"},
+      {:hackney, "~> 1.24", override: true},
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
       {:jason, "~> 1.2"},
@@ -128,6 +128,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:telemetry_metrics_prometheus, "~> 1.1"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:tzdata, "~> 1.1"},
       {:uinta, "~> 0.16.0"}
     ]
   end
