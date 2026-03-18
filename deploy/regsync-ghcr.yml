@@ -1,0 +1,38 @@
+# https://regclient.org/usage/regsync/
+sync:
+  # Build base image
+  - source: docker.io/hexpm/elixir:1.15.8-erlang-26.0.2-debian-bookworm-20250811-slim
+    target: ghcr.io/cogini/elixir:1.15.8-erlang-26.0.2-debian-bookworm-20250811-slim
+    type: image
+  # Build aws-otel-collector base image
+  - source: docker.io/amazon/aws-otel-collector:latest
+    target: ghcr.io/cogini/aws-otel-collector:latest
+    type: image
+  - source: docker.io/amazon/aws-otel-collector:v0.47.0
+    target: ghcr.io/cogini/aws-otel-collector:v0.47.0
+    type: image
+  # Deploy base image
+  - source: docker.io/debian:bookworm-slim
+    target: ghcr.io/cogini/debian:bookworm-slim
+    type: image
+  - source: docker.io/debian:bookworm-20250811-slim
+    target: ghcr.io/cogini/debian:bookworm-20250811-slim
+    type: image
+  - source: docker.io/debian:bookworm-20260223-slim
+    target: ghcr.io/cogini/debian:bookworm-20260223-slim
+    type: image
+  # Test deps
+  - source: docker.io/ankane/pgvector:latest
+    target: ghcr.io/cogini/pgvector:latest
+    type: image
+  - source: docker.io/ankane/pgvector:v0.5.1
+    target: ghcr.io/cogini/pgvector:v0.5.1
+    type: image
+  # TODO: should use newer version from pgvector/pgvector instead of ankane/pgvector
+  # https://hub.docker.com/r/pgvector/pgvector/tags
+  - source: docker.io/rabbitmq:3-management
+    target: ghcr.io/cogini/rabbitmq:3-management
+    type: image
+  - source: docker.io/rabbitmq:3.13.7-management
+    target: ghcr.io/cogini/rabbitmq:3.13.7-management
+    type: image

@@ -1,0 +1,5 @@
+# https://regclient.org/usage/regsync/
+sync:
+  - source: docker.io/zenika/alpine-chrome:119
+    target: '{{ env "ECR_REGISTRY" }}/zenika/alpine-chrome:119'
+    type: image
