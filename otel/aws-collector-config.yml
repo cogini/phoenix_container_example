@@ -10,12 +10,10 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 127.0.0.1:4317
-        # endpoint: 0.0.0.0:4317
+        endpoint: 0.0.0.0:4317
       http:
-        endpoint: 127.0.0.1:4318
-        # endpoint: 0.0.0.0:4318
-        # endpoint: 0.0.0.0:55681
+        endpoint: 0.0.0.0:4318
+
   prometheus:
     config:
       global:
@@ -37,6 +35,7 @@ receivers:
     # endpoint: 0.0.0.0:2000
     transport: udp
 
+  # Collect ECS container metrics from the ECS agent running on the host
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver
   awsecscontainermetrics:
     collection_interval: 20s
