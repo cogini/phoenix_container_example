@@ -42,6 +42,13 @@ processors:
     send_batch_size: 50
   batch/metrics:
     timeout: 60s
+  # tail_sampling:
+  #   decision_wait: 10s
+  #   policies:
+  #     - name: probabilistic-5-percent
+  #       type: probabilistic
+  #       probabilistic:
+  #         sampling_percentage: 5
 
   # Detect resources
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
@@ -69,6 +76,7 @@ processors:
     #   cloud.provider
     #   cloud.region
 
+  # Convert resource attributes to metric labels for the app
   resource/ecs:
     attributes:
       - key: job
@@ -273,6 +281,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
+      # processors: [batch/traces, resourcedetection, tail_sampling]
       processors: [batch/traces, resourcedetection]
       exporters: [awsxray]
 
