@@ -30,10 +30,6 @@ receivers:
         - targets: [ 127.0.0.1:9111 ]
         # running in docker compose
         # - targets: [ prod:9111 ]
-  awsxray:
-    endpoint: 127.0.0.1:2000
-    # endpoint: 0.0.0.0:2000
-    transport: udp
 
   # Collect ECS container metrics from the ECS agent running on the host
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver
@@ -47,11 +43,15 @@ processors:
   batch/metrics:
     timeout: 60s
 
+  # Detect resources
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/internal/aws/ecs/documentation.md
   resourcedetection:
     # detectors: [env, cs, ec2, ecs, gcp, azure, system]
     detectors: [env, ecs]
+    # timeout: 2s
+    # override: false
+    #
     # ECS attributes:
     #   aws.ecs.cluster.arn
     #   aws.ecs.launchtype
@@ -68,20 +68,6 @@ processors:
     #   cloud.platform
     #   cloud.provider
     #   cloud.region
-
-  filter/ecs:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-          - ecs.task.memory.utilized
-          - ecs.task.memory.reserved
-          - ecs.task.cpu.utilized
-          - ecs.task.cpu.reserved
-          - ecs.task.network.rate.rx
-          - ecs.task.network.rate.tx
-          - ecs.task.storage.read_bytes
-          - ecs.task.storage.write_bytes
 
   resource/ecs:
     attributes:
@@ -100,6 +86,7 @@ processors:
       # - key: service.instance.id
       #   action: upsert
       #   from_attribute: aws.ecs.task.id
+
       # Delete unused resource attributes
       # This is dumb, but there is no "keep only" action
       - key: server.port
@@ -140,30 +127,130 @@ processors:
       # - key: cloud.region
       #   action: delete
 
-      # From awsecscontainermetrics
+  # Convert resource attributes to metrics for ECS container metrics
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#available-metrics
+  resource/ecscontainermetrics:
+    attributes:
+      - key: job
+        from_attribute: aws.ecs.task.family
+        action: upsert
+      - key: instance
+        from_attribute: aws.ecs.task.id
+        action: upsert
+
       - key: aws.ecs.cluster.name
+        action: delete
+      - key: aws.ecs.container.created_at
+        action: delete
+      - key: aws.ecs.container.exit_code
+        action: delete
+      - key: aws.ecs.container.finished_at
+        action: delete
+      - key: aws.ecs.container.image.id
+        action: delete
+      - key: aws.ecs.container.started_at
+        action: delete
+      - key: aws.ecs.docker.name
+        action: delete
+      - key: aws.ecs.launch_type
         action: delete
       # - key: aws.ecs.service.name
       #   action: delete
-      - key: aws.ecs.task.known.status
+      - key: aws.ecs.task.arn
         action: delete
-      - key: aws.ecs.task.launch.type
+      - key: aws.ecs.task.family
         action: delete
-      - key: aws.ecs.task.pull.started_at
+      - key: aws.ecs.task.id
         action: delete
-      - key: aws.ecs.task.pull.stopped_at
+      - key: aws.ecs.task.known_status
         action: delete
-      - key: aws.ecs.task.version
+      - key: aws.ecs.task.pull_started_at
         action: delete
+      - key: aws.ecs.task.pull_stopped_at
+        action: delete
+      - key: aws.ecs.task.revision
+        action: delete
+      - key: cloud.account.id
+        action: delete
+      - key: cloud.availability_zone
+        action: delete
+      # - key: cloud.region
+      #   action: delete
+      - key: container.id
+        action: delete
+      - key: container.image.tag
+        action: delete
+      - key: container.name
+        action: delete
+      - key: ws.ecs.container.known_status
+        action: delete
+
+  # Select only the ECS container metrics we want
+  filter/ecs:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+          - ecs.task.memory.utilized
+          - ecs.task.memory.reserved
+          - ecs.task.cpu.utilized
+          - ecs.task.cpu.reserved
+          - ecs.task.network.rate.rx
+          - ecs.task.network.rate.tx
+          - ecs.task.storage.read_bytes
+          - ecs.task.storage.write_bytes
+
 
 exporters:
   awsxray:
-  # awsemf:
-  #   namespace: ECS/AWSOTel/Application
-  #   log_group_name: '/aws/ecs/application/metrics'
-  # debug:
-  #   # detailed, normal, basic
-  #   verbosity: normal
+
+  # Exporter for app metrics
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter
+  prometheusremotewrite:
+    # endpoint: https://aps-workspaces.ap-northeast-1.amazonaws.com/workspaces/ws-f30498c4-6b52-4d6f-a888-6b2b4717c84e/api/v1/remote_write
+    endpoint: ${env:PROMETHEUS_ENDPOINT}
+    auth:
+      authenticator: sigv4auth
+    resource_to_telemetry_conversion:
+      enabled: true
+    # This doesn't work, no matter what AI says
+    # resource_to_telemetry_conversion_allowed_list:
+    #   - service.name
+    #   - aws.ecs.task.family
+    #   - task_rev
+    # external_labels:
+    #   task.family: aws.ecs.task.family
+
+  # Exporter for ECS container metrics, separated to set different external labels and resource attributes
+  prometheusremotewrite/ecs:
+    # endpoint: https://aps-workspaces.ap-northeast-1.amazonaws.com/workspaces/ws-f30498c4-6b52-4d6f-a888-6b2b4717c84e/api/v1/remote_write
+    # namespace: ECS/AWSOTel
+    endpoint: ${env:PROMETHEUS_ENDPOINT}
+    auth:
+      authenticator: sigv4auth
+    resource_to_telemetry_conversion:
+      enabled: true
+    #   # exclude_service_attributes: false
+    # resource_to_telemetry_conversion_allowed_list:
+    #   - service.name
+    #   - aws.ecs.task.family
+    # external_labels:
+    #   task.family: aws.ecs.task.family
+    # external_labels:
+    #   component: ${env:COMPONENT}
+    # external_labels:
+    #   label_name1: label_value1
+    #   label_name2: label_value2
+    # resource_to_telemetry_conversion:
+    #   enabled: true # Convert resource attributes to metric labels
+
+  # Prometheus scrapable endpoint
+  # prometheus:
+  #   endpoint: 0.0.0.0:9888
+
+  debug:
+    # detailed, normal, basic
+    verbosity: normal
 
 extensions:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md
@@ -184,23 +271,21 @@ service:
       # debug, info, warn, error
       level: info
   pipelines:
-    # Traces
     traces:
       receivers: [otlp]
       processors: [batch/traces, resourcedetection]
-      # exporters: [datadog/api]
       exporters: [awsxray]
+
     # App metrics
     metrics:
       receivers: [prometheus]
       processors: [resourcedetection, resource/ecs, batch/metrics]
       exporters: [prometheusremotewrite, debug]
-      # exporters: [awsemf]
 
     # ECS container metrics
     metrics/ecs:
       receivers: [awsecscontainermetrics]
-      processors: [resourcedetection, resource/ecs, filter/ecs, batch/metrics]
+      processors: [resource/ecscontainermetrics, filter/ecs, batch/metrics]
       exporters: [prometheusremotewrite/ecs, debug]
 
     # Prometheus scrapable endpoint
