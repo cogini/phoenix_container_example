@@ -452,18 +452,6 @@ jobs:
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
-      - name: Debug environment
-        # env.ACTIONS_STEP_DEBUG == 'true'
-        run: |
-          # echo "github.event_name: ${{ github.event_name }}"
-          echo "ref: ${{ github.ref }}"
-          echo "ref_name: ${{ github.ref_name }}"
-          echo "environment: ${{ needs.config.outputs.environment }}"
-          echo -n "DOCKERHUB_USERNAME: "
-          echo ${{ secrets.DOCKERHUB_USERNAME }} | sed 's/./& /g'
-          echo -n "DOCKERHUB_TOKEN: "
-          echo ${{ secrets.DOCKERHUB_TOKEN }} | sed 's/./& /g'
-
       - name: Check out source
         uses: actions/checkout@v4
 
@@ -578,6 +566,7 @@ jobs:
     name: Run tests
     if: needs.config.outputs.test == '1'
     needs: [build-test, config]
+    environment: ${{ needs.config.outputs.environment }}
     permissions:
       packages: read
       contents: read
