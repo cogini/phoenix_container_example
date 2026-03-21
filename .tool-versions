@@ -2,8 +2,10 @@
 cmake 4.0.3
 elixir 1.19.5-otp-28
 erlang 28.4.1
+# nodejs 14.21.3
 # nodejs 24.1.0
-nodejs 14.21.3
+nodejs 24.14.0
 # python 3.12.11
+# python 3.14.3
 rebar 3.24.0
 yarn 1.22.22
