@@ -657,6 +657,7 @@ jobs:
     name: Run dialyzer
     if: needs.config.outputs.test-dializer == '1'
     needs: [build-test, config]
+    environment: ${{ needs.config.outputs.environment }}
     permissions:
       contents: read
       packages: read
@@ -699,6 +700,7 @@ jobs:
   test-scan:
     name: Security scan code
     needs: [build-test]
+    # environment: ${{ needs.config.outputs.environment }}
     permissions:
       contents: read
       packages: read
@@ -1042,6 +1044,7 @@ jobs:
   test-prod:
     name: Run external API tests
     needs: [build-prod, config]
+    environment: ${{ needs.config.outputs.environment }}
     permissions:
       id-token: write
       packages: read
