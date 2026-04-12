@@ -1,4 +1,6 @@
-name: Periodic Security Scan
+---
+name: Security scan
+
 # Periodically scan production images for security vulnerabilities
 on:
   schedule:
@@ -14,6 +16,7 @@ env:
   IMAGE_NAME: foo-app
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # IMAGE_OWNER: foo
   # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
   # Tag for release images
@@ -274,13 +277,9 @@ jobs:
     name: Security scan prod image
     needs: [setup-matrix]
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Read from ghcr.io repository
       packages: read
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
@@ -302,10 +301,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+        run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
@@ -322,7 +321,7 @@ jobs:
 
       - name: Display scan results
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
-        run: cat trivy.sarif | jq .
+        run: cat trivy-results.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
@@ -332,7 +331,7 @@ jobs:
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         with:
-          sarif_file: 'trivy.sarif'
+          sarif_file: 'trivy-results.sarif'
           category: trivy
 
       - name: Scan image with Grype

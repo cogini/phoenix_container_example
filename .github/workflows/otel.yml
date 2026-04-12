@@ -1,18 +1,21 @@
 ---
 name: OpenTelemetry
+
 # Build AWS OpenTelemetry Collector Docker image and push to Amazon ECR
+
 on:
   push:
-    branches:
-      - main
-      - qa
-    tags: [prod]
+    # branches:
+    #   - main
+    #   - qa
+    # tags: [prod]
     paths:
+      - .github/workflows/otel.yml
       - 'deploy/aws-otel-collector.Dockerfile'
       - 'otel/*'
-  pull_request:
-    # branches: [main]
-    types: [opened,synchronize,reopened,labeled,unlabeled]
+  # pull_request:
+  #   # branches: [main]
+  #   types: [opened,synchronize,reopened,labeled,unlabeled]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-otel
   cancel-in-progress: true
@@ -21,6 +24,7 @@ env:
   IMAGE_NAME: aws-otel-collector
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # IMAGE_OWNER: foo
   # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
   # Tag for release images
@@ -30,6 +34,7 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ''
+  MAIN_BRANCH: main
   # Give GitHub Actions access to AWS
   AWS_ENABLED: 1
   # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -42,15 +47,12 @@ jobs:
   build-otel:
     name: Build otel image
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Push to ghcr.io repository
       packages: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     steps:
-      # Pull public images without rate limits
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
