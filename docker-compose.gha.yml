@@ -23,6 +23,7 @@ services:
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
       - OTEL_DEBUG=${OTEL_DEBUG:-false}
+      # - LOGGER_LEVEL=${LOGGER_LEVEL:-info}
       # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
     volumes:
       - "./.cache:/var/cache"
@@ -31,6 +32,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
 
   prod-release:
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER:-prod-release}"
@@ -62,15 +65,19 @@ services:
       #   - oban_key_fingerprint
       context: .
     environment:
-      # # Use minio container for S3
+      # Use minio container for S3
       # - AWS_S3_HOST=${AWS_S3_HOST:-minio}
       # - AWS_S3_PORT=${AWS_S3_PORT:-9000}
       # - AWS_S3_SCHEME=${AWS_S3_SCHEME:-http}
-      # Talk to postgres database container
+      # Talk to postgres running in container
       - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
       # - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      # Run database migrations on startup
+      - DB_MIGRATE=${DB_MIGRATE:-true}
       - LOG_CONSOLE=${LOG_CONSOLE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # - LOGGER_FORMAT=${LOGGER_FORMAT:-text} # default is json
+      # - LOGGER_LEVEL=${LOGGER_LEVEL:-info}
       # Use rabbitmq running in container
       # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
       # - MQ_PASSWORD=${MQ_PASSWORD:-guest}
@@ -169,8 +176,8 @@ services:
       - "4318:4318"     # OTLP over HTTP
       - "55680:55680"   # OTLP over gRPC (legacy)
       - "55681:55681"   # OTLP over HTTP (legacy)
-      - "8888:8888"     # Prometheus metrics exposed by the collector
-      - "8889:8889"     # Prometheus exporter metrics
+      - "9888:9888"     # Prometheus metrics exposed by the collector
+      - "9889:9889"     # Prometheus exporter metrics
       - "13133:13133"   # health_check extension
       - "55679:55679"   # zpages extension
     # command: ["--config=/etc/otel-collector-config.yml"]
@@ -181,7 +188,8 @@ services:
       timeout: 6s
       retries: 5
     volumes:
-      - ./otel/aws-collector-config.yml:/etc/otel-collector-config.yml
+      # - ./otel/aws-collector-config.yml:/etc/otel-collector-config.yml
+      - ./otel/docker-compose-collector-config.yml:/etc/otel-collector-config.yml
       - ./otel/extraconfig.txt:/opt/aws/aws-otel-collector/etc/extracfg.txt
 
   # https://opentelemetry.io/docs/collector/getting-started/#docker-compose
@@ -203,6 +211,13 @@ services:
       - "55679:55679"   # zpages extension
     # depends_on:
     #   - jaeger
+
+  chromic-pdf:
+    image: "${PUBLIC_REGISTRY:-docker.io/}zenika/alpine-chrome:${CHROME_TAG:-119}"
+    ports:
+      - 9222:9222
+    hostname: chromic-pdf
+    command: [chromium-browser, "--headless", "--disable-gpu", "--no-sandbox", "--remote-debugging-address=0.0.0.0", "--remote-debugging-port=9222"]
 
   # https://docs.datadoghq.com/getting_started/agent/
   # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
@@ -341,9 +356,11 @@ services:
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
+  # https://hub.docker.com/_/postgres
   postgres:
     # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
-    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
+    # image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:18.3-alpine"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
