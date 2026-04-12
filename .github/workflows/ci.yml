@@ -1061,7 +1061,6 @@ jobs:
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
-    environment: ${{ needs.config.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
