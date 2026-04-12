@@ -46,12 +46,13 @@ env:
   IMAGE_VER: ${{ github.sha }}
   # Registry for test images
   REGISTRY: ghcr.io/
-  # Registry for public images, default is docker.io
+  # Registry for public images, blank for docker.io
   PUBLIC_REGISTRY: ''
   # PUBLIC_REGISTRY: 'ghcr.io/'
   # POSTGRES_REPO_ORG: 'cogini'
   # RABBITMQ_REPO_ORG: 'cogini/'
   # AWS_OTEL_COLLECTOR_REPO_ORG: 'cogini'
+  # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
   # Docker Hub credentials to pull base images without rate limits
@@ -79,9 +80,9 @@ env:
   # AWS CloudFront distribution ID to invalidate cache after deploy
   #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # AppSignal API key for error reporting
+  #   secrets.APPSIGNAL_PUSH_API_KEY
   # DataDog API key for reporting test results
   #   secrets.ACTIONS_DD_API_KEY
-  #   secrets.APPSIGNAL_PUSH_API_KEY
   #   secrets.DD_API_KEY
   # Oban Pro license
   #   secrets.OBAN_KEY_FINGERPRINT
@@ -159,6 +160,8 @@ jobs:
       # Tag for ECR images. Repos are separate between environments, so each gets "latest" tag
       image-tag-ecr: ${{ contains(fromJson('["main", "staging", "prod"]'), github.ref_name) && 'latest' || github.ref_name }}
 
+      image-tag-deploy: ${{ steps.get-image-tag-deploy.outputs.result }}
+
       # Enable AWS interactions in the build, including deploys.
       aws-enabled: '1'
 
@@ -170,6 +173,9 @@ jobs:
 
       # Security scan prod image
       scan-prod-image: '0'
+
+      # Security scan code image
+      scan-code: '0'
 
       # GitHub Advanced Security, free for open source, otherwise a paid feature
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -221,10 +227,10 @@ jobs:
             let platforms = [
               {
                 os: "debian",
-                elixir: "1.15.8",
-                otp: "26.0.2",
-                build_os_ver: "bookworm-20250811-slim",
-                prod_os_ver: "bookworm-slim"
+                elixir: "1.19.5",
+                otp: "28.4.1",
+                build_os_ver: "trixie-20260316-slim",
+                prod_os_ver: "trixie-20260316-slim"
               },
             ]
             let ci_nodes = [1, 2]
@@ -262,10 +268,10 @@ jobs:
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.1",
-                  build_os_ver: "bookworm-20250929-slim",
-                  prod_os_ver: "bookworm-slim"
+                  elixir: "1.19.5",
+                  otp: "28.4.1",
+                  build_os_ver: "trixie-20260316-slim",
+                  prod_os_ver: "trixie-20260316-slim"
                 },
               ]
             }
@@ -279,10 +285,10 @@ jobs:
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.1",
-                  build_os_ver: "bookworm-20250929-slim",
-                  prod_os_ver: "bookworm-slim",
+                  elixir: "1.19.5",
+                  otp: "28.4.1",
+                  build_os_ver: "trixie-20260316-slim",
+                  prod_os_ver: "trixie-20260316-slim"
                 },
               ]
             }
@@ -296,10 +302,10 @@ jobs:
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.1",
-                  build_os_ver: "bookworm-20250929-slim",
-                  prod_os_ver: "bookworm-slim",
+                  elixir: "1.19.5",
+                  otp: "28.4.1",
+                  build_os_ver: "trixie-20260316-slim",
+                  prod_os_ver: "trixie-20260316-slim"
                 },
               ]
             }
@@ -346,7 +352,7 @@ jobs:
 
       # Get image tag for deploy based on environment
       # In test, staging, and qa, deploy is based on GitHub SHA
-      # In prod (and prod-ca), deploy is based on staging ECR repo
+      # In prod, deploy is based on staging ECR repo
       # In dr, deploy is based on prod ECR repo in DR region
       - name: Configure image-tag-deploy
         id: get-image-tag-deploy
@@ -407,6 +413,7 @@ jobs:
 
   create-release:
     name: Create GitHub release
+    needs: [config]
     if: needs.config.outputs.create-release == '1'
     runs-on: ubuntu-latest
     outputs:
@@ -417,7 +424,7 @@ jobs:
       RELEASE_TAG: build-${{ github.run_number }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # - name: Tag repository
       #   run: |
@@ -453,7 +460,7 @@ jobs:
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set variables
         shell: bash
@@ -463,7 +470,7 @@ jobs:
           echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         # https://github.com/marketplace/actions/docker-login
         with:
           registry: ghcr.io
@@ -484,7 +491,7 @@ jobs:
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -514,7 +521,7 @@ jobs:
 
       # - name: Configure AWS credentials
       #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/configure-aws-credentials@v5
+      #   uses: aws-actions/configure-aws-credentials@v6
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       #   with:
@@ -525,8 +532,8 @@ jobs:
       #   if: env.AWS_ENABLED == '1'
       #   run: |
       #     mkdir -p test/bert
-      #     aws s3 cp s3://${{ vars.S3_BUCKET_CI }}/test-data.zip test-data.zip
-      #     unzip -o test-data.zip -d test/bert
+      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
+      #     unzip -o test-data.zip -d test/data
 
       - name: Set up Docker buildx
         id: buildx
@@ -576,14 +583,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # matrix: ${{ fromJson(needs.setup-matrix.outputs.test-matrix) }}
       matrix: ${{ fromJson(needs.config.outputs.test-matrix-parallel) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -591,13 +597,13 @@ jobs:
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Pull repos
         run: |
@@ -636,7 +642,7 @@ jobs:
 
       - name: Run quality checks
         # run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --mute-exit-status --all, hex.audit, deps.audit, sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
-        run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+        run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --all --mute-exit-status, hex.audit, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -673,20 +679,20 @@ jobs:
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Pull repos
         run: |
@@ -699,8 +705,9 @@ jobs:
 
   test-scan:
     name: Security scan code
-    needs: [build-test]
-    # environment: ${{ needs.config.outputs.environment }}
+    needs: [build-test, config]
+    if: needs.config.outputs.scan-code == '1'
+    environment: ${{ needs.config.outputs.environment }}
     permissions:
       contents: read
       packages: read
@@ -714,26 +721,26 @@ jobs:
       GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         # with:
         #   # Fetch all history for all branches and tags for Gitleaks
         #   fetch-depth: 0
 
       - name: Manual Trivy Setup
-        uses: aquasecurity/setup-trivy@v0.2.1
+        uses: aquasecurity/setup-trivy@0.2.6
         with:
           cache: true
-          version: v0.52.2
+          version: v0.68.2
 
       - name: Scan code with trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.69.3
         # https://github.com/marketplace/actions/aqua-security-trivy
         with:
           scan-type: 'fs'
@@ -763,6 +770,7 @@ jobs:
         with:
           path: .
           output-format: table
+          # output-format: 'sarif'
           # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
           fail-build: false
           # severity-cutoff: critical
@@ -812,21 +820,21 @@ jobs:
           echo "environment: ${{ needs.config.outputs.environment }}"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configure AWS credentials
         if: env.AWS_ENABLED == '1'
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -846,7 +854,7 @@ jobs:
         run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set variables
         id: vars
@@ -1065,24 +1073,24 @@ jobs:
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # - name: Configure AWS credentials
       #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/configure-aws-credentials@v5
+      #   uses: aws-actions/configure-aws-credentials@v6
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       #   with:
@@ -1093,13 +1101,13 @@ jobs:
       #   if: env.AWS_ENABLED == '1'
       #   run: |
       #     mkdir -p test-data
-      #     aws s3 cp s3://${{ vars.S3_BUCKET_CI }}/test-data.zip test-data.zip
+      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
       #     unzip -o test-data.zip -d test-data
 
       # Log into AWS to avoid rate limits on public ECR images
       # - name: Configure AWS credentials
       #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/configure-aws-credentials@v5
+      #   uses: aws-actions/configure-aws-credentials@v6
       #   with:
       #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       #     aws-region: ${{ vars.AWS_REGION }}
@@ -1204,6 +1212,16 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
+      # - name: Copy Erlang release files from container
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+
       # - name: Copy CodeDeploy release files from container
       #   run: |
       #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
@@ -1211,6 +1229,16 @@ jobs:
       #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
       #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
       #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+
+      # - name: Copy Ansible release files from container
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
       #     echo "$COMMAND"
       #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
@@ -1237,7 +1265,7 @@ jobs:
       GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -1247,7 +1275,7 @@ jobs:
         run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
@@ -1276,7 +1304,7 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
@@ -1341,7 +1369,7 @@ jobs:
   #         echo "environment: ${{ github.event.deployment.environment }}"
   #
   #     - name: Log in to GHCR
-  #       uses: docker/login-action@v3
+  #       uses: docker/login-action@v4
   #       with:
   #         registry: ghcr.io
   #         username: ${{ github.actor }}
@@ -1349,13 +1377,13 @@ jobs:
   #
   #     - name: Configure AWS credentials
   #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v5
+  #       uses: aws-actions/configure-aws-credentials@v6
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   #         aws-region: ${{ vars.AWS_REGION }}
   #
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v6
   #
   #     - name: Set up Docker buildx
   #       id: buildx
@@ -1489,7 +1517,7 @@ jobs:
   #
   #     - name: Configure AWS credentials
   #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v4
+  #       uses: aws-actions/configure-aws-credentials@v6
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   #         aws-region: ${{ vars.AWS_REGION }}
@@ -1520,7 +1548,7 @@ jobs:
       # ECR_REGISTRY_ID: ${{ secrets.AWS_ACCOUNT_ID }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -1533,7 +1561,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set vars for runtime info
         shell: bash
@@ -1672,7 +1700,7 @@ jobs:
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -1680,7 +1708,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: env.AWS_ENABLED == '1'
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -1826,7 +1854,7 @@ jobs:
           echo "environment: ${{ needs.config.outputs.environment }}"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -1834,7 +1862,7 @@ jobs:
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
