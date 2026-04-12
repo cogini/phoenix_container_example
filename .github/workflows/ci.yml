@@ -1442,7 +1442,7 @@ jobs:
   #     AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
   #   steps:
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v6
   #
   #     - uses: actions/setup-node@v4
   #       with:
@@ -1735,7 +1735,7 @@ jobs:
           echo "IMAGE_TAG_ECR=${IMAGE_TAG_ECR}" >> "$GITHUB_ENV"
 
       # - name: Check out source
-      #   uses: actions/checkout@v4
+      #   uses: actions/checkout@v6
 
       - name: Tag GHCR release as latest
         run: |
@@ -1780,13 +1780,13 @@ jobs:
   #   steps:
   #     - name: Configure AWS credentials
   #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v5
+  #       uses: aws-actions/configure-aws-credentials@v6
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   #         aws-region: ${{ vars.AWS_REGION }}
   #
   #     - name: Check out source
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v6
   #
   #     - name: Set variables
   #       id: vars
@@ -1868,7 +1868,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -1883,7 +1883,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # - name: Copy to GHCR
       #   run: |
