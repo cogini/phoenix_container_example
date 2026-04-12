@@ -9,8 +9,6 @@ ARG OTP_VER=28.4.1
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-# ARG BUILD_OS_VER=bookworm-20251229-slim
-# ARG PROD_OS_VER=bookworm-slim
 ARG BUILD_OS_VER=trixie-20260316-slim
 ARG PROD_OS_VER=trixie-20260316-slim
 
@@ -235,7 +233,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 # Install rust
 # ENV CARGO_HOME=/usr/local/cargo \
 #     RUSTUP_HOME=/usr/local/rust
-#
+
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y
 # ENV PATH="/usr/local/cargo/bin:${PATH}"
 
@@ -306,6 +304,7 @@ WORKDIR /app
 COPY --link Postma[n] ./Postman
 
 # COPY --link config ./config
+# Copy minimum config files needed
 COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Compile deps separately from app, improving Docker caching
@@ -348,6 +347,7 @@ RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
 # RUN mix cmd mix compile --warnings-as-errors
 
 
+# Install JavaScript dependencies
 FROM build-deps-get AS prod-assets
 ARG LANG
 
@@ -357,7 +357,11 @@ WORKDIR /app
 RUN mkdir -p ./assets
 
 # Install JavaScript deps
+# COPY --link assets ./assets
+# Copy only the minimum requirements for JavaScript deps, improving caching
 COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
+
+WORKDIR /app/assets
 
 # Install JavaScript dependencies
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
@@ -376,28 +380,6 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
 FROM build-deps-get AS prod-release
 ARG LANG
 
-# WORKDIR /app
-
-# # Build assets
-# RUN mkdir -p ./assets
-
-# # Install JavaScript deps
-# COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
-
-# WORKDIR /app/assets
-
-# # Install JavaScript dependencies
-# RUN --mount=type=cache,target=~/.npm,sharing=locked \
-#     # corepack enable ; corepack enable npm ; \
-#     # yarn --cwd ./assets install --prod
-#     yarn install --prod
-#     # pnpm install --prod
-#     # npm install
-#     # npm run deploy
-#     # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-#     # node node_modules/brunch/bin/brunch build
-#     # node node_modules/webpack/bin/webpack.js --mode production
-
 WORKDIR /app
 
 # Compile deps separately from the application for better Docker caching.
@@ -409,6 +391,8 @@ COPY --link .env.pro[d] ./
 ARG MIX_ENV
 # COPY --link config ./config
 COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
+
+COPY --link .env.defaul[t] .env.pro[d] ./
 
 # Load environment vars when compiling
 RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
@@ -444,12 +428,14 @@ RUN mix assets.setup
 RUN mix assets.deploy
 
 # Build release
-COPY --link config/runtime.exs ./config/
+# COPY --link config/runtime.exs ./config/
 
 COPY --link rel ./rel
 
 # Generate systemd and deploy scripts
 # RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+
+RUN mix sentry.package_source_code
 
 ARG RELEASE
 RUN mix release "$RELEASE"
@@ -458,6 +444,17 @@ RUN mix release "$RELEASE"
 # ARG ELIXIR_VER
 # ARG OTP_VER
 # ARG BUILD_OS_VER
+
+# RUN set -exu ; \
+#     echo "build: ${BUILD_NUM}" > /app/build_meta.yml ; \
+#     echo "elixir_ver: ${ELIXIR_VER}" >> /app/build_meta.yml ; \
+#     echo "otp_ver: ${OTP_VER}" >> /app/build_meta.yml ; \
+#     echo "build_os: ubuntu" >> /app/build_meta.yml ; \
+#     echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
+#     echo "var: ${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER}" >> /app/build_meta.yml ;
+
+# RUN set -exu ; \
+#     echo "BUILD_NUM: ${BUILD_NUM}" > /app/build_meta.sh
 
 # Create revision for CodeDeploy
 # WORKDIR /revision
@@ -468,11 +465,11 @@ RUN mix release "$RELEASE"
 #     cp /app/bin/* ./bin/ ; \
 #     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
 #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
-#     echo "build: ${BUILD_NUM}" > build_meta.yml ; \
-#     echo "elixir_ver: ${ELIXIR_VER}" >> build_meta.yml ; \
-#     echo "otp_ver: ${OTP_VER}" >> build_meta.yml ; \
-#     echo "build_os: ubuntu" >> build_meta.yml ; \
-#     echo "build_os_ver: ${BUILD_OS_VER}" >> build_meta.yml ; \
+#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
+#     echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
+#     echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER}" >> ./deploy.env ; \
+#     cp /app/build_meta.yml ./ ; \
+#     cp /app/build_meta.sh ./ ; \
 #     zip -r /revision.zip . ; \
 #     rm -rf /revision/*
 
@@ -488,11 +485,8 @@ RUN mix release "$RELEASE"
 #     cp /app/bin/* ./bin/ ; \
 #     chmod +x ./bin/* ; \
 #     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
-#     echo "build: ${BUILD_NUM}" > build_meta.yml ; \
-#     echo "elixir_ver: ${ELIXIR_VER}" >> build_meta.yml ; \
-#     echo "otp_ver: ${OTP_VER}" >> build_meta.yml ; \
-#     echo "build_os: ubuntu" >> build_meta.yml ; \
-#     echo "build_os_ver: ${BUILD_OS_VER}" >> build_meta.yml ; \
+#     cp /app/build_meta.yml ./ ; \
+#     cp /app/build_meta.sh ./ ; \
 #     zip -r /ansible.zip . ; \
 #     rm -rf /ansible/*
 
@@ -708,6 +702,9 @@ FROM prod-base AS prod
 
 # This could be put in a separate target, but it's faster to do it from prod test
 
+# Copy Erlang release prod image for publishing later
+# COPY --from=prod-release --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
+
 # Copy CodeDeploy revision into prod image for publishing later
 # COPY --from=prod-release --chown="nonroot:nonroot" /revision.zip /revision.zip
 
@@ -736,10 +733,9 @@ ARG RELEASE
 COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
 # App listen ports
-# App port
 EXPOSE 4000
 
-# Prometheus metrics port
+# Prometheus metrics
 # PromEx server port
 EXPOSE 9111
 # telemetry_metrics_prometheus default port
@@ -849,6 +845,7 @@ ARG RELEASE
 # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
 # COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
 # COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
+COPY --from=prod-release /app/_build /_build
 COPY --from=prod-release /app/priv/static /static
 
 
