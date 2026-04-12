@@ -18,7 +18,15 @@ defmodule PhoenixContainerExample.MixProject do
         # ignore_warnings: "dialyzer.ignore-warnings"
       ],
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
+      default_release: :prod,
+      releases: releases(),
+      deps: deps()
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.post": :test,
@@ -28,10 +36,7 @@ defmodule PhoenixContainerExample.MixProject do
         "quality.ci": :test,
         "assets.deploy": :prod,
         deploy: :prod
-      ],
-      default_release: :prod,
-      releases: releases(),
-      deps: deps()
+      ]
     ]
   end
 
@@ -39,7 +44,7 @@ defmodule PhoenixContainerExample.MixProject do
     [
       mod: {PhoenixContainerExample.Application, []},
       extra_applications:
-        [:logger, :runtime_tools, :eex] ++
+        [:logger, :runtime_tools, :eex, :sentry] ++
           extra_applications(Mix.env())
     ]
   end
@@ -67,7 +72,7 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp deps do
     [
-      {:appsignal_phoenix, "~> 2.0"},
+      # {:appsignal_phoenix, "~> 2.0"},
       # {:appsignal, "~> 2.0"},
       {:aws_rds_castore, "~> 1.1"},
       {:bandit, "~> 1.5"},
@@ -83,27 +88,28 @@ defmodule PhoenixContainerExample.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 1.0"},
-      {:hackney, "~> 1.24", override: true},
+      {:hackney, "~> 3.2", override: true},
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
+      {:idna, "~> 7.1", override: true},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
       # {:kubernetes_health_check, github: "cogini/kubernetes_health_check"},
       {:kubernetes_health_check, "~> 0.7.0"},
-      # {:logger_formatter_json, "~> 0.8.0"},
-      {:logger_formatter_json, github: "cogini/logger_formatter_json"},
+      {:logger_formatter_json, "~> 0.8.0"},
+      # {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
       # tls_certificate_check needs to be started before opentelemetry_exporter
       {:tls_certificate_check, "~> 1.13"},
       # opentelemetry_exporter needs to be started before the other opentelemetry modules
-      {:opentelemetry_exporter, "~> 1.8"},
-      {:opentelemetry, "~> 1.5"},
-      {:opentelemetry_api, "~> 1.4"},
-      {:opentelemetry_ecto, "~> 1.0"},
+      {:opentelemetry_exporter, "~> 1.9"},
+      {:opentelemetry, "~> 1.6"},
+      {:opentelemetry_api, "~> 1.4", override: true},
+      {:opentelemetry_ecto, "~> 1.2"},
       # {:opentelemetry_logger_metadata, "~> 0.1.0"},
       # {:opentelemetry_cowboy, "~> 1.0"},
-      {:opentelemetry_bandit, "~> 0.2.0"},
+      {:opentelemetry_bandit, "~> 0.3.0"},
       {:opentelemetry_liveview, "~> 1.0.0-rc.4"},
       {:opentelemetry_phoenix, "~> 2.0"},
       {:opentelemetry_telemetry, "~> 1.1", override: true},
@@ -113,17 +119,18 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_ecto, "~> 4.5"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_reload, "~> 1.5", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
-      {:phoenix, "~> 1.7.21"},
+      {:phoenix, "~> 1.8.0"},
       {:plugsnag, "~> 1.7"},
       {:postgrex, ">= 0.0.0"},
       {:recon, "~> 2.5"},
+      {:sentry, "~> 12.0"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ssl_verify_fun, "~> 1.1"},
       {:styler, "~> 1.11.0", only: [:dev, :test], runtime: false},
-      {:sweet_xml, "~> 0.6"},
-      {:swoosh, "~> 1.5"},
+      {:sweet_xml, "~> 0.7.5"},
+      {:swoosh, "~> 1.25"},
       {:tailwind, "~> 0.4.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics_prometheus, "~> 1.1"},
       {:telemetry_metrics, "~> 1.0"},
