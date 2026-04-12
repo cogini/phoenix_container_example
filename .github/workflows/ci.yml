@@ -152,7 +152,7 @@ jobs:
 
       # Whether to sync 3rd-party images to GHCR and ECR
       # sync-images: '${{ steps.get-sync-images.outputs.result }}'
-      sync-images: '0'
+      sync-images: '1'
 
       # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
       image-tag: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
