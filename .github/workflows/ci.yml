@@ -1838,10 +1838,10 @@ jobs:
   #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
   #           --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
 
-  # Copy Elixir images to GHCR
+  # Copy Elixir and OS base images to GHCR
   # Avoids rate limits and speeds up pull performance
-  sync-images-elixir:
-    name: Sync Elixir base images
+  sync-images-matrix:
+    name: Sync Elixir and OS base images
     needs: [config]
     if: needs.config.outputs.sync-images == '1'
     permissions:
@@ -1881,7 +1881,7 @@ jobs:
         with:
           release: 'v0.11.1' # optional version
 
-      - name: Sync Elxir and OS base images to GHCR
+      - name: Sync matrix images to GHCR
         run: regsync once -c deploy/regsync-ghcr-matrix.yml
 
 
