@@ -1918,20 +1918,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v6
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || secrets.AWS_ACCOUNT_ID }}
+      # - name: Log in to Amazon ECR
+      #   id: ecr-login
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #   with:
+      #     registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || secrets.AWS_ACCOUNT_ID }}
 
-      - name: Set vars
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+      # - name: Set vars
+      #   run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -1960,8 +1960,8 @@ jobs:
       - name: Sync images to GHCR
         run: regsync once -c deploy/regsync-ghcr.yml
 
-      - name: Sync images to ECR
-        run: regsync once -c deploy/regsync-ecr.yml
+      # - name: Sync images to ECR
+      #   run: regsync once -c deploy/regsync-ecr.yml
 
   # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
   # https://github.com/marketplace/actions/slack-notify-build
