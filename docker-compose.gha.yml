@@ -358,9 +358,9 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   # https://hub.docker.com/_/postgres
   postgres:
-    # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
-    # image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:18.3-alpine"
+    # image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
+    # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
@@ -455,7 +455,6 @@ volumes:
   zookeeper_data:
     driver: local
 
-# Secrets for builds
 # secrets:
 #   oban_license_key:
 #     file: ./.dev_secrets/oban_license_key.txt
