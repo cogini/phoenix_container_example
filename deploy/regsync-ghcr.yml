@@ -1,9 +1,9 @@
 # https://regclient.org/usage/regsync/
 sync:
   # Build base image
-  - source: docker.io/hexpm/elixir:1.19.5-erlang-28.4.1-debian-trixie-20260316-slim
-  - source: ghcr.io/cogini/elixir:1.19.5-erlang-28.4.1-debian-trixie-20260316-slim
-    type: image
+  # - source: docker.io/hexpm/elixir:1.19.5-erlang-28.4.2-debian-trixie-20260406-slim
+  #   target: ghcr.io/cogini/elixir:1.19.5-erlang-28.4.2-debian-trixie-20260406-slim
+  #   type: image
   # Build aws-otel-collector base image
   - source: docker.io/amazon/aws-otel-collector:latest
     target: ghcr.io/cogini/aws-otel-collector:latest
@@ -12,12 +12,12 @@ sync:
     target: ghcr.io/cogini/aws-otel-collector:v0.47.0
     type: image
   # Deploy base image
-  - source: docker.io/debian:trixie-slim
-    target: ghcr.io/cogini/debian:trixie-slim
-    type: image
-  - source: docker.io/debian:trixie-20260316-slim
-    target: ghcr.io/cogini/debian:trixie-20260316-slim
-    type: image
+  # - source: docker.io/debian:trixie-slim
+  #   target: ghcr.io/cogini/debian:trixie-slim
+  #   type: image
+  # - source: docker.io/debian:trixie-20260406-slim
+  #   target: ghcr.io/cogini/debian:trixie-20260406-slim
+  #   type: image
   # Test deps
   # https://hub.docker.com/_/postgres
   - source: docker.io/postgres:latest

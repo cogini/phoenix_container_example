@@ -1,0 +1,10 @@
+# This syncs base images controlled by build matrix
+sync:
+  # Build base image
+  - source: docker.io/hexpm/elixir:{{ env "ELIXIR_BASE_TAG" }}
+    target: ghcr.io/cogini/elixir:{{ env "ELIXIR_BASE_TAG" }}
+    type: image
+  # Deploy base image
+  - source: docker.io/{{ env "MATRIX_OS }:{{ env "MATRIX_PROD_OS_VER" }}
+    target: ghcr.io/cogini/{{ env "MATRIX_OS" }}:{{ env "MATRIX_PROD_OS_VER"}}
+    type: image
