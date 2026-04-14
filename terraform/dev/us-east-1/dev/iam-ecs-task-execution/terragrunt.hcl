@@ -13,11 +13,14 @@ include "root" {
 # }
 
 locals {
+  account_vars     = read_terragrunt_config(find_in_parent_folders("account.hcl"))
+  region_vars      = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars         = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   common_vars      = read_terragrunt_config(find_in_parent_folders("common.hcl"))
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-  org              = local.common_vars.locals.org
-  app_name         = local.common_vars.locals.app_name
-  env              = local.environment_vars.locals.env
+
+  org      = local.common_vars.locals.org
+  app_name = local.common_vars.locals.app_name
+  env      = local.env_vars.locals.env
 }
 
 inputs = {
@@ -39,6 +42,7 @@ inputs = {
   # "*" gives access to all parameters
   ssm_ps_params = ["*"]
   # Give acess to params under different components, after settting prefix to org/app
+  # ssm_ps_param_prefix = "${local.org}/${local.app_name}/${local.env}"
   # ssm_ps_params = ["app/*", "worker/*"]
 
   # Give access to KMS CMK
