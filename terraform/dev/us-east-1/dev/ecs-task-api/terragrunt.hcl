@@ -20,12 +20,20 @@ dependency "s3" {
 }
 
 inputs = {
-  comp = "api"
-
-  # image = "${dependency.ecr.outputs.repository_url}:latest"
-  image = "public.ecr.aws/docker/library/httpd:2.4"
+  comp           = "api"
+  container_name = "foo-app"
+  image          = "${dependency.ecr.outputs.repository_url}:latest"
+  # image = "public.ecr.aws/docker/library/httpd:2.4"
 
   port_mappings = [
+    # Settings for HTTP
+    {
+      containerPort = 4000
+      hostPort      = 4000
+      appProtocol   = "http"
+      protocol      = "tcp"
+    },
+    # Settings for HTTPS
     {
       containerPort = 4001
       hostPort      = 4001
@@ -34,10 +42,10 @@ inputs = {
     }
   ]
 
-  entrypoint = ["sh", "-c"]
-  command = [
-    "/bin/sh -c \"echo '<html><head><title>ECS Api</title></head><h1>ECS Api</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4001'\""
-  ]
+  # entrypoint = ["sh", "-c"]
+  # command = [
+  #   "/bin/sh -c \"echo '<html><head><title>ECS Api</title></head><h1>ECS Api</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4001'\""
+  # ]
 
   environment = []
   # environment = [
