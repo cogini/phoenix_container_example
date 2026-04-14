@@ -64,7 +64,7 @@ inputs = {
   # deployment_maximum_percent = 200
   # deployment_minimum_healthy_percent = 0
   desired_count = 1
-  # health_check_grace_period_seconds = 30
+  health_check_grace_period_seconds = 5
 
   # iam_role = dependency.iam.outputs.instance_profile_name
 
