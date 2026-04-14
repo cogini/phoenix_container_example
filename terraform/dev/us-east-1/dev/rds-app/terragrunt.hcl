@@ -30,7 +30,8 @@ inputs = {
   allocated_storage   = 5
   multi_az            = false
   deletion_protection = false
-  # disable backups to create DB faster
+  # In test environments, create/delete DB faster
+  # Dangerous for prod
   backup_retention_period = 0
   skip_final_snapshot     = true
   apply_immediately       = true
@@ -42,29 +43,32 @@ inputs = {
   # storage_encrypted = true
 
   subnet_ids           = dependency.vpc.outputs.subnets["database"]
+  # create_db_subnet_group = true
+  # db_subnet_group_name   = "foo-app"
   db_subnet_group_name = dependency.vpc.outputs.database_subnet_group
 
-  security_group_ids   = [dependency.sg.outputs.security_group_id]
-  # kms_key_id = dependency.kms.outputs.key_arn
+  security_group_ids = [dependency.sg.outputs.security_group_id]
+
+  # dns_domain         = dependency.vpc.outputs.private_dns_domain
+  # dns_zone_id        = dependency.vpc.outputs.private_dns_zone_id
 
   # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBInstance.html
   # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
   engine = "postgres"
   # aws rds describe-db-engine-versions --engine postgres | jq '.DBEngineVersions[].EngineVersion'
   # aws rds describe-db-engine-versions --default-only --engine postgres
-  engine_version       = "15.3"
-  major_engine_version = "15"
-  port                 = "5432"
+  engine_version = "15.14"
+  # major_engine_version = "15"
+  port           = "5432"
   # aws rds describe-db-engine-versions --engine postgres | jq '.DBEngineVersions[].DBParameterGroupFamily'
   family = "postgres15"
   # DB option group
   rds_master_user = "postgres"
-  # Set rds_master_pass via environment TF_VAR_rds_master_pass
 
-  # By default, RDS sets the password and stores it in AWS Secrets Manager.
-  # You can access it via the AWS console if you need it.
-  # Set master password via AWS SSM parameter store:
-  # ssm_rds_master_password = "/foo/app/dev/rds/master_password"
+  # When `manage_master_user_password = true`, RDS sets the password and stores it in
+  # AWS Secrets Manager. You can access it via the AWS console if you need it.
+  manage_master_user_password = true
+
   # Setting the master password via a parameter is possible, but insecure, as
   # it is stored in the Terraform state. Set OS environment var TF_VAR_rds_master_pass
 
@@ -219,6 +223,8 @@ inputs = {
   #   }
   # ]
 
-  service_discovery_namespace_id = dependency.sd.outputs.id
-  service_discovery_dns_domain   = dependency.sd.outputs.dns_domain
+  # kms_key_id = dependency.kms.outputs.key_arn
+
+  # service_discovery_namespace_id = dependency.sd.outputs.id
+  # service_discovery_dns_domain   = dependency.sd.outputs.dns_domain
 }
