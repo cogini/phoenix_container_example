@@ -1,10 +1,10 @@
 # Create target group for blue/green deployment
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//target-group"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//target-group"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "vpc" {
   config_path = "../vpc"
