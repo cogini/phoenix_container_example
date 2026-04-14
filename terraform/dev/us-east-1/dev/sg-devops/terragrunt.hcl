@@ -1,7 +1,10 @@
 # Security group for devops running in private subnet
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//sg"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//sg"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "vpc" {
   config_path = "../vpc"
@@ -11,9 +14,6 @@ dependency "vpc" {
 #     "../sg-bastion",
 #   ]
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 inputs = {
   comp = "devops"
