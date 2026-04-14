@@ -12,21 +12,25 @@ dependency "vpc" {
 dependencies {
   paths = [
     "../sg-lb-public",
+    # "../sg-bastion",
+    # "../sg-devops",
   ]
 }
 
 inputs = {
-  comp      = "app"
+  comp = "app"
+  # name = "foo-app-private" # Default app-comp
   app_ports = [80, 443, 4000, 4001, 4443]
   # app_sources = ["sg-lb-public", "sg-bastion", "sg-devops", "sg-prometheus"]
   app_sources = ["sg-lb-public"]
 
-  # prometheus_ports = [9100, 9111]
+  # prometheus_ports = [9100, 9111, 9568]
   # prometheus_sources = ["sg-prometheus"]
+  prometheus_sources = ["sg-devops"]
 
-  # ssh_sources = ["sg-bastion", "sg-devops"]
-  # icmp_sources = ["sg-bastion", "sg-devops"]
-  extra_tags = { location = "internal" }
+  # ssh_sources   = ["sg-bastion", "sg-devops"]
+  # icmp_sources  = ["sg-bastion", "sg-devops"]
+  extra_tags     = { location = "internal" }
 
   allow_self = true
 
