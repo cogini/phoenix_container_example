@@ -17,14 +17,14 @@ dependency "vpc" {
 
 inputs = {
   # name = "main" # default is app_name
+  # enabled = false
 
-  vpc_id                      = dependency.vpc.outputs.vpc_id
   public_subnet               = dependency.vpc.outputs.public_subnets[0]
   private_subnets_cidr_blocks = dependency.vpc.outputs.private_subnets_cidr_blocks
   private_route_table_ids     = dependency.vpc.outputs.private_route_table_ids
 
-  # image_id = "ami-0f57d652281755ea1"
-
+  image_id = "ami-0bdee4ce8b0dab1d0"
   # key_name = "my-key"
-  # enabled = false
+
+  vpc_id                      = dependency.vpc.outputs.vpc_id
 }
