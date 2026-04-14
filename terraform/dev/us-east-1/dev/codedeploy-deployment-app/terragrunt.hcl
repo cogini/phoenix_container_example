@@ -44,7 +44,9 @@ inputs = {
     dependency.tg-2.outputs.name
   ]
 
-  listener_arns = [dependency.lb.outputs.listener_arn]
+  listener_arns = [
+    dependency.lb.outputs.listener_arn
+  ]
 
   ecs_cluster_name = dependency.cluster.outputs.name
   ecs_service_name = dependency.service.outputs.name
