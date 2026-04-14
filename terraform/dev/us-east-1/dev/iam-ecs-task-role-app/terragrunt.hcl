@@ -23,25 +23,27 @@ inputs = {
 
   # Give access to S3 buckets
   s3_buckets = {
-    # s3-app = {
-    #   # assets = {}
-    #   # Allow read only access to config bucket
-    #   config = {
-    #     actions = ["s3:ListBucket", "s3:List*", "s3:Get*"]
-    #   }
-    #   data = {
-    #     actions = ["s3:ListBucket", "s3:List*", "s3:Get*", "s3:PutObject*", "s3:DeleteObject"]
-    #   }
-    #   logs = {}
-    #   # protected_web = {}
-    #   # public_web = {}
-    # }
+    s3-app = {
+      # assets = {}
+      # Allow read only access to config bucket
+      # config = {
+      #   actions = ["s3:ListBucket", "s3:List*", "s3:Get*"]
+      # }
+      # Allow write access to config bucket
+      # data = {
+      #   actions = ["s3:ListBucket", "s3:List*", "s3:Get*", "s3:PutObject*", "s3:DeleteObject"]
+      # }
+      # logs = {}
+      # protected_web = {}
+      # public_web = {}
+    }
   }
 
   # Allow writing to any log group and stream
   cloudwatch_logs = ["*"]
   # cloudwatch_logs = ["log-group:*"]
   # cloudwatch_logs = ["log-group:*:log-stream:*"]
+  # cloudwatch_logs_prefix = "arn:${var.aws_partition}:logs:*:*"
 
   # Enable writing metrics to any namespace
   cloudwatch_metrics_namespace = "*"
