@@ -2,19 +2,34 @@
 # terraform {
 #   source = "${get_terragrunt_dir()}/../../../modules//ecr-build"
 # }
-# dependencies {
-#   paths = []
-# }
-# include {
+# include "root" {
 #   path = find_in_parent_folders()
 # }
 #
 # inputs = {
 #   comp = "app"
 #   cross_accounts = [
+#     # prod
 #     "arn:aws:iam::111111111111:root",
+#     # qa
 #     "arn:aws:iam::222222222222:root"
 #   ]
+#
+#  cross_accounts_rw = [
+#    # qa
+#    "arn:aws:iam::2222222222:root",
+#  ]
+#
+#  # Replicate ECR repository to prod account DR region for high availability
+#  create_replication = true
+#  # dr
+#  registry_replication_rules = [
+#    {
+#      destinations = [{
+#        region      = "us-east-1"
+#        registry_id = "3333333333"
+#      }]
+#  }]
 # }
 
 locals {
@@ -79,7 +94,7 @@ data "aws_iam_policy_document" "this" {
     for_each = var.cross_accounts
 
     content {
-      sid = "CrossAccountReadOnly"
+      # sid = "CrossAccountReadOnly"
 
       principals {
         type        = "AWS"
@@ -121,6 +136,7 @@ resource "aws_ecr_pull_through_cache_rule" "this" {
 }
 
 # Replication
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_replication_configuration
 resource "aws_ecr_replication_configuration" "this" {
   count = var.create_replication ? 1 : 0
 
