@@ -1,14 +1,14 @@
 # Create IAM instance profile for devops
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//iam-instance-profile-app"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-instance-profile-app"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 # dependency "kms" {
 #   config_path = "../kms"
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 inputs = {
   comp = "devops"
