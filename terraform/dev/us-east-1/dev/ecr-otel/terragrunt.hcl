@@ -16,5 +16,8 @@ locals {
 }
 
 inputs = {
+  comp = "otel"
   name = "${local.org}/aws-otel-collector"
+
+  # allow_codebuild = true
 }
