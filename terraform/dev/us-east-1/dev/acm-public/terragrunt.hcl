@@ -31,4 +31,7 @@ inputs = {
   # Default is true, for primary load balancer cert.
   # False when there is a cert already in another region, e.g. for CloudFront.
   # create_route53_records = false
+
+  # Override region, certs for CloudFront must be created in us-east-1.
+  aws_region = "us-east-1"
 }
