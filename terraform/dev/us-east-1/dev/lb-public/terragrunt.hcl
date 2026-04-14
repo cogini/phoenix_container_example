@@ -1,10 +1,10 @@
 # Create Load Balancer in public subnet
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//lb"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//lb"
 }
-dependency "route53" {
-  config_path = "../route53-public"
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "s3" {
   config_path = "../s3-request-logs"
@@ -22,9 +22,6 @@ dependencies {
   paths = [
     "../acm-public",
   ]
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {
