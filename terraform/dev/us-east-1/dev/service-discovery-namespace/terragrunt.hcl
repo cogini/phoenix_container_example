@@ -11,6 +11,6 @@ dependency "vpc" {
 }
 
 inputs = {
-  # name = "app.internal"
+  # name defaults to "${var.app_name}.internal"
   vpc_id = dependency.vpc.outputs.vpc_id
 }
