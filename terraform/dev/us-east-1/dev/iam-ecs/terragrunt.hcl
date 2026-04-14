@@ -2,7 +2,7 @@
 
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using-service-linked-roles.html
 #
-# Equivalent to
+# Equivalent to running
 # aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 #
 # This role is normally created by e.g. the AWS console, so you may not need to
