@@ -13,6 +13,9 @@ include "root" {
 #   config_path = "../route53-public"
 #   # config_path = "../route53-cdn" # separate CDN domain
 # }
+# dependency "s3-access-logs" {
+#   config_path = "../s3-access-logs"
+# }
 
 inputs = {
   comp = "app"
@@ -31,6 +34,9 @@ inputs = {
     # Config files
     # config = {
     #   encrypt = true
+    #   logging = {
+    #     target_bucket = dependency.s3-access-logs.outputs.buckets["access_logs"].id
+    #   }
     # }
     # Data files
     # data = {
