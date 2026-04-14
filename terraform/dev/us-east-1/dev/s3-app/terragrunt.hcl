@@ -28,8 +28,19 @@ inputs = {
   buckets = {
     # App assets such as CSS and JS published via CDN
     assets = {
+      website = true
+      cors = {
+        allowed_headers = ["*"]
+        allowed_methods = ["GET", "HEAD"]
+        allowed_origins = ["*"]
+        # allowed_origins = [
+        #   "https://*.tezrac.com",
+        #   "http://localhost:4000"
+        # ]
+        expose_headers  = ["ETag"]
+        max_age_seconds = 3600
+      }
       encrypt = false
-      cors    = true
     }
     # Config files
     # config = {
