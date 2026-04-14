@@ -42,6 +42,7 @@ EOF
 
 # Configure Terragrunt to store state in S3 bucket
 remote_state {
+  # disable_init = true
   backend = "s3"
   config = {
     encrypt        = true
