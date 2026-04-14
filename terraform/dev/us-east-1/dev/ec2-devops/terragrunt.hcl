@@ -17,11 +17,14 @@ dependency "vpc" {
 }
 
 locals {
+  account_vars     = read_terragrunt_config(find_in_parent_folders("account.hcl"))
+  region_vars      = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars         = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   common_vars      = read_terragrunt_config(find_in_parent_folders("common.hcl"))
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-  org              = local.common_vars.locals.org
-  app_name         = local.common_vars.locals.app_name
-  env              = local.environment_vars.locals.env
+
+  org      = local.common_vars.locals.org
+  app_name = local.common_vars.locals.app_name
+  env      = local.env_vars.locals.env
 }
 
 inputs = {
@@ -39,7 +42,7 @@ inputs = {
   # Ubuntu 22.04
   # ami = "ami-0c7217cdde317cfec"
 
-  keypair_name = "${local.app_name}-dev"
+  keypair_name = "${local.app_name}-${local.env}"
 
   # Increase root volume size, necessary when building large apps
   # root_volume_size = 400
