@@ -71,7 +71,7 @@ inputs = {
   # sqs_queues = ["*"]
 
   # Enable ECS service discovery to build Erlang cluster
-  enable_ecs_discovery = true
+  # enable_ecs_discovery = true
 
   # Give access to KMS CMK
   # kms_key_arn = dependency.kms.outputs.key_arn
