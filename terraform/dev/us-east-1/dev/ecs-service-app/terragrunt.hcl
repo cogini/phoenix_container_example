@@ -86,6 +86,22 @@ inputs = {
     # port = 4000
   }
 
+  # service_connect_configuration = {
+  #   # enabled = true # default true
+  #   # log_configuration = {
+  #   #   log_driver = "awslogs"
+  #   # }
+  #   # namespace name or ARN of aws_service_discovery_http_namespace
+  #   namespace = dependency.sd-service.outputs.arn
+  #   service = [
+  #     {
+  #       port_name =  "web"
+  #       # discovery_name = "ai-app"
+  #       # client_alias = ["ai-app.ai.internal"]
+  #     }
+  #   ]
+  # }
+
   enable_ecs_managed_tags = true
 
   # propagate_tags = "SERVICE" | "TASK_DEFINITION"
