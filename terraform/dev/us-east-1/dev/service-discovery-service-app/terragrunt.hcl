@@ -11,7 +11,7 @@ dependency "namespace" {
 }
 
 inputs = {
-  comp    = "app"
-  namespace_id = dependency.namespace.outputs.id
+  comp           = "app"
+  namespace_id   = dependency.namespace.outputs.id
   routing_policy = "MULTIVALUE"
 }
