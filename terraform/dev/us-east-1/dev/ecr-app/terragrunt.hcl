@@ -10,10 +10,18 @@ include "root" {
 inputs = {
   comp = "app"
 
-  pull_through_cache_rules = [
-    {
-      ecr_repository_prefix = "ecr-public"
-      upstream_registry_url = "public.ecr.aws"
-    }
-  ]
+  # allow_codebuild = true
+
+  # cross_accounts = [
+  #  "arn:aws:iam::737720086707:root",
+  #  "arn:aws:iam::318109559665:root"
+  # ]
+  # create_replication = true
+  # registry_replication_rules = [
+  #   {
+  #     destinations = [{
+  #       region      = "us-east-1"
+  #       registry_id = "318109559665"
+  #     }]
+  # }]
 }
