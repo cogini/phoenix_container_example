@@ -1,10 +1,10 @@
 # Create VPC
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//vpc"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//vpc"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {
