@@ -50,6 +50,9 @@ inputs = {
   # Allow writing to specific namespace
   # cloudwatch_metrics_namespace = "Foo"
 
+  # Enable writing AWS hosted Prometheus
+  prometheus = true
+
   # Enable writing to AWS X-Ray
   xray = true
 
