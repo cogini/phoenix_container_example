@@ -90,9 +90,6 @@ inputs = {
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
 
-  task_role_arn      = dependency.iam-task.outputs.arn
-  execution_role_arn = dependency.iam-execution.outputs.arn
-
   # log_configuration = {
   #   logDriver = "awslogs"
   #   options = {
@@ -103,6 +100,9 @@ inputs = {
   #   }
   #   secretOptions = []
   # }
+
+  task_role_arn      = dependency.iam-task.outputs.arn
+  execution_role_arn = dependency.iam-execution.outputs.arn
 
   # FARGATE supported values
   # CPU value       Memory value (MiB)
