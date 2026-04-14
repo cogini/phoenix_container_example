@@ -36,11 +36,10 @@ inputs = {
   instance_type = "t4g.nano"
 
   ami_filter_architecture = ["arm64"]
-  ami_filter_name = ["ubuntu/images/hvm-ssd/ubuntu-jammy*"]
+  ami_filter_name   = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble*"]
   ami_filter_owners = ["amazon"]
 
-  # Ubuntu 22.04
-  # ami = "ami-0c7217cdde317cfec"
+  ami = "ami-02c57ce16e9a8e906"
 
   keypair_name = "${local.app_name}-${local.env}"
 
