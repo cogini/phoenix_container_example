@@ -9,5 +9,6 @@ include "root" {
 
 inputs = {
   comp             = "app"
+  # name             = "foo-app"
   compute_platform = "ECS"
 }
