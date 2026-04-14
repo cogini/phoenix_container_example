@@ -9,20 +9,30 @@ include "root" {
 dependency "lb" {
   config_path = "../lb-public"
 }
-dependency "zone" {
-  config_path = "../route53-public"
-  # config_path = "../route53-cdn" # separate CDN domain
+dependency "vpc" {
+  config_path = "../vpc"
 }
-include "root" {
-  path = find_in_parent_folders()
+
+locals {
+  account_vars = read_terragrunt_config(find_in_parent_folders("account.hcl"))
+  region_vars  = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  dns_vars     = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
+
+  account_id = local.account_vars.locals.aws_account_id
+  region     = local.region_vars.locals.aws_region
+  env        = local.env_vars.locals.env
+  dns_domain = local.dns_vars.locals.domain
+  dns_subdomain = local.dns_vars.locals.subdomain
 }
 
 inputs = {
   comp = "api"
   name = "api-ecs-1"
 
-  hosts = ["api.${dependency.zone.outputs.name_nodot}"]
-  # hosts = ["${local.environment_vars.locals.dns_domain}"]
+  hosts = [
+    join(".", compact(["api", local.dns_subdomain, local.dns_domain]))
+  ]
 
   port     = 4001
   protocol = "HTTP"
