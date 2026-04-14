@@ -1,7 +1,10 @@
 # Create alias for *.example.com
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//route53-alias"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//route53-alias"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 # dependency "cloudfront" {
 #   config_path = "../cloudfront-public-web"
@@ -15,9 +18,6 @@ dependency "lb" {
 # dependency "s3" {
 #   config_path = "../s3-app"
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 inputs = {
   # Name of host part, e.g. www for www.example.com
