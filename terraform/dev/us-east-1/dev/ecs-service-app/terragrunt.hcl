@@ -9,9 +9,6 @@ include "root" {
 dependency "cluster" {
   config_path = "../ecs-cluster"
 }
-# dependency "iam" {
-#   config_path = "../iam-instance-profile-app"
-# }
 dependency "sd-service" {
   config_path = "../service-discovery-service-app"
 }
