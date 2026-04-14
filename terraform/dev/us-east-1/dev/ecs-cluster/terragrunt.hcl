@@ -28,6 +28,9 @@ inputs = {
 
   container_insights = "enabled"
 
+  # Preserve desired count when updating an autoscaled ECS Service
+  autoscaling_enabled = true
+
   service_discovery_namespace = dependency.sd-namespace.outputs.arn
 
   # force_delete = true
