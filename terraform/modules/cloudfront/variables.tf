@@ -1,5 +1,5 @@
 variable "comp" {
-  description = "Name of the app component, e.g. app, worker."
+  description = "Name of the app component, e.g., app, worker."
 }
 
 variable "origin_bucket_arn" {
@@ -29,11 +29,11 @@ variable "logs_bucket_path_prefix" {
 }
 
 variable "host_name" {
-  description = "Subdomain, e.g. assets for assets.example.com, www for www.example.com"
+  description = "Subdomain, e.g., assets for assets.example.com, www for www.example.com"
 }
 
 variable "alias_domain" {
-  description = "Whether this distribution should handle the bare domain, e.g. example.com"
+  description = "Whether this distribution should handle the bare domain, e.g., example.com"
   default     = false
 }
 
