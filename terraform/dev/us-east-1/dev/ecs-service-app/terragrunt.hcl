@@ -36,9 +36,10 @@ inputs = {
   load_balancer = [
     {
       target_group_arn = dependency.tg.outputs.arn
-      container_name   = dependency.task.outputs.container_name
+      # container_name   = dependency.task.outputs.container_name
+      container_name   = "foo-app"
+      container_port   = 4000
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
-      container_port = 4000
     }
   ]
 
@@ -74,11 +75,15 @@ inputs = {
   }
 
   service_registries = {
-    registry_arn   = dependency.sd-service.outputs.arn
+    registry_arn = dependency.sd-service.outputs.arn
     # port = 4000
-    container_name   = dependency.task.outputs.container_name
+    # container_name = dependency.task.outputs.container_name
+    container_name = "foo-app"
+    # Port value from task definition
     # container_port = dependency.task.outputs.port_mappings[0].hostPort
     # container_port = 4000
+    # Port value if Service Discovery service specified an SRV record
+    # port = 4000
   }
 
   enable_ecs_managed_tags = true
