@@ -8,11 +8,10 @@
 # terragrunt import aws_route53_delegation_set.main N00459021OGOQ0Z7P9GHG
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//route53-delegation-set"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//route53-delegation-set"
 }
-
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {

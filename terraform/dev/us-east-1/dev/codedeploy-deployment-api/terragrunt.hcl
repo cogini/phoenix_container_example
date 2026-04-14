@@ -1,7 +1,7 @@
 # Create CodeDeploy deployment group for app
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//codedeploy-deployment-ecs"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//codedeploy-deployment-ecs"
 }
 dependency "cluster" {
   config_path = "../ecs-cluster"
@@ -33,7 +33,7 @@ dependency "tg-2" {
 #   ]
 # }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {

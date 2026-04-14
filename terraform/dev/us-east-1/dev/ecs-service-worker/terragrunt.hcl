@@ -1,7 +1,10 @@
 # Create ECS service
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//ecs-service"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//ecs-service"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "cluster" {
   config_path = "../ecs-cluster"
@@ -23,9 +26,6 @@ dependency "task" {
 # }
 dependency "vpc" {
   config_path = "../vpc"
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

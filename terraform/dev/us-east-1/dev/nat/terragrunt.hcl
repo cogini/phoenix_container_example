@@ -6,15 +6,13 @@
 # generally is more trouble to run, but is useful for dev or smaller apps.
 
 terraform {
-  # source = "${dirname(find_in_parent_folders())}/modules//fck-nat"
-  source = "${dirname(find_in_parent_folders())}/modules//nat"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//nat"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "vpc" {
   config_path = "../vpc"
-}
-
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

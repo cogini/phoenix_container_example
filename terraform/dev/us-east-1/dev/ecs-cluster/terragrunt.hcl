@@ -1,13 +1,13 @@
 # Create ECS cluster
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//ecs-cluster"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//ecs-cluster"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "sd-namespace" {
   config_path = "../service-discovery-namespace"
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

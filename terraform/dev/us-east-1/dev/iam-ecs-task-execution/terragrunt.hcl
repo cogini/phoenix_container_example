@@ -3,15 +3,14 @@
 # images from ECR, access Parameter Store, set up CloudWatch logs, etc.
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-execution"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-ecs-task-execution"
 }
-
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
 # dependency "kms" {
 #   config_path = "../kms"
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 locals {
   common_vars      = read_terragrunt_config(find_in_parent_folders("common.hcl"))

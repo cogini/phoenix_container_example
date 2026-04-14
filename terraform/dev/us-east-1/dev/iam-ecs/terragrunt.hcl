@@ -14,11 +14,10 @@
 # terragrunt import aws_iam_service_linked_role.this arn:aws:iam::12345678:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//iam-ecs"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-ecs"
 }
-
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {

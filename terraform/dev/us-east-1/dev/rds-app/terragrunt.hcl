@@ -1,17 +1,17 @@
 # Create RDS database for app
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//rds"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//rds"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 # dependency "kms" {
 #   config_path = "../kms"
 # }
-dependency "sd" {
-  config_path = "../service-discovery-namespace"
-}
+# dependency "sd" {
+#   config_path = "../service-discovery-namespace"
+# }
 dependency "sg" {
   config_path = "../sg-db"
 }

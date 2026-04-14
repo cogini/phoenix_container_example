@@ -1,7 +1,10 @@
 # Create CloudFront distribution for app assets, e.g. CSS
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//cloudfront"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//cloudfront"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "acm" {
   config_path = "../acm-public"
@@ -21,9 +24,6 @@ dependency "s3-logs" {
 # dependency "lambda" {
 #   config_path = "../lambda-edge"
 # }
-include "root" {
-  path = find_in_parent_folders()
-}
 
 inputs = {
   # App name for S3 bucket

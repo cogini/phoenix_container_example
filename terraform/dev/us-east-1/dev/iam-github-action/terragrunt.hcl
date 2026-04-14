@@ -1,10 +1,10 @@
 # Create IAM role that allows a GitHub Action to call AWS
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//iam-github-action"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-github-action"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "cloudfront" {
   config_path = "../cloudfront-app-assets"

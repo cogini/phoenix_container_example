@@ -1,10 +1,10 @@
 # Create IAM ECS task role for app, equivalent to EC2 instance profile
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-role-app"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-ecs-task-role-app"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 # dependency "kms" {
 #   config_path = "../kms"

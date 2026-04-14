@@ -1,13 +1,13 @@
 # Create Service Discovery Service
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//service-discovery-service"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//service-discovery-service"
 }
 dependency "namespace" {
   config_path = "../service-discovery-namespace"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {

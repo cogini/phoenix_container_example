@@ -1,7 +1,10 @@
 # Create ECS task
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//ecs-task"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//ecs-task"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "iam-task" {
   config_path = "../iam-ecs-task-role-app"
@@ -14,9 +17,6 @@ dependency "ecr" {
 }
 dependency "s3" {
   config_path = "../s3-app"
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 inputs = {

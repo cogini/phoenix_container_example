@@ -1,7 +1,10 @@
 # Security group for RDS db
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//sg"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//sg"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "vpc" {
   config_path = "../vpc"
@@ -15,9 +18,6 @@ dependencies {
     # "../sg-build-app",
     # "../sg-worker",
   ]
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 locals {

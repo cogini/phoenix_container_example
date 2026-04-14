@@ -1,13 +1,13 @@
 # Create Route53 records to validate email sending via SES
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//route53-ses"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//route53-ses"
 }
 dependency "route53" {
   config_path = "../route53-public"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 
 inputs = {

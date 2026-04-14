@@ -1,7 +1,10 @@
 # Create DevOps EC2 instance
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//ec2-private"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//ec2-private"
+}
+include "root" {
+  path = find_in_parent_folders("root.hcl")
 }
 dependency "iam" {
   config_path = "../iam-instance-profile-devops"
@@ -11,9 +14,6 @@ dependency "sg" {
 }
 dependency "vpc" {
   config_path = "../vpc"
-}
-include "root" {
-  path = find_in_parent_folders()
 }
 
 locals {

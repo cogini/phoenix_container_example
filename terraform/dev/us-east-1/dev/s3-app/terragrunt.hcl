@@ -1,10 +1,10 @@
 # Create S3 buckets for app
 
 terraform {
-  source = "${dirname(find_in_parent_folders())}/modules//s3-app"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//s3-app"
 }
 include "root" {
-  path = find_in_parent_folders()
+  path = find_in_parent_folders("root.hcl")
 }
 # dependency "kms" {
 #   config_path = "../kms"
