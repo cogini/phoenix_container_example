@@ -48,6 +48,10 @@ module "vpc" {
   one_nat_gateway_per_az = var.one_nat_gateway_per_az
 
   customer_gateways  = var.customer_gateways
+
+  # enable_s3_endpoint       = true
+  # enable_dynamodb_endpoint = false
+
   enable_vpn_gateway = var.enable_vpn_gateway
   amazon_side_asn    = var.amazon_side_asn
 
@@ -82,3 +86,13 @@ resource "aws_security_group" "rds" {
 
   tags = local.tags
 }
+
+# # Private DNS zone for app in VPC
+# resource "aws_route53_zone" "this" {
+#   count = var.enable_route53 ? 1 : 0
+#   name  = var.private_dns_domain == "" ? "${var.app_name}.internal" : var.private_dns_domain
+
+#   vpc {
+#     vpc_id = module.vpc.vpc_id
+#   }
+# }
