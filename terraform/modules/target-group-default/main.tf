@@ -67,6 +67,7 @@ resource "aws_lb_target_group" "this" {
     for_each = var.stickiness == null ? [] : [var.stickiness]
     content {
       cookie_duration = lookup(stickiness.value, "cookie_duration", null)
+      cookie_name     = lookup(stickiness.value, "cookie_name", null)
       enabled         = lookup(stickiness.value, "enabled", null)
       type            = stickiness.value.type
     }
