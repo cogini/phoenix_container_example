@@ -2,30 +2,30 @@
 
 # Example config:
 # terraform {
-#   source = "${get_terragrunt_dir()}/../../../modules//target-group-default"
+#   source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//target-group-default"
+# }
+# include "root" {
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "vpc" {
 #   config_path = "../vpc"
 # }
-# include {
-#   path = find_in_parent_folders()
-# }
 #
 # inputs = {
-#   port = 4001
+#   port     = 4001
 #   protocol = "HTTPS"
 #
 #   health_check = {
-#     # If you don't specify the port, it uses the same as the traffic port
-#     # You still need to specify HTTPS, though
+#     # If you don't specify the port, it uses the same as the traffic port.
+#     # You still need to specify HTTPS, though.
+#     protocol = "HTTPS" # default HTTP
 #     port = 4001
-#     protocol = "HTTPS"
 #     path = "/"
-#     interval = 30
-#     timeout = 10
-#     healthy_threshold = 2
-#     unhealthy_threshold = 2
-#     matcher = "200"
+#     # interval = 10 # default 30
+#     # timeout = 10 # default 5
+#     healthy_threshold = 2 # default 3
+#     unhealthy_threshold = 2 # default 3
+#     matcher = "200,302" # default 200
 #   }
 #
 #   # stickiness = {
