@@ -6,18 +6,18 @@ locals {
   enable_sd = var.service_discovery_namespace_id == null ? false : true
 }
 
-# https://www.terraform.io/docs/providers/aws/d/db_instance.html
-
+# Read database master password from AWS SSM Parameter Store
+# manage_master_user_password must be set to false, as it takes priority
 # https://www.terraform.io/docs/providers/aws/d/ssm_parameter.html
 # data "aws_ssm_parameter" "db_master_password" {
 #   name = "/${var.app_name}/${var.env}/${var.comp}/database/password/master"
 # }
 
+# Read database master password from AWS Secrets Manager
+# https://www.terraform.io/docs/providers/aws/d/secretsmanager_secret.html
 # data "aws_secretsmanager_secret" "db_master_password" {
 #   name = "${var.app_name}-${var.env}-${var.comp}-database-master-password"
 # }
-
-# https://www.terraform.io/docs/providers/aws/d/secretsmanager_secret.html
 
 # https://www.terraform.io/docs/providers/aws/r/db_instance.html
 # https://github.com/terraform-aws-modules/terraform-aws-rds
