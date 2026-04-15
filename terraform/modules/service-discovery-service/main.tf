@@ -1,20 +1,21 @@
 # Create Service Discovery service
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/service_discovery_service
 #
-# Example:
+# Example config:
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//service-discovery-service"
-# }
-# dependency "namespace" {
-#   config_path = "../service-discovery-namespace"
 # }
 # include "root" {
 #   path = find_in_parent_folders()
 # }
-# 
+# dependency "namespace" {
+#   config_path = "../service-discovery-namespace"
+# }
+#
 # inputs = {
-#   comp    = "app"
+#   comp = "app"
 #   namespace_id = dependency.namespace.outputs.id
+#   routing_policy = "MULTIVALUE"
 # }
 
 locals {
