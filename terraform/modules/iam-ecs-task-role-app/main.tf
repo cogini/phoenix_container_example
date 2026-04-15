@@ -73,6 +73,8 @@
 #   kms_key_arn = dependency.kms.outputs.key_arn
 # }
 
+data "aws_caller_identity" "current" {}
+
 data "terraform_remote_state" "s3" {
   for_each = toset(keys(var.s3_buckets))
   backend  = "s3"
@@ -123,13 +125,12 @@ locals {
     ]
   ])
   configure_s3 = length(local.bucket_names) > 0
+  configure_efs = length(var.efs) > 0
 }
 
-data "aws_caller_identity" "current" {}
-
-# Configure access to SSM Parameter Store parameters
 locals {
   # https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-access.html
+  # Configure access to SSM Parameter Store parameters
   ssm_ps_arn          = "arn:${var.aws_partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter"
   ssm_ps_param_prefix = var.ssm_ps_param_prefix == "" ? "${var.org}/${var.app_name}/${var.env}/${var.comp}" : var.ssm_ps_param_prefix
   ssm_ps_resources    = [for name in var.ssm_ps_params : "${local.ssm_ps_arn}/${local.ssm_ps_param_prefix}/${name}"]
@@ -137,19 +138,16 @@ locals {
   configure_sqs       = length(var.sqs_queues) > 0
 }
 
-# Override var.app_name
 locals {
   name = var.name == "" ? "${var.app_name}" : var.name
 }
 
-# Configure access to CloudWatch metrics
 locals {
+  # Configure access to CloudWatch metrics
   configure_cloudwatch_metrics  = var.cloudwatch_metrics_namespace != ""
   cloudwatch_metrics_namespaces = var.cloudwatch_metrics_namespace == "*" ? [] : [var.cloudwatch_metrics_namespace]
-}
 
-# Configure access to CloudWatch Logs
-locals {
+  # Configure access to CloudWatch Logs
   cloudwatch_logs_prefix = var.cloudwatch_logs_prefix == "" ? "arn:${var.aws_partition}:logs:*:*" : var.cloudwatch_logs_prefix
   cloudwatch_logs        = [for name in var.cloudwatch_logs : "${local.cloudwatch_logs_prefix}:${name}"]
   # arn:${var.aws_partition}:logs:*:*:*
@@ -173,144 +171,91 @@ locals {
   write_prometheus = var.prometheus
 }
 
-# Allow writing to CloudWatch metrics
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
-# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
-data "aws_iam_policy_document" "cloudwatch-metrics" {
-  count = local.configure_cloudwatch_metrics ? 1 : 0
-
-  statement {
-    actions = [
-      "cloudwatch:PutMetricData",
-    ]
-    resources = ["*"]
-    dynamic "condition" {
-      for_each = local.cloudwatch_metrics_namespaces
-      content {
-        test     = "StringEquals"
-        variable = "cloudwatch:namespace"
-        values   = [condition.value]
-      }
-    }
-  }
-}
-
-resource "aws_iam_policy" "cloudwatch-metrics" {
-  count = local.configure_cloudwatch_metrics ? 1 : 0
-
-  name_prefix = "${local.name}-${var.comp}-cloudwatch-metrics-"
-  description = "Enable logging to CloudWatch metrics"
-  policy      = data.aws_iam_policy_document.cloudwatch-metrics[0].json
-}
-
-# Allow writing to CloudWatch Logs
-# https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
-data "aws_iam_policy_document" "cloudwatch-logs" {
-  count = local.configure_cloudwatch_logs ? 1 : 0
-
-  statement {
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:PutRetentionPolicy",
-    ]
-    resources = local.cloudwatch_logs
-  }
-
+data "aws_iam_policy_document" "this" {
+  # Allow writing to CloudWatch Logs
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
+  #
   # In addition, you may want to allow writing directly to a S3 bucket for logs
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Sending-Logs-Directly-To-S3.html
   # Configure that with "buckets", above
-}
-
-resource "aws_iam_policy" "cloudwatch-logs" {
-  count       = local.configure_cloudwatch_logs ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-cloudwatch-logs-"
-  description = "Enable logging to CloudWatch Logs"
-  policy      = data.aws_iam_policy_document.cloudwatch-logs[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "cloudwatch-logs" {
-  count      = local.configure_cloudwatch_logs ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudwatch-logs[0].arn
-}
-
-data "aws_iam_policy_document" "ecs-discovery" {
-  count = var.enable_ecs_discovery ? 1 : 0
-
-  statement {
-    actions = [
-      "ec2:DescribeInstances",
-      "ecs:DescribeContainerInstances",
-      "ecs:DescribeTasks",
-      "ecs:ListClusters",
-      "ecs:ListServices",
-      "ecs:ListTasks",
-    ]
-    resources = ["*"]
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_logs ? tolist([1]) : []
+    content {
+      actions = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutRetentionPolicy",
+      ]
+      resources = local.cloudwatch_logs
+    }
   }
-}
 
-resource "aws_iam_policy" "ecs-discovery" {
-  count       = var.enable_ecs_discovery ? 1 : 0
-  name        = "${local.name}-${var.comp}-ecs-discovery"
-  description = "Allow ECS service and task discovery"
-  policy      = data.aws_iam_policy_document.ecs-discovery[0].json
-}
-
-data "aws_iam_policy_document" "transcribe" {
-  count = var.enable_transcribe ? 1 : 0
-
-  statement {
-    actions = [
-      "transcribe:StartTranscriptionJob",
-      "transcribe:GetTranscriptionJob",
-      "transcribe:TagResource"
-    ]
-    resources = ["*"]
+  # Allow writing to CloudWatch metrics
+  # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_metrics ? tolist([1]) : []
+    content {
+      actions = [
+        "cloudwatch:PutMetricData",
+      ]
+      resources = ["*"]
+      dynamic "condition" {
+        for_each = local.cloudwatch_metrics_namespaces
+        content {
+          test     = "StringEquals"
+          variable = "cloudwatch:namespace"
+          values   = [condition.value]
+        }
+      }
+    }
   }
-}
 
-resource "aws_iam_policy" "transcribe" {
-  count = var.enable_transcribe ? 1 : 0
-
-  name_prefix = "${local.name}-${var.comp}-transcribe-"
-  description = "Allow performing Transcribe jobs"
-  policy      = data.aws_iam_policy_document.transcribe[0].json
-}
-
-data "aws_iam_policy_document" "sqs" {
-  count = local.configure_sqs ? 1 : 0
-
-  statement {
-    actions = [
-      "sqs:SendMessage",
-      "sqs:ReceiveMessage",
-      "sqs:DeleteMessage",
-      "sqs:ChangeMessageVisibility",
-      "sqs:ListQueues"
-    ]
-    resources = var.sqs_queues
+  dynamic "statement" {
+    for_each = var.enable_ecs_discovery ? tolist([1]) : []
+    content {
+      actions = [
+        "ec2:DescribeInstances",
+        "ecs:DescribeContainerInstances",
+        "ecs:DescribeTasks",
+        "ecs:ListClusters",
+        "ecs:ListServices",
+        "ecs:ListTasks",
+      ]
+      resources = ["*"]
+    }
   }
-}
 
-resource "aws_iam_policy" "sqs" {
-  count       = local.configure_sqs ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-sqs-"
-  description = "allow sqs actions"
-  policy      = data.aws_iam_policy_document.sqs[0].json
-}
+  dynamic "statement" {
+    for_each = var.enable_transcribe ? tolist([1]) : []
+    content {
+      actions = [
+        "transcribe:StartTranscriptionJob",
+        "transcribe:GetTranscriptionJob",
+        "transcribe:TagResource"
+      ]
+      resources = ["*"]
+    }
+  }
 
-# Give access to S3 buckets
-data "aws_iam_policy_document" "s3" {
-  count = local.configure_s3 ? 1 : 0
+  dynamic "statement" {
+    for_each = local.configure_sqs ? tolist([1]) : []
+    content {
+      actions = [
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:ListQueues"
+      ]
+      resources = var.sqs_queues
+    }
+  }
 
-  # General S3 access configuration
-
-  # Allow ListBucket actions on buckets
+  # Allow S3 ListBucket actions on buckets
   dynamic "statement" {
     for_each = local.bucket_actions
     content {
@@ -319,7 +264,7 @@ data "aws_iam_policy_document" "s3" {
     }
   }
 
-  # Allow other actions on buckets
+  # Allow S3 other actions on buckets
   dynamic "statement" {
     for_each = local.bucket_actions_content
     content {
@@ -327,24 +272,10 @@ data "aws_iam_policy_document" "s3" {
       resources = ["${statement.value["bucket"].arn}/*"]
     }
   }
-}
-
-resource "aws_iam_policy" "s3" {
-  count       = local.configure_s3 ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-s3-"
-  description = "Allow access to S3 buckets"
-  policy      = data.aws_iam_policy_document.s3[0].json
-}
-
-# Allow access to SSM for management
-# https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
-# https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-instance-profile.html
-data "aws_iam_policy_document" "ssm" {
-  count = local.configure_ssm_ps ? 1 : 0
 
   # Allow read only access to SSM Parameter Store params
   dynamic "statement" {
-    for_each = local.ssm_ps_resources
+    for_each = local.configure_ssm_ps ? tolist([1]) : []
     content {
       actions = [
         "ssm:DescribeParameters",
@@ -354,84 +285,72 @@ data "aws_iam_policy_document" "ssm" {
       resources = local.ssm_ps_resources
     }
   }
-}
 
-resource "aws_iam_policy" "ssm" {
-  count       = local.configure_ssm_ps ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-ssm-"
-  description = "Enable instances to access SSM"
-  policy      = data.aws_iam_policy_document.ssm[0].json
-}
+  # Allow access to SSM for management
+  # https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+  # https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-instance-profile.html
 
-# allow access to ssmmessages for secure connection
-# https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
-data "aws_iam_policy_document" "ssmmessages" {
-  count = var.enable_ssmmessages ? 1 : 0
-
-  # allow read only access to ssm parameter store params
+  # Allow access to ssmmessages for secure connection
+  # https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
   dynamic "statement" {
-    for_each = local.ssm_ps_resources
+    for_each = var.enable_ssmmessages ? tolist([1]) : []
     content {
       actions = [
         "ssmmessages:CreateControlChannel",
         "ssmmessages:CreateDataChannel",
         "ssmmessages:OpenControlChannel",
-        "ssmmessages:OpenDataChannel"
+        "ssmmessages:OpenDataChannel",
       ]
       resources = ["*"]
     }
   }
-}
 
-resource "aws_iam_policy" "ssmmessages" {
-  count       = var.enable_ssmmessages ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-ssmmessages-"
-  description = "Allow access to ssmmessages for secure connection"
-  policy      = data.aws_iam_policy_document.ssmmessages[0].json
-}
-
-data "aws_iam_policy_document" "ses" {
-  count = var.enable_ses ? 1 : 0
-
-  statement {
-    actions = [
-      "ses:SendRawEmail"
-    ]
-    resources = ["*"]
+  # Allow sending email via SES
+  dynamic "statement" {
+    for_each = var.enable_ses ? tolist([1]) : []
+    content {
+      actions = [
+        "ses:SendRawEmail"
+      ]
+      resources = ["*"]
+    }
   }
-}
 
-resource "aws_iam_policy" "ses" {
-  count       = var.enable_ses ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-ses-"
-  description = "Allow sending ses"
-  policy      = data.aws_iam_policy_document.ses[0].json
-}
-
-# KMS
-# https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
-# https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
-data "aws_iam_policy_document" "kms" {
-  count = var.kms_key_arn != null ? 1 : 0
-
-  statement {
-    sid = "AllowKeyUsage"
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey",
-    ]
-    resources = [var.kms_key_arn]
+  # Give access to EFS file systems
+  dynamic "statement" {
+    for_each = var.efs
+    content {
+      actions   = statement.value.actions
+      resources = [statement.value.file_system_arn]
+      dynamic "condition" {
+        for_each = statement.value.access_point_arn == null ? [] : [statement.value.access_point_arn]
+        content {
+          test     = "StringEquals"
+          variable = "elasticfilesystem:AccessPointArn"
+          values   = [condition.value]
+        }
+      }
+    }
   }
-}
 
-resource "aws_iam_policy" "kms" {
-  count       = var.kms_key_arn != null ? 1 : 0
-  name_prefix = "${local.name}-${var.comp}-kms-"
-  description = "Enable instances to access KMS CMK"
-  policy      = data.aws_iam_policy_document.kms[0].json
+  # KMS
+  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
+  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  # https://repost.aws/knowledge-center/s3-access-denied-error-kms
+  dynamic "statement" {
+    for_each = var.kms_key_arn == null ? [] : tolist([1])
+    content {
+      sid = "AllowKeyUsage"
+      actions = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
+      ]
+      resources = [var.kms_key_arn]
+    }
+  }
 }
 
 # KMS for SSM PS
@@ -457,7 +376,7 @@ resource "aws_iam_policy" "kms" {
 #   }
 # }
 
-# Base IAM role
+# Allow role to be assumed by AWS
 data "aws_iam_policy_document" "assume-role-policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -475,7 +394,6 @@ data "aws_iam_policy_document" "assume-role-policy" {
 resource "aws_iam_role" "this" {
   name_prefix = "${local.name}-${var.comp}-"
   description = "${local.name} ${var.comp} task role"
-  # path               = "/system/"
   assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
 
   # https://github.com/hashicorp/terraform/issues/2761
@@ -486,63 +404,15 @@ resource "aws_iam_role" "this" {
   }
 }
 
-# Allow access to secrets encrypted by the app custom KMS key,
-# needed to access encrypted S3 buckets
-# resource "aws_kms_grant" "this" {
-#   count             = var.kms_key_arn != null ? 1 : 0
-#   name              = "${local.name}-${var.comp}-kms"
-#   key_id            = var.kms_key_arn
-#   grantee_principal = aws_iam_role.this.arn
-#   operations        = ["Decrypt", "DescribeKey"]
-# }
-
-resource "aws_iam_role_policy_attachment" "cloudwatch-metrics" {
-  count      = local.configure_cloudwatch_metrics ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.cloudwatch-metrics[0].arn
+resource "aws_iam_policy" "this" {
+  name_prefix = "${local.name}-${var.comp}-ecs-task-"
+  description = "Access resources from ECS task"
+  policy      = data.aws_iam_policy_document.this.json
 }
 
-resource "aws_iam_role_policy_attachment" "ecs-discovery" {
-  count      = var.enable_ecs_discovery ? 1 : 0
+resource "aws_iam_role_policy_attachment" "this" {
   role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ecs-discovery[0].arn
-}
-
-# Allow access to S3 buckets
-resource "aws_iam_role_policy_attachment" "s3" {
-  count      = local.configure_s3 ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.s3[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "ssm" {
-  count      = local.configure_ssm_ps ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ssm[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "ssmmessages" {
-  count      = var.enable_ssmmessages ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ssmmessages[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "sqs" {
-  count      = local.configure_sqs ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.sqs[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "ses" {
-  count      = var.enable_ses ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.ses[0].arn
-}
-
-resource "aws_iam_role_policy_attachment" "transcribe" {
-  count      = var.enable_transcribe ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.transcribe[0].arn
+  policy_arn = aws_iam_policy.this.arn
 }
 
 # Allow uploading segment documents and telemetry to the X-Ray API
@@ -559,12 +429,6 @@ resource "aws_iam_role_policy_attachment" "prometheus" {
   count      = local.write_prometheus ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "kms" {
-  count      = var.kms_key_arn != null ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.kms[0].arn
 }
 
 # Allow component to read parameters from SSM
