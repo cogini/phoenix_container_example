@@ -19,20 +19,15 @@ locals {
 module "app_container" {
   source = "github.com/cloudposse/terraform-aws-ecs-container-definition?ref=0.60.0"
 
-  container_name               = local.container_name
+  command                      = var.command
+  container_cpu                = var.container_cpu
   container_image              = var.image
   container_memory             = var.container_memory
   container_memory_reservation = var.memory_reservation
-  container_cpu                = var.container_cpu
-
-  port_mappings = var.port_mappings
-
-  environment = var.environment
-  secrets     = local.secrets
-  essential   = true
-  command     = var.command
-  entrypoint  = var.entrypoint
-
+  container_name               = local.container_name
+  entrypoint                   = var.entrypoint
+  environment                  = var.environment
+  essential                    = true
   log_configuration = {
     logDriver = "awslogs"
     options = {
@@ -43,6 +38,11 @@ module "app_container" {
     }
     secretOptions = []
   }
+
+  port_mappings = var.port_mappings
+
+  secrets     = local.secrets
+
 }
 
 module "xray_container" {
