@@ -30,7 +30,8 @@
 data "aws_ami" "fck_nat" {
   filter {
     name   = "name"
-    values = ["fck-nat-amzn2-*"]
+    # values = ["fck-nat-amzn2-*"]
+    values = ["fck-nat-al2023-*"]
   }
 
   filter {
