@@ -33,13 +33,14 @@ module "db" {
   instance_class       = var.instance_class
   ca_cert_identifier   = var.ca_cert_identifier
 
-  replicate_source_db = var.replicate_source_db
+  replicate_source_db  = var.replicate_source_db
 
-  allocated_storage = var.allocated_storage
-  storage_type      = var.storage_type
-  storage_encrypted = var.storage_encrypted
-  iops              = var.iops
+  allocated_storage    = var.allocated_storage
+  storage_type         = var.storage_type
+  storage_encrypted    = var.storage_encrypted
+  iops                 = var.iops
 
+  availability_zone = var.availability_zone
   multi_az = var.multi_az
 
   # DB parameter group
