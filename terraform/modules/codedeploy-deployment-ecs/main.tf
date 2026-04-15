@@ -4,6 +4,9 @@
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//codedeploy-deployment-ecs"
 # }
+# include "root" {
+#   path = find_in_parent_folders()
+# }
 # dependency "cluster" {
 #   config_path = "../ecs-cluster"
 # }
@@ -28,48 +31,45 @@
 # dependency "target-group-2" {
 #   config_path = "../target-group-app-ecs-2"
 # }
-# include "root" {
-#   path = find_in_parent_folders()
-# }
-# 
+#
 # inputs = {
 #   # Name of component we are deploying
 #   comp = "app"
-# 
+#
 #   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-blue-green.html
 #   target_group_names = [
 #     dependency.target-group-1.outputs.name,
 #     dependency.target-group-2.outputs.name
 #   ]
-# 
+#
 #   listener_arns = [dependency.lb.outputs.listener_arn]
-# 
+#
 #   ecs_cluster_name = dependency.cluster.outputs.name
 #   ecs_service_name = dependency.service.outputs.name
-# 
+#
 #   # Blue/Green
 #   deployment_type   = "BLUE_GREEN"
 #   deployment_option = "WITH_TRAFFIC_CONTROL"
-# 
+#
 #   # On success, deploy immediately
 #   deployment_ready_option_action_on_timeout     = "CONTINUE_DEPLOYMENT"
 #   deployment_ready_option_wait_time_in_minutes  = 0
-# 
+#
 #   deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
-# 
+#
 #   # In place
 #   # deployment_type   = "IN_PLACE"
 #   # deployment_option = "WITHOUT_TRAFFIC_CONTROL"
 #   # deployment_config_name = "CodeDeployDefault.OneAtATime"
-# 
+#
 #   codedeploy_app_name = dependency.codedeploy-app.outputs.app_name
 #   codedeploy_service_role_arn = dependency.iam-codedeploy.outputs.codedeploy_service_role_arn
-# 
+#
 #   # alarm_configuration = {
 #   #   alarms  = ["my-alarm-name"]
 #   #   enabled = true
 #   # }
-# 
+#
 #   trigger_target_arn = dependency.sns.outputs.arn
 # }
 
