@@ -14,7 +14,13 @@ variable "name" {
 }
 
 variable "cross_accounts" {
-  description = "Principal of aws accounts like arn:aws:iam::account-id:root"
+  description = "Principal of AWS accounts like arn:aws:iam::account-id:root with read-only access"
+  type        = list(string)
+  default     = []
+}
+
+variable "cross_accounts_rw" {
+  description = "Principal of AWS accounts like arn:aws:iam::account-id:root with read/write access"
   type        = list(string)
   default     = []
 }
@@ -34,9 +40,19 @@ variable "pull_through_cache_rules" {
   default = []
 }
 
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_replication_configuration
 variable "registry_replication_rules" {
   description = "Replication rules"
-  type        = any
+  type        = list(object({
+    destinations = list(object({
+      region      = string
+      registry_id = string
+    })),
+    repository_filter = optional(list(object({
+      filter = string
+      filter_type = string
+    })))
+  }))
   default     = []
 }
 

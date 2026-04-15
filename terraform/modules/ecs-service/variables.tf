@@ -186,7 +186,24 @@ variable "service_connect_configuration" {
       # Port number for the Service Connect proxy to listen on.
       ingress_port_override = optional(number),
       # Name of one of the portMappings from all the containers in the task definition.
-      port_name = number
+      port_name = string,
+      timeout = optional(object({
+        # time in seconds a connection will stay active while idle. 0 to disable idleTimeout.
+        idle_timeout_seconds = optional(number),
+        # time in seconds for upstream to respond with a complete response per request.
+        # 0 to disable perRequestTimeout. Can only be set when appProtocol isn't TCP.
+        per_request_timeout_seconds = optional(number)
+      })),
+      tls = optional(object({
+        issuer_cert_authority = optional(object({
+          # ARN of the aws_acmpca_certificate_authority used to create the TLS Certificates
+          aws_pca_authority_arn = string
+        })),
+        # KMS key used to encrypt the private key in Secrets Manager.
+        kms_key = optional(string),
+        # ARN of the IAM Role that's associated with the Service Connect TLS.
+        role_arn = optional(string)
+      }))
     }))),
   })
   default = null
