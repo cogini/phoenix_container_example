@@ -1,10 +1,39 @@
-variable "comp" {
-  description = "App component name, e.g. app, worker"
+variable "awslogs_group" {
+  description = "awslogs-group"
+  default     = ""
 }
 
-variable "name" {
-  description = "Service name, app_name-comp if empty"
+variable "awslogs_stream_prefix" {
+  description = "awslogs-stream-prefix"
   default     = ""
+}
+
+variable "awslogs_create_group" {
+  description = "awslogs-create-group"
+  default     = true
+}
+
+variable "cloudwatch_logs_create_group" {
+  description = "Create CloudWatch Logs group"
+  default     = true
+}
+
+variable "comp" {
+  description = "App component name, e.g., app, worker"
+}
+
+variable "container_cpu" {
+  description = "Total number of cpu units used by task: 128 to 10240"
+  # Required for FARGATE launch type
+  type    = number
+  default = null
+}
+
+variable "container_memory" {
+  description = "Amount in MiB of memory used by task"
+  # Required for FARGATE launch type
+  type    = number
+  default = null
 }
 
 variable "container_name" {
@@ -12,9 +41,38 @@ variable "container_name" {
   default     = ""
 }
 
-variable "service_name" {
-  description = "Service name, name if empty"
-  default     = ""
+variable "command" {
+  description = "Command"
+  type        = list(string)
+  default     = null
+}
+
+variable "cpu" {
+  description = "Total number of cpu units used by task: 128 to 10240"
+  # Required for FARGATE launch type
+  type    = number
+  default = null
+}
+
+variable "entrypoint" {
+  description = "Entrypoint"
+  type        = list(string)
+  default     = null
+}
+
+variable "environment" {
+  description = "Environment variables to pass to container"
+  type = list(object({
+    name  = string
+    value = string
+  }))
+  default     = null
+}
+
+variable "execution_role_arn" {
+  description = "IAM service role for container agent and the Docker daemon"
+  type        = string
+  default     = null
 }
 
 variable "family_name" {
@@ -22,33 +80,48 @@ variable "family_name" {
   default     = ""
 }
 
-variable "command" {
-  type        = list(string)
-  description = "Command"
-  default     = null
-}
-
-variable "entrypoint" {
-  type        = list(string)
-  description = "Entrypoint"
-  default     = null
-}
-
-variable "xray" {
-  description = "Add a sidecar for AWS X-Ray daemon"
-  type        = bool
-  default     = false
-}
-
-variable "xray_image" {
-  description = "Image for X-Ray daemon"
-  # default     = "123456789012.dkr.ecr.us-east-2.amazonaws.com/xray-daemon"
-  default = "amazon/aws-xray-daemon"
-}
-
 variable "image" {
-  type        = string
   description = "Image used to start container"
+  type        = string
+}
+
+variable "ipc_mode" {
+  description = "IPC resource namespace for containers in task: host, task, or none"
+  # Not supported for FARGATE launch type
+  type    = string
+  default = null
+}
+
+# variable "log_configuration" {
+#   description = "Log configuration"
+#   type = object({
+#     logDriver = string
+#     options   = optional(map(string))
+#     secretOptions = optional(list(object({
+#       name      = string
+#       valueFrom = string
+#     })))
+#   })
+#
+#   default     = null
+# }
+
+variable "name" {
+  description = "Service name, app_name-comp if empty"
+  default     = ""
+}
+
+variable "network_mode" {
+  description = "Docker networking mode for containers in task: none, bridge, awsvpc, or host"
+  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking.html
+  default = "awsvpc"
+}
+
+variable "pid_mode" {
+  description = "Process namespace for containers the task: host or task"
+  # Not supported for FARGATE launch type
+  type    = string
+  default = null
 }
 
 variable "port_mappings" {
@@ -69,15 +142,6 @@ variable "port_mappings" {
   ]
 }
 
-variable "environment" {
-  type = list(object({
-    name  = string
-    value = string
-  }))
-  description = "Environment variables to pass to container"
-  default     = null
-}
-
 variable "secrets" {
   type = list(object({
     name      = string
@@ -87,33 +151,9 @@ variable "secrets" {
   default     = []
 }
 
-# variable "log_configuration" {
-#   description = "Log configuration"
-#   type = object({
-#     logDriver = string
-#     options   = optional(map(string))
-#     secretOptions = optional(list(object({
-#       name      = string
-#       valueFrom = string
-#     })))
-#   })
-#
-#   default     = null
-# }
-
-variable "awslogs_group" {
-  description = "awslogs-group"
+variable "service_name" {
+  description = "Service name, name if empty"
   default     = ""
-}
-
-variable "awslogs_stream_prefix" {
-  description = "awslogs-stream-prefix"
-  default     = ""
-}
-
-variable "awslogs_create_group" {
-  description = "awslogs-create-group"
-  default     = true
 }
 
 variable "ssm_ps_param_prefix" {
@@ -128,54 +168,7 @@ variable "task_role_arn" {
   default     = null
 }
 
-variable "execution_role_arn" {
-  description = "IAM service role for container agent and the Docker daemon"
-  type        = string
-  default     = null
-}
-
-variable "network_mode" {
-  description = "Docker networking mode for containers in task: none, bridge, awsvpc, or host"
-  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking.html
-  default = "awsvpc"
-}
-
-variable "ipc_mode" {
-  description = "IPC resource namespace for containers in task: host, task, or none"
-  # Not supported for FARGATE launch type
-  type    = string
-  default = null
-}
-
-variable "pid_mode" {
-  description = "Process namespace for containers the task: host or task"
-  # Not supported for FARGATE launch type
-  type    = string
-  default = null
-}
-
-variable "cpu" {
-  description = "Total number of cpu units used by task: 128 to 10240"
-  # Required for FARGATE launch type
-  type    = number
-  default = null
-}
-
-variable "container_cpu" {
-  description = "Total number of cpu units used by task: 128 to 10240"
-  # Required for FARGATE launch type
-  type    = number
-  default = null
-}
-
 variable "memory" {
-  description = "Amount in MiB of memory used by task"
-  # Required for FARGATE launch type
-  type    = number
-  default = null
-}
-
-variable "container_memory" {
   description = "Amount in MiB of memory used by task"
   # Required for FARGATE launch type
   type    = number
@@ -189,17 +182,6 @@ variable "memory_reservation" {
   default = null
 }
 
-variable "requires_compatibilities" {
-  description = "Launch types required by task: EC2 or FARGATE"
-  default     = ["FARGATE"]
-}
-
-variable "volume" {
-  description = "List of volume blocks"
-  type        = list(any)
-  default     = []
-}
-
 variable "placement_constraints" {
   description = "Set of placement constraints rules during task placement, max 10"
   type        = list(any)
@@ -211,4 +193,27 @@ variable "proxy_configuration" {
   description = "App Mesh proxy configuration details"
   type        = map(any)
   default     = null
+}
+
+variable "requires_compatibilities" {
+  description = "Launch types required by task: EC2 or FARGATE"
+  default     = ["FARGATE"]
+}
+
+variable "volume" {
+  description = "List of volume blocks"
+  type        = list(any)
+  default     = []
+}
+
+variable "xray" {
+  description = "Add a sidecar for AWS X-Ray daemon"
+  type        = bool
+  default     = false
+}
+
+variable "xray_image" {
+  description = "Image for X-Ray daemon"
+  # default     = "123456789012.dkr.ecr.us-east-2.amazonaws.com/xray-daemon"
+  default = "amazon/aws-xray-daemon"
 }
