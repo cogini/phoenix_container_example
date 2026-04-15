@@ -8,7 +8,7 @@ variable "dns_ttl" {
 }
 
 variable "health_check_failure_threshold" {
-  description = "The number of 30-second intervals that service discovery shoudl wait before changing health status of service instance. Max 10."
+  description = "The number of 30-second intervals that service discovery should wait before changing health status of service instance. Max 10."
   default     = null
 }
 
