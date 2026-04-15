@@ -59,28 +59,27 @@ resource "aws_lb_target_group" "this" {
   deregistration_delay = var.deregistration_delay
 
   dynamic "health_check" {
-    for_each = var.health_check == null ? [] : tolist([1])
+    for_each = var.health_check == null ? [] : [var.health_check]
     content {
-      enabled             = lookup(var.health_check, "enabled", null)
-      healthy_threshold   = lookup(var.health_check, "healthy_threshold", null)
-      interval            = lookup(var.health_check, "interval", null)
-      matcher             = lookup(var.health_check, "matcher", null)
-      path                = lookup(var.health_check, "path", null)
-      port                = lookup(var.health_check, "port", null)
-      protocol            = lookup(var.health_check, "protocol", null)
-      timeout             = lookup(var.health_check, "timeout", null)
-      unhealthy_threshold = lookup(var.health_check, "unhealthy_threshold", null)
+      enabled             = lookup(health_check.value, "enabled", null)
+      healthy_threshold   = lookup(health_check.value, "healthy_threshold", null)
+      interval            = lookup(health_check.value, "interval", null)
+      matcher             = lookup(health_check.value, "matcher", null)
+      path                = lookup(health_check.value, "path", null)
+      port                = lookup(health_check.value, "port", null)
+      protocol            = lookup(health_check.value, "protocol", null)
+      timeout             = lookup(health_check.value, "timeout", null)
+      unhealthy_threshold = lookup(health_check.value, "unhealthy_threshold", null)
     }
   }
 
-  # slow_start
-
   dynamic "stickiness" {
-    for_each = var.stickiness == null ? [] : tolist([1])
+    for_each = var.stickiness == null ? [] : [var.stickiness]
     content {
-      cookie_duration = lookup(var.stickiness, "cookie_duration", null)
-      enabled         = lookup(var.stickiness, "enabled", null)
-      type            = lookup(var.stickiness, "type", "lb_cookie")
+      cookie_duration = lookup(stickiness.value, "cookie_duration", null)
+      cookie_name     = lookup(stickiness.value, "cookie_name", null)
+      enabled         = lookup(stickiness.value, "enabled", null)
+      type            = lookup(stickiness.value, "type", "lb_cookie")
     }
   }
 
@@ -104,13 +103,12 @@ resource "aws_lb_target_group" "this" {
   }
 }
 
-# https://www.terraform.io/docs/providers/aws/r/lb_listener_rule.html
+# https://registry.terraform.io/providers/-/aws/latest/docs/resources/lb_listener_rule
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-update-rules.html
 resource "aws_lb_listener_rule" "this" {
   count        = var.listener_rule ? 1 : 0
   listener_arn = var.listener_arn
-
-  priority = var.priority
+  priority     = var.priority
 
   action {
     target_group_arn = aws_lb_target_group.this.arn
