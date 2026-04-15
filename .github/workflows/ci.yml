@@ -25,6 +25,7 @@ on:
       - 'otel/*'
       # Handled by newman.yml GitHub Action
       - 'deploy/newman.Dockerfile'
+      - 'terraform/*'
   # pull_request:
   #   # branches: [main]
   #   types: [opened,synchronize,reopened,labeled,unlabeled]
