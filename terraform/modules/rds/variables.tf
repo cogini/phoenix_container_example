@@ -21,6 +21,12 @@ variable "auto_minor_version_upgrade" {
   default     = true
 }
 
+variable "availability_zone" {
+  description = "Availability Zone of the RDS instance"
+  type        = string
+  default     = null
+}
+
 variable "backup_retention_period" {
   description = "The days to retain backups for, 0 to disable"
   default     = 7
@@ -137,6 +143,12 @@ variable "kms_key_id" {
 variable "maintenance_window" {
   description = "The window to perform maintenance in. Syntax: 'ddd:hh24:mi-ddd:hh24:mi'. Eg: 'Mon:00:00-Mon:03:00'"
   default     = "sat:03:00-sat:05:00"
+}
+
+variable "manage_master_user_password" {
+  description = "Have RDS generate and manage master user password in Secrets Manager"
+  type        = bool
+  default     = null
 }
 
 variable "monitoring_interval" {
@@ -256,5 +268,5 @@ variable "subnet_ids" {
 
 variable "security_group_ids" {
   description = "Security group IDs"
-  type        = list(any)
+  type        = list(string)
 }
