@@ -49,7 +49,7 @@ resource "aws_lb_target_group" "this" {
   deregistration_delay = var.deregistration_delay
 
   dynamic "health_check" {
-    for_each = [var.health_check]
+    for_each = var.health_check == null ? [] : [var.health_check]
     content {
       enabled             = lookup(health_check.value, "enabled", null)
       healthy_threshold   = lookup(health_check.value, "healthy_threshold", null)
@@ -64,7 +64,7 @@ resource "aws_lb_target_group" "this" {
   }
 
   dynamic "stickiness" {
-    for_each = [var.stickiness]
+    for_each = var.stickiness == null ? [] : [var.stickiness]
     content {
       cookie_duration = lookup(stickiness.value, "cookie_duration", null)
       enabled         = lookup(stickiness.value, "enabled", null)
