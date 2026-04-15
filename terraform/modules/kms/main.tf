@@ -90,6 +90,7 @@ data "aws_iam_policy_document" "default" {
       resources = ["*"]
     }
   }
+
   dynamic "statement" {
     for_each = var.enable_ec2_as ? tolist([1]) : []
     content {
