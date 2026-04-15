@@ -36,16 +36,16 @@
 # }
 
 locals {
-  name = var.name == "" ? "${var.app_name}-${var.comp}" : var.name
+  name  = var.name == "" ? "${var.app_name}-${var.comp}" : var.name
 }
 
 # https://www.terraform.io/docs/providers/aws/r/lb_target_group.html
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html
 resource "aws_lb_target_group" "this" {
-  name             = local.name
-  port             = var.port
-  protocol         = var.protocol
-  protocol_version = var.protocol_version
+  name                 = local.name
+  port                 = var.port
+  protocol             = var.protocol
+  protocol_version     = var.protocol_version
 
   dynamic "health_check" {
     for_each = [var.health_check]
