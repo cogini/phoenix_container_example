@@ -66,7 +66,7 @@ data "aws_iam_policy_document" "this" {
   count = local.configure_policy ? 1 : 0
 
   dynamic "statement" {
-    for_each = var.allow_codebuild ? list([1]) : []
+    for_each = var.allow_codebuild ? tolist([1]) : []
     content {
       sid = "CodeBuildAccess"
 
@@ -113,6 +113,42 @@ data "aws_iam_policy_document" "this" {
         "ecr:GetRepositoryPolicy",
         "ecr:ListImages",
         "ecr:ListTagsForResource",
+      ]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.cross_accounts_rw
+
+    content {
+      # sid = "CrossAccountReadOnly"
+
+      principals {
+        type        = "AWS"
+        identifiers = tolist(var.cross_accounts_rw)
+      }
+
+      actions = [
+        # Same as read-only
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:DescribeImages",
+        "ecr:DescribeRepositories",
+        "ecr:GetAuthorizationToken",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetLifecyclePolicyPreview",
+        "ecr:GetRepositoryPolicy",
+        "ecr:ListImages",
+        "ecr:ListTagsForResource",
+
+        # Add write actions
+        "ecr:BatchImportUpstreamImage",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+        # "ecr:CreateRepository",
       ]
     }
   }
@@ -165,35 +201,4 @@ resource "aws_ecr_replication_configuration" "this" {
       }
     }
   }
-}
-
-# Cross-Account registry replication policy
-# to be created on the replica side
-
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
-
-resource "aws_ecr_registry_policy" "this" {
-  count = length(var.source_account) > 1 ? 1 : 0
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid    = "AllowCrossAccountReplication",
-        Effect = "Allow",
-        Principal = {
-          "AWS" : "arn:${var.aws_partition}:iam::${var.source_account}:root"
-        },
-        Action = [
-          "ecr:CreateRepository",
-          "ecr:ReplicateImage",
-          "ecr:BatchImportUpstreamImage"
-        ],
-        Resource = [
-          "arn:${var.aws_partition}:ecr:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:repository/*"
-        ]
-      }
-    ]
-  })
 }
