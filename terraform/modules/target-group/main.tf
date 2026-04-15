@@ -1,8 +1,11 @@
-# Create a load balancer target group for app
+# Create load balancer target group for app
 
 # Example config:
 # terraform {
-#   source = "${get_terragrunt_dir()}/../../../modules//target-group"
+#   source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//target-group"
+# }
+# include "root" {
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "vpc" {
 #   config_path = "../vpc"
@@ -10,36 +13,35 @@
 # dependency "lb" {
 #   config_path = "../lb-public"
 # }
-# dependency "zone" {
-#   config_path = "../route53-public"
-#   # config_path = "../route53-cdn" # separate CDN domain
-# }
-# include {
-#   path = find_in_parent_folders()
-# }
 #
 # inputs = {
-#   host_name = "app"
+#   comp = "app"
+#   name = "app-1"
 #
-#   port = 4001
+#   port     = 4001
 #   protocol = "HTTPS"
 #
 #   health_check = {
+#     # If you don't specify the port, it uses the same as the traffic port.
+#     # You still need to specify HTTPS, though.
+#     protocol = "HTTPS" # default HTTP
+#     port = 4001
 #     path = "/"
-#     # interval = 30 # default 30
+#     # interval = 10 # default 30
 #     # timeout = 10 # default 5
 #     healthy_threshold = 2 # default 3
 #     unhealthy_threshold = 2 # default 3
-#     matcher = 200
+#     matcher = "200,302" # default 200
 #   }
 #
 #   # stickiness = {
 #   #   type = "lb_cookie"
 #   # }
 #
-#   listener_arn = dependency.lb.outputs.listener_arn
-#   vpc_id = dependency.vpc.outputs.vpc_id
-#   zone_name = dependency.zone.outputs.name
+#   # listener_rule = true # default
+#   # listener_arn = dependency.lb.outputs.listener_arn
+#   vpc_id        = dependency.vpc.outputs.vpc_id
+#   target_type   = "ip"
 # }
 
 locals {
