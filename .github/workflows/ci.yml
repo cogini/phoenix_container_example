@@ -140,7 +140,7 @@ jobs:
       # Combinations used to build assets
       # Usually only a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
-      # Combinations to sync images to GHCR for 
+      # Combinations to sync images to GHCR for
       sync-matrix: ${{ steps.common-matrix.outputs.result }}
 
       # Select environment to deploy to based on git branch/tag
@@ -184,7 +184,7 @@ jobs:
 
       # Create GitHub release for this build
       create-release: '0'
-      
+
       # Send results to Datadog
       datadog: '0'
     steps:
