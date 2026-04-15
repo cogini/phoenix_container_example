@@ -47,9 +47,9 @@ env:
   IMAGE_VER: ${{ github.sha }}
   # Registry for test images
   REGISTRY: ghcr.io/
-  # Registry for public images, blank for docker.io
-  PUBLIC_REGISTRY: ''
-  # PUBLIC_REGISTRY: 'ghcr.io/'
+  # Registry for public images during testing, blank for docker.io
+  # PUBLIC_REGISTRY: ''
+  PUBLIC_REGISTRY: 'ghcr.io/'
   POSTGRES_REPO_ORG: 'cogini'
   RABBITMQ_REPO_ORG: 'cogini/'
   AWS_OTEL_COLLECTOR_REPO_ORG: 'cogini'
