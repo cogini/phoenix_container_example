@@ -10,6 +10,9 @@
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//iam-github-action"
 # }
+# include "root" {
+#   path = find_in_parent_folders()
+# }
 # dependency "cloudfront" {
 #   config_path = "../cloudfront-app-assets"
 # }
@@ -45,9 +48,6 @@
 # }
 # dependency "s3" {
 #   config_path = "../s3-app"
-# }
-# include "root" {
-#   path = find_in_parent_folders()
 # }
 #
 # inputs = {
