@@ -9,6 +9,8 @@ defmodule PhoenixContainerExample.Application do
 
   @impl true
   def start(_type, _args) do
+    # :ok = Logger.add_handlers(@app)
+
     :logger.add_handler(:my_sentry_handler, Sentry.LoggerHandler, %{
       config: %{metadata: [:file, :line]}
     })
