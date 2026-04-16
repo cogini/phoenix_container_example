@@ -30,6 +30,22 @@ variable "hosts" {
   default     = []
 }
 
+variable "listener_arn" {
+  description = "LB listener ARN to add the rule to"
+}
+
+variable "listener_rule" {
+  description = "Whether to add a listener rule"
+  type        = bool
+  default     = true
+}
+
+variable "load_balancing_algorithm_type" {
+  description = "How load balancer selects targets when routing. Values: round_robin, least_outstanding_requests, or weighted_random"
+  type        = string
+  default     = null
+}
+
 variable "name" {
   description = "The name of the target group"
   default     = ""
@@ -47,8 +63,20 @@ variable "port" {
   type        = number
 }
 
+variable "priority" {
+  description = "Listener rule priority"
+  type        = number
+  default     = null
+}
+
 variable "protocol" {
   description = "Protocol to use for routing traffic to the targets"
+  type        = string
+  default     = null
+}
+
+variable "protocol_version" {
+  description = "Protocol version"
   type        = string
   default     = null
 }
@@ -66,28 +94,6 @@ variable "stickiness" {
 
 variable "target_type" {
   description = "The type of target, values are instance: instance, ip, lambda. Default instance"
-  type        = string
-  default     = null
-}
-
-variable "listener_arn" {
-  description = "LB listener ARN to add the rule to"
-}
-
-variable "listener_rule" {
-  description = "Whether to add a listener rule"
-  type        = bool
-  default     = true
-}
-
-variable "priority" {
-  description = "Listener rule priority"
-  type        = number
-  default     = null
-}
-
-variable "protocol_version" {
-  description = "Protocol version"
   type        = string
   default     = null
 }
