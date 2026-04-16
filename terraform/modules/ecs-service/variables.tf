@@ -1,15 +1,12 @@
-variable "comp" {
-  description = "Name of the app component, app, worker, etc."
-}
-
-variable "name" {
-  description = "Name tag of instance, var.app_name-var.comp if empty"
-  default     = ""
-}
-
 variable "capacity_provider_strategy" {
   description = "Capacity provider strategy"
-  type        = list(any)
+  type        = list(
+    object({
+      capacity_provider = string
+      weight            = optional(number)
+      base              = optional(number)
+    })
+  )
   default     = []
 }
 
@@ -19,10 +16,50 @@ variable "cluster" {
   default     = null
 }
 
+variable "comp" {
+  description = "Name of the app component, app, worker, etc."
+}
+
 variable "deployment_controller_type" {
   description = "Deployment controller type: CODE_DEPLOY or ECS. Default: ECS"
   type        = string
   default     = null
+}
+
+variable "deployment_configuration" {
+  description = "Deployment configuration"
+  type    = object({
+    # Number of minutes to wait after a new deployment is fully provisioned
+    # before terminating the old deployment. Valid range: 0-1440 minutes.
+    # Used with BLUE_GREEN, LINEAR, and CANARY strategies.
+    bake_time_in_minutes = optional(number)
+    canary_configuration = optional(object({
+      # Minutes to wait before shifting all traffic to the new deployment.
+      # Valid range: 0-1440 minutes.
+      canary_bake_time_in_minutes = optional(number)
+      # Percentage of traffic to route to the canary deployment.
+      # Valid range: 0.1-100.0.
+      canary_percent = number
+    }))
+    lifecycle_hook = optional(object({
+      hook_details = optional(string)
+      hook_target_arn = string
+      # Stages during the deployment when the hook should be invoked.
+      # One or more of "RECONCILE_SERVICE", "PRE_SCALE_UP", "POST_SCALE_UP", "TEST_TRAFFIC_SHIFT",
+      # "POST_TEST_TRAFFIC_SHIFT", "PRODUCTION_TRAFFIC_SHIFT", "POST_PRODUCTION_TRAFFIC_SHIFT"
+      lifecycle_stages = list(string)
+      # ARN of IAM role that grants the service permission to invoke the Lambda function.
+      role_arn = string
+    }))
+    linear_configuration = optional(object({
+      # Percentage of traffic to shift in each step during a linear deployment. Valid range: 3.0-100.0.
+      step_percent = number
+      # Minutes to wait between each step during a linear deployment. Valid range: 0-1440 minutes.
+      step_bake_time_in_minutes = optional(number)
+    }))
+    strategy = optional(string) # ROLLING, BLUE_GREEN, LINEAR, CANARY. Default: ROLLING
+  })
+  default = null
 }
 
 variable "deployment_maximum_percent" {
@@ -92,7 +129,20 @@ variable "launch_type" {
 variable "load_balancer" {
   description = "List of load balancer configs"
   type = list(object({
+    advanced_configuration = optional(object({
+      # ARN of alternate target group for Blue/Green deployments
+      alternate_target_group_arn = string,
+      # ARN of listener rule that routes production traffic
+      production_listener_rule = string,
+      # ARN of IAM role that allows ECS to manage the target groups
+      role_arn = string
+      # ARN of listener rule that routes test traffic
+      test_listener_rule = optional(string)
+    })),
+    # Name of ELB. Required for ELB Classic
     elb_name         = optional(string),
+    # ARN of load balancer target group to associate with the service.
+    # Required for ALB or NLB
     target_group_arn = optional(string),
     container_name   = string,
     container_port   = number
@@ -100,15 +150,27 @@ variable "load_balancer" {
   default = []
 }
 
+variable "name" {
+  description = "Name tag of instance, var.app_name-var.comp if empty"
+  default     = ""
+}
+
 variable "network_configuration" {
   description = "Network configuration"
-  type        = object({ subnets = list(string), security_groups = list(string), assign_public_ip = bool })
+  type        = object({
+    subnets = list(string),
+    security_groups = list(string),
+    assign_public_ip = bool
+  })
   default     = null
 }
 
 variable "ordered_placement_strategy" {
   description = "Service level strategy rules taken into consideration during task placement"
-  type        = list(any)
+  type        = list(object({
+    type = string, # random, spread, or binpack
+    field = optional(string)
+  }))
   default     = []
 }
 
@@ -143,10 +205,11 @@ variable "scheduling_strategy" {
 variable "service_registries" {
   description = "Service discovery registries for the service"
   type = object({
+    # ARN of AWS Service Registry
     registry_arn = string,
-    # Port of SRV record
+    # Port value used if service discovery service specified an SRV record
     port = optional(number),
-    # Container name from task definition
+    # Container name from task definition, not needed there is only one container
     container_name = optional(string),
     # Port from task definition
     container_port = optional(number)
@@ -179,7 +242,13 @@ variable "service_connect_configuration" {
     # Service Connect service objects
     service = optional(list(object({
       # List of client aliases for ths service. Maximum number of aliases is 1.
-      client_alias = optional(list(string)),
+      client_alias = optional(list(object({
+        # Name used in the applications of client tasks to connect to this service.
+        dns_name = optional(string),
+        # Listening port number for the Service Connect proxy. This port is
+        # available inside of all of the tasks within the same namespace.
+        port = number
+      }))),
       # The name of the new AWS Cloud Map service that ECS creates.
       # Must be a valid DNS name, and must be unique in the namespace.
       discovery_name = optional(string),
@@ -213,4 +282,10 @@ variable "task_definition" {
   description = "Family and revision (family:revision) or full ARN of task definition to run in service"
   type        = string
   default     = ""
+}
+
+variable "wait_for_steady_state" {
+  description = "Wait for service to reach steady state (like aws ecs wait services-stable) before continuing. Default false."
+  type        = bool
+  default     = null
 }
