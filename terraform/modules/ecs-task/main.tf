@@ -28,6 +28,9 @@ module "app_container" {
   entrypoint                   = var.entrypoint
   environment                  = var.environment
   essential                    = true
+  port_mappings                = var.port_mappings
+  secrets                      = local.secrets
+
   log_configuration = {
     logDriver = "awslogs"
     options = {
@@ -38,11 +41,6 @@ module "app_container" {
     }
     secretOptions = []
   }
-
-  port_mappings = var.port_mappings
-
-  secrets     = local.secrets
-
 }
 
 module "xray_container" {
