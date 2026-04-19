@@ -214,6 +214,7 @@ data "aws_iam_policy_document" "this" {
     }
   }
 
+  # https://hex.pm/packages/libcluster_ecs
   dynamic "statement" {
     for_each = var.enable_ecs_discovery ? tolist([1]) : []
     content {
