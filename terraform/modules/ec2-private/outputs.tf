@@ -1,8 +1,3 @@
-output "id" {
-  description = "List of instance ids"
-  value       = aws_instance.this[*].id
-}
-
 # output "arn" {
 #   description = "List of instance arns"
 #   value       = aws_instance.this.*.arn
@@ -13,14 +8,29 @@ output "availability_zone" {
   value       = aws_instance.this[*].availability_zone
 }
 
-output "placement_group" {
-  description = "List of instance placement groups"
-  value       = aws_instance.this[*].placement_group
+# output "credit_specification" {
+#   description = "List of instance credit specifications"
+#   value       = aws_instance.this.*.credit_specification
+# }
+
+output "iam_instance_profile_name" {
+  description = "List of instance IAM instance profile names"
+  value       = aws_instance.this[*].iam_instance_profile
+}
+
+output "id" {
+  description = "List of instance ids"
+  value       = aws_instance.this[*].id
 }
 
 output "key_name" {
   description = "List of instance key names"
   value       = aws_instance.this[*].key_name
+}
+
+output "placement_group" {
+  description = "List of instance placement groups"
+  value       = aws_instance.this[*].placement_group
 }
 
 output "public_dns" {
@@ -58,22 +68,12 @@ output "security_groups" {
   value       = aws_instance.this[*].security_groups
 }
 
-output "vpc_security_group_ids" {
-  description = "List of instance vpc security group ids"
-  value       = aws_instance.this[*].vpc_security_group_ids
-}
-
 output "subnet_id" {
   description = "List of instance subnet ids"
   value       = aws_instance.this[*].subnet_id
 }
 
-# output "credit_specification" {
-#   description = "List of instance credit specifications"
-#   value       = aws_instance.this.*.credit_specification
-# }
-
-output "iam_instance_profile_name" {
-  description = "List of instance IAM instance profile names"
-  value       = aws_instance.this[*].iam_instance_profile
+output "vpc_security_group_ids" {
+  description = "List of instance vpc security group ids"
+  value       = aws_instance.this[*].vpc_security_group_ids
 }
