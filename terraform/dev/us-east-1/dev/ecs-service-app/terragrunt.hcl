@@ -26,6 +26,7 @@ dependency "sg" {
 }
 dependency "task" {
   config_path = "../ecs-task-app"
+}
 # dependency "listener-rule" {
 #   config_path = "../lb-listener-rule-app"
 # }
@@ -49,13 +50,13 @@ inputs = {
 
   load_balancer = [
     {
-      target_group_arn = dependency-1.tg.outputs.arn
+      target_group_arn = dependency.tg-1.outputs.arn
       # container_name   = dependency.task.outputs.container_name
       # Name of container to associate with the load balancer, from task definition
       container_name   = "foo-app"
       # Port on container to associate with the load balancer, from task definition
-      container_port   = 4000
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
+      container_port   = 4000
       # advanced_configuration = {
       #   alternate_target_group_arn = dependency.tg-1.outputs.arn
       #   production_listener_rule = dependency.listener-rule.outputs.arn
