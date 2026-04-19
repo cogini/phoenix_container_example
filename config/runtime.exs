@@ -179,6 +179,24 @@ if config_env() == :prod do
           ]
         ]
 
+    # libcluster_ecs uses the ECS API to discover nodes in the same cluster and service
+    # https://hex.pm/packages/libcluster_ecs
+    "ecs" ->
+      config :libcluster,
+        topologies: [
+          app: [
+            strategy: Cluster.EcsStrategy,
+            config: [
+              cluster_name: "foo",
+              service_name: "foo-app",
+              # release name
+              app_prefix: "prod",
+              region: System.get_env("AWS_REGION", "us-east-1"),
+              container_port: "DISTRIBUTION_PORT" |> System.get_env("7777") |> String.to_integer()
+            ]
+          ]
+        ]
+
     "dns" ->
       # Periodically poll DNS to find nodes.
       # This uses AWS Service Discovery support for ECS.
