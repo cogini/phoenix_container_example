@@ -100,6 +100,7 @@ defmodule PhoenixContainerExample.MixProject do
       # {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
+      {:libcluster_ecs, "~> 0.2.0"},
       # tls_certificate_check needs to be started before opentelemetry_exporter
       {:tls_certificate_check, "~> 1.13"},
       # opentelemetry_exporter needs to be started before the other opentelemetry modules
