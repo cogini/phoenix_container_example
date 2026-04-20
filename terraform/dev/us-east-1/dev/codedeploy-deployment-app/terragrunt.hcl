@@ -25,10 +25,10 @@ dependency "sns" {
   config_path = "../sns-codedeploy-app"
 }
 dependency "tg-1" {
-  config_path = "../target-group-app-ecs-1"
+  config_path = "../target-group-app-1"
 }
 dependency "tg-2" {
-  config_path = "../target-group-app-ecs-2"
+  config_path = "../target-group-app-2"
 }
 
 inputs = {
