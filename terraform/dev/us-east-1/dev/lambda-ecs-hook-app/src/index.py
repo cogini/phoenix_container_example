@@ -109,12 +109,12 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             logger.error(error_message)
             raise Exception(error_message)
 
-    service_revision = event["executionDetails"]["targetServiceRevisionArn"]
+    # service_revision = event["executionDetails"]["targetServiceRevisionArn"]
 
     # Retrieve Task Definition Arn from the service revision
-    task_definition_arn = retrieve_task_definition_arn(service_revision)
-    if not task_definition_arn:
-        return hook_failed()
+    # task_definition_arn = retrieve_task_definition_arn(service_revision)
+    # if not task_definition_arn:
+    #     return hook_failed()
 
     # # Retrieve Container Images
     # container_image_list = retrieve_container_images(task_definition_arn)
