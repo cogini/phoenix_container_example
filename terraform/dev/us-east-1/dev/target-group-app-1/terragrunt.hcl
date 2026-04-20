@@ -30,10 +30,10 @@ inputs = {
   comp = "app"
   name = "app-1"
 
-  hosts = [
-    join(".", compact(["app", local.dns_subdomain, local.dns_domain])),
-    join(".", compact([local.dns_subdomain, local.dns_domain]))
-  ]
+  # hosts = [
+  #   join(".", compact(["app", local.dns_subdomain, local.dns_domain])),
+  #   join(".", compact([local.dns_subdomain, local.dns_domain]))
+  # ]
 
   port     = 4001
   protocol = "HTTPS"
@@ -57,7 +57,7 @@ inputs = {
 
   target_type = "ip" # default "instance"
 
-  # listener_rule = true # default true
+  listener_rule = false # default true
   listener_arn = dependency.lb.outputs.listener_arn
 
   vpc_id       = dependency.vpc.outputs.vpc_id
