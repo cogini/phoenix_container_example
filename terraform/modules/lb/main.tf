@@ -24,7 +24,7 @@ data "aws_iam_server_certificate" "iam" {
   latest = true
 }
 
-# https://www.terraform.io/docs/providers/aws/r/lb.html
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb.html
 resource "aws_lb" "this" {
   name     = local.name
   internal = var.internal
@@ -54,7 +54,7 @@ resource "aws_lb" "this" {
   )
 }
 
-# https://www.terraform.io/docs/providers/aws/r/lb_listener.html
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener.html
 resource "aws_lb_listener" "http" {
   count             = var.enable_http ? 1 : 0
   load_balancer_arn = aws_lb.this.arn
