@@ -51,7 +51,7 @@ env:
   # PUBLIC_REGISTRY: ''
   PUBLIC_REGISTRY: 'ghcr.io/'
   POSTGRES_REPO_ORG: 'cogini'
-  RABBITMQ_REPO_ORG: 'cogini/'
+  RABBITMQ_REPO_ORG: 'cogini'
   AWS_OTEL_COLLECTOR_REPO_ORG: 'cogini'
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
