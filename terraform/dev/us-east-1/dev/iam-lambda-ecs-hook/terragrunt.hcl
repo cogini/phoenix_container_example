@@ -7,11 +7,11 @@ include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 dependency "lambda" {
-  config_path = "../lambda-ecs-hook-ellie"
+  config_path = "../lambda-ecs-hook-app"
 }
 
 inputs = {
-  comp = "ellie"
+  comp = "app"
 
   lambda_function_arns = [
     dependency.lambda.outputs.lambda_function_arn
