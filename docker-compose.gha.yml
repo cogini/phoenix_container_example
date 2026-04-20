@@ -358,7 +358,7 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   # https://hub.docker.com/_/postgres
   postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:18.3-alpine"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-_}/postgres:18.3-alpine"
     # image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
     # build:
@@ -400,7 +400,7 @@ services:
 
   # https://hub.docker.com/_/rabbitmq
   rabbitmq:
-    image: "${PUBLIC_REGISTRY:-docker.io/}${RABBITMQ_REPO_ORG:-}rabbitmq:3-management"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${RABBITMQ_REPO_ORG:-_}rabbitmq:3-management"
     restart: always
     ports:
       - '5671:5671' # AMQPS port (TLS)
