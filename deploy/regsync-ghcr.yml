@@ -6,10 +6,10 @@ sync:
   #   type: image
   # Build aws-otel-collector base image
   - source: docker.io/amazon/aws-otel-collector:latest
-    target: ghcr.io/cogini/aws-otel-collector:latest
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/aws-otel-collector:latest
     type: image
   - source: docker.io/amazon/aws-otel-collector:v0.47.0
-    target: ghcr.io/cogini/aws-otel-collector:v0.47.0
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/aws-otel-collector:v0.47.0
     type: image
   # Deploy base image
   # - source: docker.io/debian:trixie-slim
@@ -21,10 +21,10 @@ sync:
   # Test deps
   # https://hub.docker.com/_/postgres
   - source: docker.io/postgres:latest
-    target: ghcr.io/cogini/pgvector:latest
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/pgvector:latest
     type: image
   - source: docker.io/postgres:18.3-alpine
-    target: ghcr.io/cogini/postgres:18.3-alpine
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/postgres:18.3-alpine
     type: image
   # - source: docker.io/ankane/pgvector:latest
   #   target: ghcr.io/cogini/pgvector:latest
@@ -35,8 +35,8 @@ sync:
   # TODO: should use newer version from pgvector/pgvector instead of ankane/pgvector
   # https://hub.docker.com/r/pgvector/pgvector/tags
   - source: docker.io/rabbitmq:3-management
-    target: ghcr.io/cogini/rabbitmq:3-management
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/rabbitmq:3-management
     type: image
   - source: docker.io/rabbitmq:3.13.7-management
-    target: ghcr.io/cogini/rabbitmq:3.13.7-management
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/rabbitmq:3.13.7-management
     type: image
