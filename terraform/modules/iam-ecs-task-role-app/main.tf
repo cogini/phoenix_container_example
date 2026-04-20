@@ -215,6 +215,7 @@ data "aws_iam_policy_document" "this" {
   }
 
   # https://hex.pm/packages/libcluster_ecs
+  # TODO: limit resources to specific cluster, service, or tasks
   dynamic "statement" {
     for_each = var.enable_ecs_discovery ? tolist([1]) : []
     content {
