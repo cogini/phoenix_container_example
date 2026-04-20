@@ -2,42 +2,55 @@
 
 # Example config:
 # terraform {
-#   source = "${dirname(find_in_parent_folders())}/../modules//lb-listener-rule"
+#   source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//lb-listener-rule"
 # }
 # include "root" {
-#   path = find_in_parent_folders()
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "lb" {
 #   config_path = "../lb-public"
 # }
 # dependency "tg-1" {
-#   config_path = "../target-group-app-ecs-ellie-1"
+#   config_path = "../target-group-app-ecs-foo-1"
 # }
 # dependency "tg-2" {
-#   config_path = "../target-group-app-ecs-ellie-2"
+#   config_path = "../target-group-app-ecs-foo-2"
 # }
 #
 # inputs = {
 #   listener_arn = dependency.lb.outputs.listener_arn
 #   # priority        = 100
 #
-#   target_group_arns = [
-#     # dependency.tg-1.outputs.arn,
-#     dependency.tg-2.outputs.arn
+#   # target_group_arns = [
+#   #   dependency.tg-1.outputs.arn,
+#   #   # dependency.tg-2.outputs.arn
+#   # ]
+#
+#   target_groups = [
+#     {
+#       arn = dependency.tg-1.outputs.arn
+#       # weight = 100
+#     },
+#     # {
+#     #   arn = dependency.tg-2.outputs.arn
+#     #   weight = 100
+#     # }
 #   ]
 #
 #   conditions = [
 #     {
 #       path_pattern = {
 #         values = [
-#           "/api/v1/mediaServices/*", # Used to setup/create a session
-#           "/mediaSessions/*"         # Handles client interactions for a session
+#           "/api/v1/mediaServices*", # Used to setup/create a session
+#           "/mediaSessions*"         # Handles client interactions for a session
 #         ]
 #       }
 #     }
 #   ]
 # }
 
+# https://registry.terraform.io/providers/-/aws/latest/docs/resources/lb_listener_rule
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-update-rules.html
 resource "aws_lb_listener_rule" "this" {
   listener_arn = var.listener_arn
   priority     = var.priority
