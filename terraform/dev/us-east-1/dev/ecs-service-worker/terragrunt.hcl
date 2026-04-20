@@ -22,7 +22,7 @@ dependency "task" {
   config_path = "../ecs-task-worker"
 }
 # dependency "tg" {
-#   config_path = "../target-group-app-ecs-1"
+#   config_path = "../target-group-app-1"
 # }
 dependency "vpc" {
   config_path = "../vpc"

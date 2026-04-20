@@ -9,15 +9,15 @@ include "root" {
 dependency "cluster" {
   config_path = "../ecs-cluster"
 }
-# dependency "iam-lambda" {
-#   config_path = "../iam-lambda-ecs-hook-app"
-# }
-# dependency "iam-ecs-lb" {
-#   config_path = "../iam-ecs-load-balancers"
-# }
-# dependency "lambda" {
-#   config_path = "../lambda-ecs-hook-app"
-# }
+dependency "iam-lambda" {
+  config_path = "../iam-lambda-ecs-hook"
+}
+dependency "iam-ecs-lb" {
+  config_path = "../iam-ecs-load-balancers"
+}
+dependency "lambda" {
+  config_path = "../lambda-ecs-hook-app"
+}
 dependency "sd-service" {
   config_path = "../service-discovery-service-app"
 }
@@ -27,14 +27,14 @@ dependency "sg" {
 dependency "task" {
   config_path = "../ecs-task-app"
 }
-# dependency "listener-rule" {
-#   config_path = "../lb-listener-rule-app"
-# }
+dependency "listener-rule" {
+  config_path = "../lb-listener-rule-app"
+}
 dependency "tg-1" {
-  config_path = "../target-group-app-ecs-1"
+  config_path = "../target-group-app-1"
 }
 dependency "tg-2" {
-  config_path = "../target-group-app-ecs-2"
+  config_path = "../target-group-app-2"
 }
 dependency "vpc" {
   config_path = "../vpc"
@@ -51,18 +51,18 @@ inputs = {
   load_balancer = [
     {
       target_group_arn = dependency.tg-1.outputs.arn
-      # container_name   = dependency.task.outputs.container_name
       # Name of container to associate with the load balancer, from task definition
+      # container_name   = dependency.task.outputs.container_name
       container_name   = "foo-app"
       # Port on container to associate with the load balancer, from task definition
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
       container_port   = 4000
-      # advanced_configuration = {
-      #   alternate_target_group_arn = dependency.tg-1.outputs.arn
-      #   production_listener_rule = dependency.listener-rule.outputs.arn
-      #   # Role which allows ECS to modify load balancer target group and listener rules
-      #   role_arn = dependency.iam-ecs-lb.outputs.role_arn
-      # }
+      advanced_configuration = {
+        alternate_target_group_arn = dependency.tg-2.outputs.arn
+        production_listener_rule = dependency.listener-rule.outputs.arn
+        # Role which allows ECS to modify load balancer target group and listener rules
+        role_arn = dependency.iam-ecs-lb.outputs.role_arn
+      }
     }
   ]
 
@@ -84,22 +84,22 @@ inputs = {
   deployment_controller_type = "ECS"
   force_new_deployment       = true
 
-  # deployment_configuration = {
-  #   strategy = "BLUE_GREEN" # "ROLLING", "BLUE_GREEN", "LINEAR", "CANARY". Default: "ROLLING"
-  #   # strategy = "ROLLING"
-  #   bake_time_in_minutes = 0 # default 5
-  #
-  #   lifecycle_hook = {
-  #     hook_details = "ECS Deployment Lifecycle Hook"
-  #     hook_target_arn = dependency.lambda.outputs.lambda_function_arn
-  #     lifecycle_stages = [
-  #       "RECONCILE_SERVICE", "PRE_SCALE_UP", "POST_SCALE_UP", "TEST_TRAFFIC_SHIFT",
-  #       "POST_TEST_TRAFFIC_SHIFT", "PRODUCTION_TRAFFIC_SHIFT", "POST_PRODUCTION_TRAFFIC_SHIFT"
-  #     ]
-  #     # Role which allows ECS to invoke Lambda function
-  #     role_arn = dependency.iam-lambda.outputs.role_arn
-  #   }
-  # }
+  deployment_configuration = {
+    strategy = "BLUE_GREEN" # "ROLLING", "BLUE_GREEN", "LINEAR", "CANARY". Default: "ROLLING"
+    # strategy = "ROLLING"
+    bake_time_in_minutes = 0 # default 5
+
+    lifecycle_hook = {
+      hook_details = "ECS Deployment Lifecycle Hook"
+      hook_target_arn = dependency.lambda.outputs.lambda_function_arn
+      lifecycle_stages = [
+        "RECONCILE_SERVICE", "PRE_SCALE_UP", "POST_SCALE_UP", "TEST_TRAFFIC_SHIFT",
+        "POST_TEST_TRAFFIC_SHIFT", "PRODUCTION_TRAFFIC_SHIFT", "POST_PRODUCTION_TRAFFIC_SHIFT"
+      ]
+      # Role which allows ECS to invoke Lambda function
+      role_arn = dependency.iam-lambda.outputs.role_arn
+    }
+  }
 
   # deployment_maximum_percent = 200
   # deployment_minimum_healthy_percent = 0
@@ -114,17 +114,17 @@ inputs = {
     assign_public_ip = false # true when running in public subnet
   }
 
-  service_registries = {
-    registry_arn = dependency.sd-service.outputs.arn
-    # port = 4000
-    # container_name = dependency.task.outputs.container_name
-    container_name = "foo-app"
-    # Port value from task definition
-    # container_port = dependency.task.outputs.port_mappings[0].hostPort
-    # container_port = 4000
-    # Port value if Service Discovery service specified an SRV record
-    # port = 4000
-  }
+  # service_registries = {
+  #   registry_arn = dependency.sd-service.outputs.arn
+  #   # Container name value from task definition
+  #   # container_name = dependency.task.outputs.container_name
+  #   container_name = "foo-app"
+  #   # Port value from task definition
+  #   # container_port = dependency.task.outputs.port_mappings[0].hostPort
+  #   container_port = 4000
+  #   # Port value if Service Discovery service specified an SRV record
+  #   # port = 4000
+  # }
 
   # service_connect_configuration = {
   #   # enabled = true # default true
