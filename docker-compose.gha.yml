@@ -375,7 +375,9 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ https://github.com/docker-library/postgres/issues/37
+      - postgres_data:/var/lib/postgresql
       # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
     restart: always
     healthcheck:
