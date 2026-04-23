@@ -94,21 +94,9 @@ env:
   APP_PORT: 4000
   # MIX_ENV: foo
   ELIXIR_MODULE: PhoenixContainerExample
-  ECS_CLUSTER: foo
-  ECS_SERVICE: foo-app
-  ECS_CONTAINER: foo-app
-  ECS_CPU: 256
-  ECS_RAM: 2048
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
-  TASKDEF: ecs/task-definition.json
-  ECS_SERVICE_WORKER: foo-worker
-  ECS_CONTAINER_WORKER: foo-worker
-  ECS_CPU_WORKER: 256
-  ECS_RAM_WORKER: 2048
-  TASKDEF_WORKER: ecs/task-definition.worker.json
-  APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
   # APPSIGNAL_APP_NAME: bounce
@@ -1585,14 +1573,19 @@ jobs:
       - name: Generate ECS task-defintion.json
         env:
           AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_GROUP: /ecs/foo-app
+          AWSLOGS_STREAM_PREFIX: foo-app
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          ECS_SERVICE: foo-app
+          ECS_CONTAINER: foo-app
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          CPU: ${{ env.ECS_CPU }}
-          RAM: ${{ env.ECS_RAM }}
+          CPU: 256
+          RAM: 2048
           APP_IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
           # OTEL_IMAGE: "public.ecr.aws/aws-observability/aws-otel-collector:${{ vars.AWS_OTEL_VER }}"
+          TASKDEF: ecs/task-definition.json
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
@@ -1600,6 +1593,11 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         env:
           IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+          ECS_SERVICE: foo-app
+          ECS_CONTAINER: foo-app
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_GROUP: /ecs/foo-app
+          AWSLOGS_STREAM_PREFIX: foo-app
         with:
           # https://github.com/aws-actions/amazon-ecs-render-task-definition
           task-definition: ${{ env.TASKDEF }}
@@ -1612,48 +1610,77 @@ jobs:
             awslogs-create-group=true
             awslogs-group=/ecs/${{ env.ECS_SERVICE }}
             awslogs-region=${{ env.AWSLOGS_REGION }}
-            awslogs-stream-prefix=${{ env.ECS_SERVICE }}
+            awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
           # environment-variables: |
           #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         if: env.AWS_ENABLED == '1'
+        env:
+          ECS_SERVICE: foo-app
+          ECS_CONTAINER: foo-app
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}
           # wait-for-service-stability: true
-          # codedeploy-appspec: ${{ env.APPSPEC }}
+          # codedeploy-appspec: ecs/appspec.yml
           # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
           # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
       - name: Generate ECS task-defintion.json (worker)
         env:
           AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_GROUP: /ecs/foo-worker
+          AWSLOGS_STREAM_PREFIX: foo-worker
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          ECS_SERVICE: foo-worker
+          ECS_CONTAINER: foo-worker
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          CPU: ${{ env.ECS_CPU_WORKER }}
-          RAM: ${{ env.ECS_RAM_WORKER }}
-        run: jq --null-input -f "${TASKDEF_WORKER}.jq" | tee "$TASKDEF_WORKER"
+          CPU: 256
+          RAM: 2048
+          TASKDEF: ecs/task-definition.worker.json
+        run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition (worker)
         id: task-def-worker
         uses: aws-actions/amazon-ecs-render-task-definition@v1
+        env:
+          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+          ECS_SERVICE: foo-worker
+          ECS_CONTAINER: foo-worker
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_GROUP: /ecs/foo-worker
+          AWSLOGS_STREAM_PREFIX: foo-worker
         with:
-          task-definition: ${{ env.TASKDEF_WORKER }}
-          container-name: ${{ env.ECS_CONTAINER_WORKER }}
-          image: ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.VAR}}${{env.IMAGE_VER}}
+          # https://github.com/aws-actions/amazon-ecs-render-task-definition
+          task-definition: ${{ env.TASKDEF }}
+          # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
+          # task-definition-family: ${{ env.ECS_FAMILY }}
+          container-name: ${{ env.ECS_CONTAINER }}
+          # This should match the image tag used in build-prod
+          image: ${{env.IMAGE}}
+          log-configuration-options: |
+            awslogs-create-group=true
+            awslogs-group=/ecs/${{ env.ECS_SERVICE }}
+            awslogs-region=${{ env.AWSLOGS_REGION }}
+            awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
+          # environment-variables: |
+          #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
 
       - name: Deploy to Amazon ECS (worker)
         if: env.AWS_ENABLED == '1'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        env:
+          ECS_SERVICE: foo-worker
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
-          service: ${{ env.ECS_SERVICE_WORKER }}
+          service: ${{ env.ECS_SERVICE }}
 
       # - name: Run CodeBuild
       #   uses: aws-actions/aws-codebuild-run-build@v1
