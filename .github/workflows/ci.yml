@@ -1552,6 +1552,7 @@ jobs:
 
       - name: Set vars
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+        # echo "ECR_REGISTRY=${{ env.ECR_REGISTRY_ID }}.dkr.ecr.${{ env.ECR_REGISTRY_REGION }}.amazonaws.com" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -1561,7 +1562,6 @@ jobs:
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
           echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
-          # echo "ECR_REGISTRY=${{ env.ECR_REGISTRY_ID }}.dkr.ecr.${{ env.ECR_REGISTRY_REGION }}.amazonaws.com" >> "$GITHUB_ENV"
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
