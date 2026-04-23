@@ -11,4 +11,7 @@
 ## (requires changing both vm.args and remote.vm.args)
 ##-start_epmd false -erl_epmd_port 6789
 
--epmd_module Elixir.Cluster.EPMD
+# -epmd_module Elixir.Cluster.EPMD
+
+# -kernel inet_dist_listen_min 9000
+# -kernel inet_dist_listen_max 9010
