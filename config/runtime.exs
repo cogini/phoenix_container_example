@@ -192,7 +192,7 @@ if config_env() == :prod do
               # app_prefix: System.get_env("RELEASE_NAME", "prod"),
               app_prefix: System.get_env("RELEASE_VSN"),
               region: System.get_env("AWS_REGION", "us-east-1"),
-              container_port: System.get_env("DISTRIBUTION_PORT", "7777") |> String.to_integer()
+              container_port: "DISTRIBUTION_PORT" |> System.get_env("7777") |> String.to_integer()
             ]
           ]
         ]
