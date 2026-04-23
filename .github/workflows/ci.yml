@@ -132,7 +132,7 @@ jobs:
       sync-matrix: ${{ steps.common-matrix.outputs.result }}
 
       # Select environment to deploy to based on git branch/tag
-      environment: ${{ (github.ref_name == "main" && "staging") || (github.ref_name == "prod" && "production") }}
+      environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
 
       # Whether to deploy. Only standard tags/branches deploy, not other dev branches.
       # deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
