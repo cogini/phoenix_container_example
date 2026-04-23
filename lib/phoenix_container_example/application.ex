@@ -45,11 +45,12 @@ defmodule PhoenixContainerExample.Application do
 
   defp cluster_supervisor do
     topologies = Application.get_env(:libcluster, :topologies, [])
-    strategy = get_in(topologies, [:app, :strategy])
 
     if Enum.empty?(topologies) do
       []
     else
+      strategy = get_in(topologies, [:app, :strategy])
+
       case strategy do
         Cluster.EcsStrategy ->
           [{Cluster.EcsClusterInfo, get_in(topologies, [:app, :config])}]
