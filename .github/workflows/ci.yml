@@ -1579,6 +1579,7 @@ jobs:
           AWSLOGS_STREAM_PREFIX: foo-app
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          SERVICE_NAME: foo-app
           ECS_SERVICE: foo-app
           ECS_CONTAINER: foo-app
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
@@ -1638,6 +1639,7 @@ jobs:
           AWSLOGS_STREAM_PREFIX: foo-worker
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          SERVICE_NAME: foo-worker
           ECS_SERVICE: foo-worker
           ECS_CONTAINER: foo-worker
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
