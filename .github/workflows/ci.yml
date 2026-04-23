@@ -38,7 +38,7 @@ env:
   IMAGE_NAME: foo-app
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # IMAGE_OWNER: foo
+  # IMAGE_OWNER: cogini
   # AWS ECR Docker repo org name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
   # ECR_IMAGE_OWNER: ''
@@ -47,7 +47,7 @@ env:
   IMAGE_VER: ${{ github.sha }}
   # Registry for test images
   REGISTRY: ghcr.io/
-  # Registry for public images during testing, blank for docker.io
+  # Registry for public images, default (blank) is docker.io
   # PUBLIC_REGISTRY: ''
   PUBLIC_REGISTRY: 'ghcr.io/'
   POSTGRES_REPO_ORG: 'cogini'
