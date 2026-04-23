@@ -96,7 +96,7 @@ env:
   ELIXIR_MODULE: PhoenixContainerExample
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
-  # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
+  CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
   # APPSIGNAL_APP_NAME: bounce
@@ -1535,10 +1535,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
     env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      ECS_CLUSTER: foo
       # ECR_REGISTRY_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
