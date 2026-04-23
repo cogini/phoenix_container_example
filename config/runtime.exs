@@ -189,7 +189,8 @@ if config_env() == :prod do
             config: [
               cluster_name: System.get_env("ECS_CLUSTER_NAME", "foo"),
               service_name: System.get_env("ECS_SERVICE_NAME", "foo-app"),
-              app_prefix: "prod",
+              # app_prefix: System.get_env("RELEASE_NAME", "prod"),
+              app_prefix: System.get_env("RELEASE_VSN"),
               region: System.get_env("AWS_REGION", "us-east-1"),
               container_port: "DISTRIBUTION_PORT" |> System.get_env("7777") |> String.to_integer()
             ]
