@@ -15,17 +15,17 @@ on:
     #   - qa
     # tags: [prod]
     paths-ignore:
-      - 'README.md'
-      # - '.github/**'
-      - '.vscode'
-      - '.gitignore'
+      - "README.md"
+      # - ".github/**"
+      - ".vscode"
+      - ".gitignore"
+      - "terraform/*"
       # Handled by otel.yml GitHub Action
       - .github/workflows/otel.yml
-      - 'deploy/aws-otel-collector.Dockerfile'
-      - 'otel/*'
+      - "deploy/aws-otel-collector.Dockerfile"
+      - "otel/*"
       # Handled by newman.yml GitHub Action
       - 'deploy/newman.Dockerfile'
-      - 'terraform/*'
   # pull_request:
   #   # branches: [main]
   #   types: [opened,synchronize,reopened,labeled,unlabeled]
@@ -132,14 +132,15 @@ jobs:
       sync-matrix: ${{ steps.common-matrix.outputs.result }}
 
       # Select environment to deploy to based on git branch/tag
-      environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
+      environment: ${{ (github.ref_name == "main" && "staging") || (github.ref_name == "prod" && "production") }}
 
       # Whether to deploy. Only standard tags/branches deploy, not other dev branches.
-      deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
+      # deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
+      deploy: "1"
 
       # Whether to sync 3rd-party images to GHCR and ECR
-      # sync-images: '${{ steps.get-sync-images.outputs.result }}'
-      sync-images: '1'
+      # sync-images: "${{ steps.get-sync-images.outputs.result }}"
+      sync-images: "1"
 
       # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
       image-tag: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
@@ -150,31 +151,31 @@ jobs:
       image-tag-deploy: ${{ steps.get-image-tag-deploy.outputs.result }}
 
       # Enable AWS interactions in the build, including deploys.
-      aws-enabled: '1'
+      aws-enabled: "1"
 
       # Run unit tests
-      test: '1'
+      test: "1"
 
       # Run dialyzer
-      test-dialyzer: '0'
+      test-dialyzer: "0"
 
       # Security scan prod image
-      scan-prod-image: '0'
+      scan-prod-image: "0"
 
       # Security scan code image
-      scan-code: '0'
+      scan-code: "0"
 
       # GitHub Advanced Security, free for open source, otherwise a paid feature
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-      github-advanced-security: '0'
+      github-advanced-security: "0"
 
       # Create GitHub release for this build
-      create-release: '0'
+      create-release: "0"
 
       # Send results to Datadog
-      datadog: '0'
+      datadog: "0"
     steps:
       - name: Configure common-matrix
         id: common-matrix
