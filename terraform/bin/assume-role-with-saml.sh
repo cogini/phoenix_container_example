@@ -14,7 +14,7 @@ IN_FILE="samlresponse.log"
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-086708630682}"
 ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${IAM_ROLE_NAME:-ADFS-Vendor}"
 SAML_PROVIDER="arn:aws:iam::${AWS_ACCOUNT_ID}:saml-provider/ADFS"
-AWS_PROFILE="${AWS_PROFILE:-amtelco-test}"
+AWS_PROFILE="${AWS_PROFILE:-foo-test}"
 AWS_REGION="${AWS_REGION:-us-east-2}"
 
 OUT_FILE="$(mktemp -t saml)-assumed-role.json"
