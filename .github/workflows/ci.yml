@@ -206,9 +206,9 @@ jobs:
                 {
                   os: "debian",
                   elixir: "1.19.5",
-                  otp: "28.4.2",
-                  build_os_ver: "trixie-20260406-slim",
-                  prod_os_ver: "trixie-20260406-slim"
+                  otp: "28.5,
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
@@ -222,9 +222,9 @@ jobs:
               {
                 os: "debian",
                 elixir: "1.19.5",
-                otp: "28.4.2",
-                build_os_ver: "trixie-20260406-slim",
-                prod_os_ver: "trixie-20260406-slim"
+                otp: "28.5,
+                build_os_ver: "trixie-20260421-slim",
+                prod_os_ver: "trixie-20260421-slim"
               },
             ]
             let ci_nodes = [1, 2]
@@ -263,9 +263,9 @@ jobs:
                 {
                   os: "debian",
                   elixir: "1.19.5",
-                  otp: "28.4.2",
-                  build_os_ver: "trixie-20260406-slim",
-                  prod_os_ver: "trixie-20260406-slim"
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
@@ -280,9 +280,9 @@ jobs:
                 {
                   os: "debian",
                   elixir: "1.19.5",
-                  otp: "28.4.2",
-                  build_os_ver: "trixie-20260406-slim",
-                  prod_os_ver: "trixie-20260406-slim"
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
@@ -297,9 +297,9 @@ jobs:
                 {
                   os: "debian",
                   elixir: "1.19.5",
-                  otp: "28.4.2",
-                  build_os_ver: "trixie-20260406-slim",
-                  prod_os_ver: "trixie-20260406-slim"
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
