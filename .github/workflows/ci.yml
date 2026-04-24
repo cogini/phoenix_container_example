@@ -1401,7 +1401,7 @@ jobs:
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           FAMILY: "foo-app"
           GIT_HEAD_REF: ${{ github.head_ref }}
-          IMAGE_OTEL: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}aws-otel-collector:latest
+          IMAGE_OTEL: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}aws-otel-collector:latest"
           IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
           ROLES: "app,web"
           SERVICE: foo-app
