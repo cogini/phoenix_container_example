@@ -17,15 +17,15 @@ on:
     paths-ignore:
       - "README.md"
       # - ".github/**"
-      - ".vscode"
-      - ".gitignore"
+      - .vscode
+      - .gitignore
       - "terraform/*"
       # Handled by otel.yml GitHub Action
       - .github/workflows/otel.yml
-      - "deploy/aws-otel-collector.Dockerfile"
+      - deploy/aws-otel-collector.Dockerfile
       - "otel/*"
       # Handled by newman.yml GitHub Action
-      - 'deploy/newman.Dockerfile'
+      - deploy/newman.Dockerfile
   # pull_request:
   #   # branches: [main]
   #   types: [opened,synchronize,reopened,labeled,unlabeled]
@@ -39,20 +39,20 @@ env:
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
   # IMAGE_OWNER: cogini
-  # AWS ECR Docker repo org name (may be blank, otherwise must have trailing slash)
+  # AWS ECR Docker repo "org" name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
-  # ECR_IMAGE_OWNER: ''
+  # ECR_IMAGE_OWNER: ""
   # Tag for release images, used to find the latest deployed image.
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
-  # PUBLIC_REGISTRY: ''
-  PUBLIC_REGISTRY: 'ghcr.io/'
-  POSTGRES_REPO_ORG: 'cogini'
-  RABBITMQ_REPO_ORG: 'cogini'
-  AWS_OTEL_COLLECTOR_REPO_ORG: 'cogini'
+  # PUBLIC_REGISTRY: ""
+  PUBLIC_REGISTRY: "ghcr.io/"
+  AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
+  POSTGRES_REPO_ORG: ${{ github.repository_owner }}
+  RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
@@ -105,8 +105,8 @@ env:
   # secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
   # secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # Docker
-  DOCKER_BUILDKIT: '1'
-  COMPOSE_DOCKER_CLI_BUILD: '1'
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
@@ -170,6 +170,9 @@ jobs:
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       github-advanced-security: "0"
+
+      # Upload assets to S3
+      upload-assets: "0"
 
       # Create GitHub release for this build
       create-release: "0"
@@ -701,7 +704,7 @@ jobs:
   test-scan:
     name: Security scan code
     needs: [build-test, config]
-    if: needs.config.outputs.scan-code == '1'
+    if: needs.config.outputs.scan-code == "1"
     environment: ${{ needs.config.outputs.environment }}
     permissions:
       contents: read
@@ -729,7 +732,7 @@ jobs:
         #   fetch-depth: 0
 
       - name: Manual Trivy Setup
-        uses: aquasecurity/setup-trivy@0.2.6
+        uses: aquasecurity/setup-trivy@v0.2.6
         with:
           cache: true
           version: v0.68.2
@@ -738,10 +741,10 @@ jobs:
         uses: aquasecurity/trivy-action@0.69.3
         # https://github.com/marketplace/actions/aqua-security-trivy
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          scan-type: "fs"
+          scan-ref: "."
           ignore-unfixed: true
-          severity: 'CRITICAL'
+          severity: "CRITICAL"
           # trivy-config: trivy.yaml
           format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
           # output: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'trivy-results.sarif' }}
@@ -881,7 +884,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
 
       - name: Enable corepack
         run: corepack enable
@@ -893,7 +896,6 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Cache deps
-        id: cache-deps
         uses: actions/cache@v4
         env:
           cache-name: cache-elixir-deps-${{ github.ref_name }}
@@ -906,7 +908,6 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache compiled build
-        id: cache-build
         uses: actions/cache@v4
         env:
           cache-name: cache-compiled-build-${{ github.ref_name }}
@@ -920,7 +921,6 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache node-modules
-        id: node-modules
         uses: actions/cache@v4
         env:
           cache-name: cache-node-modules-${{ github.ref_name }}
@@ -974,17 +974,17 @@ jobs:
       - name: Build and deploy assets
         run: mix assets.deploy
 
-      # Copying is faster than syncing. With digested files, multiple versions
-      # can coexist on the server, and the app will choose the right ones.
       - name: Copy assets to S3
         if: env.AWS_ENABLED == '1'
+        # Copying is faster than syncing. With digested files, multiple versions
+        # can coexist on the server, and the app will choose the right ones.
         run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
 
-      # - name: Sync to S3
+      # - name: Sync assets to S3
       #   working-directory: app
       #   run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }} --delete
 
-      # We don't have to invalidate with using digested files.
+      # We don't have to invalidate when using digested files.
       # - name: Create CloudFront invalidation
       #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
@@ -1039,15 +1039,14 @@ jobs:
 
           # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+        # secrets: |
+        #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+        #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+        #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
   test-prod:
     name: Run external API tests
     needs: [build-prod, config]
-    environment: ${{ needs.config.outputs.environment }}
     permissions:
       id-token: write
       packages: read
@@ -1056,6 +1055,7 @@ jobs:
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
@@ -1083,7 +1083,7 @@ jobs:
         uses: actions/checkout@v6
 
       # - name: Configure AWS credentials
-      #   if: env.AWS_ENABLED == '1'
+      #   if: env.AWS_ENABLED == "1"
       #   uses: aws-actions/configure-aws-credentials@v6
       #   # https://github.com/aws-actions/configure-aws-credentials
       #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -1092,7 +1092,7 @@ jobs:
       #     aws-region: ${{ vars.AWS_REGION }}
 
       # - name: Get test data files
-      #   if: env.AWS_ENABLED == '1'
+      #   if: env.AWS_ENABLED == "1"
       #   run: |
       #     mkdir -p test-data
       #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
@@ -1100,14 +1100,14 @@ jobs:
 
       # Log into AWS to avoid rate limits on public ECR images
       # - name: Configure AWS credentials
-      #   if: env.AWS_ENABLED == '1'
+      #   if: env.AWS_ENABLED == "1"
       #   uses: aws-actions/configure-aws-credentials@v6
       #   with:
       #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       #     aws-region: ${{ vars.AWS_REGION }}
 
       # - name: Log in to Amazon ECR
-      #   if: env.AWS_ENABLED == '1'
+      #   if: env.AWS_ENABLED == "1"
       #   id: ecr-login
       #   uses: aws-actions/amazon-ecr-login@v2
 
@@ -1238,7 +1238,7 @@ jobs:
 
   scan:
     name: Security scan prod image
-    if: needs.config.outputs.scan-prod-image == '1'
+    if: needs.config.outputs.scan-prod-image == "1"
     needs: [build-prod, config]
     permissions:
       id-token: write
@@ -1294,7 +1294,7 @@ jobs:
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
           category: trivy
 
       - name: Scan image with Grype
@@ -1330,201 +1330,9 @@ jobs:
       #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
-  # upload-assets:
-  #   name: Upload assets to CDN
-  #   # Extract assets from container
-  #   if: github.event_name != 'pull_request'
-  #   # if: contains(github.ref, 'refs/heads/main')
-  #   # needs: [build-prod, test-prod, test]
-  #   # needs: [test-prod, test, test-dialyzer]
-  #   needs: [build-prod]
-  #   permissions:
-  #     # Interact with GitHub OIDC Token endpoint for AWS
-  #     id-token: write
-  #     contents: read
-  #     # Push to ghcr.io repository
-  #     packages: write
-  #     # Upload JUnit report files
-  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-  #     checks: write
-  #     pull-requests: write
-  #     issues: read
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ needs.config.outputs.environment }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.config.outputs.assets-matrix) }}
-  #   env:
-  #     MIX_ENV: prod
-  #   steps:
-  #     - name: Debug environment
-  #       run: |
-  #         echo "ref_name: ${{ github.ref_name }}"
-  #         echo "environment: ${{ github.event.deployment.environment }}"
-  #
-  #     - name: Log in to GHCR
-  #       uses: docker/login-action@v4
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Configure AWS credentials
-  #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v6
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-  #         aws-region: ${{ vars.AWS_REGION }}
-  #
-  #     - name: Check out source
-  #       uses: actions/checkout@v6
-  #
-  #     - name: Set up Docker buildx
-  #       id: buildx
-  #       uses: docker/setup-buildx-action@v3
-  #       with:
-  #         driver-opts: network=host
-  #
-  #     - name: Get build artifacts on host
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         file: ${{ env.DOCKER_FILE }}
-  #         target: artifacts
-  #         build-args: |
-  #           ELIXIR_VER=${{ matrix.elixir }}
-  #           OTP_VER=${{ matrix.otp }}
-  #           BUILD_OS_VER=${{ matrix.build_os_ver }}
-  #           PROD_OS_VER=${{ matrix.prod_os_ver }}
-  #         context: .
-  #         builder: ${{ steps.buildx.outputs.name }}
-  #         push: false
-  #         cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-  #         outputs: type=local,dest=output
-  #
-  #     - name: List output dir
-  #       run: find output/static -print
-  #
-  #     - name: Sync to S3
-  #       run: aws s3 sync output/static/ s3://${{ vars.S3_BUCKET_ASSETS }}
-  #
-  #     - name: Create CloudFront invalidation
-  #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
-
-  # upload-assets:
-  #   name: Build and upload assets to CDN
-  #   needs: [config]
-  #   # Build assets in host instead of Docker for better performance.
-  #   if: ${{ github.event_name != 'pull_request' }}
-  #   permissions:
-  #     # Interact with GitHub OIDC Token endpoint for AWS
-  #     id-token: write
-  #     contents: read
-  #     # Push to ghcr.io repository
-  #     packages: write
-  #     # Upload JUnit report files
-  #     # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-  #     checks: write
-  #     pull-requests: write
-  #     issues: read
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ needs.config.outputs.environment }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.config.outputs.assets-matrix) }}
-  #   env:
-  #     MIX_ENV: prod
-  #     AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
-  #   steps:
-  #     - name: Check out source
-  #       uses: actions/checkout@v6
-  #
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 18
-  #
-  #     - name: Enable corepack
-  #       run: corepack enable
-  #
-  #     - name: Install Erlang and Elixir
-  #       uses: erlef/setup-beam@v1
-  #       with:
-  #         otp-version: ${{ matrix.otp }}
-  #         elixir-version: ${{ matrix.elixir }}
-  #
-  #     - name: Cache deps
-  #       id: cache-deps
-  #       uses: actions/cache@v4
-  #       env:
-  #         cache-name: cache-elixir-deps
-  #       with:
-  #         path: deps
-  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-  #
-  #     - name: Cache compiled build
-  #       id: cache-build
-  #       uses: actions/cache@v4
-  #       env:
-  #         cache-name: cache-compiled-build
-  #       with:
-  #         path: _build
-  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-  #
-  #     - name: Cache node-modules
-  #       id: node-modules
-  #       uses: actions/cache@v4
-  #       env:
-  #         cache-name: cache-node-modules
-  #       with:
-  #         path: assets/node_modules
-  #         key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-  #
-  #     - name: Install build tools
-  #       run: mix do local.rebar --force, local.hex --force
-  #
-  #     # Force full recompile on builds that are retried.
-  #     - name: Clean deps to avoid flaky incremental builds
-  #       if: github.run_attempt != '1'
-  #       run: |
-  #         mix deps.clean --all
-  #         mix clean
-  #       shell: sh
-  #
-  #     - name: Get Elixir deps
-  #       run: mix deps.get
-  #
-  #     - name: Compile
-  #       run: mix compile
-  #
-  #     # - name: Install JavaScript libs
-  #     #   # working-directory: assets
-  #     #   # run: npm install && npm run deploy
-  #     #   run: yarn --cwd ./assets install --prod
-  #
-  #     - name: Deploy assets
-  #       run: mix assets.deploy
-  #
-  #     - name: Configure AWS credentials
-  #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v6
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-  #         aws-region: ${{ vars.AWS_REGION }}
-  #
-  #     - name: Sync to S3
-  #       run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }}
-  #
-  #     - name: Create CloudFront invalidation
-  #       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
-
   deploy-ecs:
     name: Deploy to AWS ECS
-    if: needs.config.outputs.deploy == '1'
+    if: needs.config.outputs.deploy == "1"
     # needs: [test-prod, test, test-dialyzer, upload-assets, config]
     needs: [test-prod, test, config]
     permissions:
@@ -1541,6 +1349,7 @@ jobs:
       ECS_CLUSTER: foo
       # ECR_REGISTRY_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -1562,7 +1371,8 @@ jobs:
       - name: Set vars for runtime info
         shell: bash
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
+          echo "GIT_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
+          echo "GIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
           echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
@@ -1574,117 +1384,94 @@ jobs:
 
       - name: Generate ECS task-defintion.json
         env:
-          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
-          AWSLOGS_GROUP: /ecs/foo-app
-          AWSLOGS_STREAM_PREFIX: foo-app
+          APP_CPU: 256
+          APP_PORT: 4000
+          APP_RAM: 512
+          ARCH: "X86_64"
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
-          SERVICE_NAME: foo-app
-          ECS_SERVICE: foo-app
-          ECS_CONTAINER: foo-app
-          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          CPU: 256
-          RAM: 2048
-          APP_IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-          # OTEL_IMAGE: "public.ecr.aws/aws-observability/aws-otel-collector:${{ vars.AWS_OTEL_VER }}"
-          TASKDEF: ecs/task-definition.json
-        run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
-
-      - name: Put new image ID in ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        env:
-          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-          ECS_SERVICE: foo-app
-          ECS_CONTAINER: foo-app
-          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
           AWSLOGS_GROUP: /ecs/foo-app
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
           AWSLOGS_STREAM_PREFIX: foo-app
-        with:
-          # https://github.com/aws-actions/amazon-ecs-render-task-definition
-          task-definition: ${{ env.TASKDEF }}
-          # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
-          # task-definition-family: ${{ env.ECS_FAMILY }}
-          container-name: ${{ env.ECS_CONTAINER }}
-          # This should match the image tag used in build-prod
-          image: ${{env.IMAGE}}
-          log-configuration-options: |
-            awslogs-create-group=true
-            awslogs-group=/ecs/${{ env.ECS_SERVICE }}
-            awslogs-region=${{ env.AWSLOGS_REGION }}
-            awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
-          # environment-variables: |
-          #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
+          BUILD_NUM: ${{ github.run_number }}
+          COMP: "app"
+          CONTAINER_NAME: foo-app
+          ENV: ${{ needs.config.outputs.environment }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+          FAMILY: "foo-app"
+          GIT_HEAD_REF: ${{ github.head_ref }}
+          IMAGE_OTEL: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}aws-otel-collector:latest
+          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+          ROLES: "app,web"
+          SERVICE: foo-app
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+        run: jq --null-input -f "ecs/task-definition.${COMP}.json.jq" | tee "/tmp/task-definition.${COMP}.json"
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         if: env.AWS_ENABLED == '1'
-        env:
-          ECS_SERVICE: foo-app
-          ECS_CONTAINER: foo-app
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          service: ${{ env.ECS_SERVICE }}
+          cluster: foo
+          service: foo-app
           # wait-for-service-stability: true
           # codedeploy-appspec: ecs/appspec.yml
           # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
           # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
-      - name: Generate ECS task-defintion.json (worker)
-        env:
-          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
-          AWSLOGS_GROUP: /ecs/foo-worker
-          AWSLOGS_STREAM_PREFIX: foo-worker
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
-          SERVICE_NAME: foo-worker
-          ECS_SERVICE: foo-worker
-          ECS_CONTAINER: foo-worker
-          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-          CPU: 256
-          RAM: 2048
-          TASKDEF: ecs/task-definition.worker.json
-        run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
+      # - name: Generate ECS task-defintion.json (worker)
+      #   env:
+      #     AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+      #     AWSLOGS_GROUP: /ecs/foo-worker
+      #     AWSLOGS_STREAM_PREFIX: foo-worker
+      #     AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      #     AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+      #     SERVICE_NAME: foo-worker
+      #     ECS_SERVICE: foo-worker
+      #     ECS_CONTAINER: foo-worker
+      #     EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+      #     IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+      #     TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+      #     CPU: 256
+      #     RAM: 2048
+      #     TASKDEF: ecs/task-definition.worker.json
+      #   run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
-      - name: Put new image ID in ECS task definition (worker)
-        id: task-def-worker
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        env:
-          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-          ECS_SERVICE: foo-worker
-          ECS_CONTAINER: foo-worker
-          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
-          AWSLOGS_GROUP: /ecs/foo-worker
-          AWSLOGS_STREAM_PREFIX: foo-worker
-        with:
-          # https://github.com/aws-actions/amazon-ecs-render-task-definition
-          task-definition: ${{ env.TASKDEF }}
-          # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
-          # task-definition-family: ${{ env.ECS_FAMILY }}
-          container-name: ${{ env.ECS_CONTAINER }}
-          # This should match the image tag used in build-prod
-          image: ${{env.IMAGE}}
-          log-configuration-options: |
-            awslogs-create-group=true
-            awslogs-group=/ecs/${{ env.ECS_SERVICE }}
-            awslogs-region=${{ env.AWSLOGS_REGION }}
-            awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
-          # environment-variables: |
-          #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
+      # - name: Put new image ID in ECS task definition (worker)
+      #   id: task-def-worker
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   env:
+      #     IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+      #     ECS_SERVICE: foo-worker
+      #     ECS_CONTAINER: foo-worker
+      #     AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+      #     AWSLOGS_GROUP: /ecs/foo-worker
+      #     AWSLOGS_STREAM_PREFIX: foo-worker
+      #   with:
+      #     # https://github.com/aws-actions/amazon-ecs-render-task-definition
+      #     task-definition: ${{ env.TASKDEF }}
+      #     # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
+      #     # task-definition-family: ${{ env.ECS_FAMILY }}
+      #     container-name: ${{ env.ECS_CONTAINER }}
+      #     # This should match the image tag used in build-prod
+      #     image: ${{env.IMAGE}}
+      #     log-configuration-options: |
+      #       awslogs-create-group=true
+      #       awslogs-group=/ecs/${{ env.ECS_SERVICE }}
+      #       awslogs-region=${{ env.AWSLOGS_REGION }}
+      #       awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
+      #     # environment-variables: |
+      #     #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
 
-      - name: Deploy to Amazon ECS (worker)
-        if: env.AWS_ENABLED == '1'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        env:
-          ECS_SERVICE: foo-worker
-        with:
-          task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          service: ${{ env.ECS_SERVICE }}
+      # - name: Deploy to Amazon ECS (worker)
+      #   if: env.AWS_ENABLED == '1'
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      #   env:
+      #     ECS_SERVICE: foo-worker
+      #   with:
+      #     task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
+      #     cluster: ${{ env.ECS_CLUSTER }}
+      #     service: ${{ env.ECS_SERVICE }}
 
       # - name: Run CodeBuild
       #   uses: aws-actions/aws-codebuild-run-build@v1
