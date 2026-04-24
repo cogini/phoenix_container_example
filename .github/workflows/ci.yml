@@ -1406,7 +1406,7 @@ jobs:
           FAMILY: "foo-app"
           GIT_HEAD_REF: ${{ github.head_ref }}
           IMAGE_OTEL: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}aws-otel-collector:latest"
-          IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
+          IMAGE: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}"
           ROLES: "app,web"
           SERVICE: foo-app
           TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
@@ -1416,7 +1416,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         if: env.AWS_ENABLED == '1'
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          task-definition: /tmp/task-definition.app.json
           cluster: foo
           service: foo-app
           # wait-for-service-stability: true
