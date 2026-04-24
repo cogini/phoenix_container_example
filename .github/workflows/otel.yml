@@ -34,6 +34,9 @@ env:
   # PUBLIC_REGISTRY: ''
   # Assume that base image has been synced to local registry
   PUBLIC_REGISTRY: 'ghcr.io/'
+  AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
+  POSTGRES_REPO_ORG: ${{ github.repository_owner }}
+  RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
@@ -46,15 +49,11 @@ env:
   #   vars.AWS_REGION
   # AWS role allowing GitHub Actions to access resources and deploy
   #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action-role
-  # GitHub Advanced Security, free for open source, otherwise a paid feature
-  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
-  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
   # Docker
   DOCKER_BUILDKIT: '1'
   DOCKER_FILE: deploy/aws-otel-collector.Dockerfile
 jobs:
-  build-otel:
+  build-prod:
     name: Build otel image
     permissions:
       id-token: write
@@ -62,10 +61,21 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    env:
-      AWS_ENABLED: '1'
-      AWS_REGION: "${{ vars.AWS_REGION }}"
     steps:
+      - name: Debug environment
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "ref: ${{ github.ref }}"
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "environment: ${{ needs.config.outputs.environment }}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -83,6 +93,8 @@ jobs:
         if: env.AWS_ENABLED == '1'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
+        # with:
+        #   registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || vars.AWS_ACCOUNT }}
 
       - name: Set vars
         if: env.AWS_ENABLED == '1'
@@ -102,10 +114,6 @@ jobs:
           echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
           echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
-      - name: Get branch name
-        shell: bash
-        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
-
       - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
@@ -115,12 +123,12 @@ jobs:
       - name: Build image and push
         if: env.AWS_ENABLED == '1'
         uses: docker/build-push-action@v6
-        env:
-          # REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          # https://hub.docker.com/r/amazon/aws-otel-collector/tags
-          BASE_IMAGE_TAG: 'v0.47.0'
         with:
           file: ${{ env.DOCKER_FILE }}
+          # https://hub.docker.com/r/amazon/aws-otel-collector/tags
+          build-args: |
+            AWS_REGION=${{ vars.AWS_REGION }}
+            BASE_IMAGE_TAG='v0.47.0'
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
