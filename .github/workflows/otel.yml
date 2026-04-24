@@ -116,7 +116,7 @@ jobs:
         uses: docker/build-push-action@v6
         env:
           # REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_REGION: "${{ vars.AWS_REGION }}"
           # https://hub.docker.com/r/amazon/aws-otel-collector/tags
           BASE_IMAGE_TAG: 'v0.47.0
         with:
