@@ -535,12 +535,12 @@ jobs:
 
       - name: Set up Docker buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           driver-opts: network=host
 
       - name: Build test image and push to GHCR
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
@@ -886,7 +886,7 @@ jobs:
       # We do it here instead of a separate task, as we need
       # priv/static/cache_manifest.json in the build.
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
 
@@ -900,7 +900,7 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Cache deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-elixir-deps-${{ github.ref_name }}
         with:
@@ -912,7 +912,7 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache compiled build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-compiled-build-${{ github.ref_name }}
         with:
@@ -925,7 +925,7 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache node-modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-node-modules-${{ github.ref_name }}
         with:
@@ -994,12 +994,12 @@ jobs:
 
       - name: Set up Docker buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           driver-opts: network=host
 
       - name: Build prod image and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
