@@ -93,7 +93,9 @@ env:
   # Target port for prod image tests
   APP_PORT: 4000
   # MIX_ENV: foo
+  # Elixir module, used in health checks
   ELIXIR_MODULE: PhoenixContainerExample
+  # Elixir module Erlang app name
   ELIXIR_APP: phoenix_container_example
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs

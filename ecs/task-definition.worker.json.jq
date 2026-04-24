@@ -88,7 +88,7 @@
       ],
       "essential": true,
       "healthCheck": {
-        "command": ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"],
+        "command": ["CMD", "/app/bin/prod", "eval", "\(env.ELIXIR_MODULE).Health.basic()"],
         "interval": 30,
         "timeout": 5,
         "retries": 3,
