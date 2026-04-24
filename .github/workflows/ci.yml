@@ -1039,6 +1039,7 @@ jobs:
 
           # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+
         # secrets: |
         #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
         #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -1698,7 +1699,8 @@ jobs:
       - name: Install regsync
         uses: regclient/actions/regsync-installer@v0.1.0
         with:
-          release: 'v0.11.1' # optional version
+          # optional version
+          release: 'v0.11.1'
 
       - name: Sync matrix images to GHCR
         run: regsync once -c deploy/regsync-ghcr-matrix.yml
@@ -1774,7 +1776,8 @@ jobs:
       - name: Install regsync
         uses: regclient/actions/regsync-installer@v0.1.0
         with:
-          release: 'v0.11.1' # optional version
+          # optional version
+          release: 'v0.11.1'
 
       - name: Sync images to GHCR
         run: regsync once -c deploy/regsync-ghcr.yml
