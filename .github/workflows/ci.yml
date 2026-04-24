@@ -16,14 +16,14 @@ on:
     # tags: [prod]
     paths-ignore:
       - "README.md"
-      # - ".github/**"
+      # - '.github/**'
       - .vscode
       - .gitignore
       - "terraform/*"
       # Handled by otel.yml GitHub Action
       - .github/workflows/otel.yml
       - deploy/aws-otel-collector.Dockerfile
-      - "otel/*"
+      - 'otel/*'
       # Handled by newman.yml GitHub Action
       - deploy/newman.Dockerfile
   # pull_request:
