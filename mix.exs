@@ -88,7 +88,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 1.0"},
-      {:hackney, "~> 3.2", override: true},
+      {:hackney, "~> 4.0", override: true},
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
       {:idna, "~> 7.1", override: true},
