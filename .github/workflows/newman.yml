@@ -7,7 +7,7 @@ on:
       - qa
     tags: [prod]
     paths:
-      - 'deploy/newman.Dockerfile'
+      - deploy/newman.Dockerfile
   pull_request:
     # branches: [main]
     types: [opened,synchronize,reopened,labeled,unlabeled]
