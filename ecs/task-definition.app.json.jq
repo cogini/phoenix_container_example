@@ -31,7 +31,7 @@
         },
         {
           "name": "APPSIGNAL_OTP_APP",
-          "value": "phoenix_container_example"
+          "value": env.ELIXIR_APP
         },
         {
           "name": "BUGSNAG_APP_VERSION",
