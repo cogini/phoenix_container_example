@@ -1035,8 +1035,8 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:build-${{ github.run_number }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:version-${{ env.APP_VERSION }}
 
-          # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:git-${{ github.sha }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:git-${{ github.sha }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:build-${{ github.run_number }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:version-${{ env.APP_VERSION }}
           # ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ steps.get-env-tag.outputs.result }}
@@ -1509,80 +1509,80 @@ jobs:
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
 
-  tag:
-    name: Tag prod images as latest
-    if: needs.config.outputs.deploy == '1'
-    needs: [deploy-ecs, config]
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
-    runs-on: ubuntu-latest
-    environment: ${{ needs.config.outputs.environment }}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
-    steps:
-      - name: Log in to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  # tag:
+  #   name: Tag prod images as latest
+  #   if: needs.config.outputs.deploy == '1'
+  #   needs: [deploy-ecs, config]
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ needs.config.outputs.environment }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
+  #   env:
+  #     DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+  #     VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+  #     AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+  #   steps:
+  #     - name: Log in to GHCR
+  #       uses: docker/login-action@v4
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure AWS credentials
-        if: env.AWS_ENABLED == '1'
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
+  #     - name: Configure AWS credentials
+  #       if: env.AWS_ENABLED == '1'
+  #       uses: aws-actions/configure-aws-credentials@v6
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        if: env.AWS_ENABLED == '1'
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+  #     - name: Log in to Amazon ECR
+  #       if: env.AWS_ENABLED == '1'
+  #       id: ecr-login
+  #       uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set vars
-        if: env.AWS_ENABLED == '1'
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+  #     - name: Set vars
+  #       if: env.AWS_ENABLED == '1'
+  #       run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
-      - name: Get branch name
-        shell: bash
-        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
+  #     - name: Get branch name
+  #       shell: bash
+  #       run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
 
-      - name: Set vars
-        env:
-          IMAGE_TAG: ${{ needs.config.outputs.image-tag }}
-          IMAGE_TAG_ECR: ${{ needs.config.outputs.image-tag-ecr }}
-        run: |
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
-          echo "IMAGE_TAG_ECR=${IMAGE_TAG_ECR}" >> "$GITHUB_ENV"
+  #     - name: Set vars
+  #       env:
+  #         IMAGE_TAG: ${{ needs.config.outputs.image-tag }}
+  #         IMAGE_TAG_ECR: ${{ needs.config.outputs.image-tag-ecr }}
+  #       run: |
+  #         echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+  #         echo "IMAGE_TAG_ECR=${IMAGE_TAG_ECR}" >> "$GITHUB_ENV"
 
-      # - name: Check out source
-      #   uses: actions/checkout@v6
+  #     # - name: Check out source
+  #     #   uses: actions/checkout@v6
 
-      - name: Tag GHCR release as latest
-        run: |
-          # skopeo copy --multi-arch=index-only \
-          skopeo copy \
-            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
-            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG}"
+  #     - name: Tag GHCR release as latest
+  #       run: |
+  #         # skopeo copy --multi-arch=index-only \
+  #         skopeo copy \
+  #           "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
+  #           "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG}"
 
-      - name: Tag ECR release as latest
-        if: env.AWS_ENABLED == '1'
-        run: |
-          MANIFEST=$(aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
-            --image-ids imageTag="${VAR}${IMAGE_VER}" \
-            --output json | jq --raw-output --join-output '.images[0].imageManifest')
-          export MANIFEST
-          aws ecr put-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
-            --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
-          # Requires higher permissions
-          # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
+  #     - name: Tag ECR release as latest
+  #       if: env.AWS_ENABLED == '1'
+  #       run: |
+  #         MANIFEST=$(aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
+  #           --image-ids imageTag="${VAR}${IMAGE_VER}" \
+  #           --output json | jq --raw-output --join-output '.images[0].imageManifest')
+  #         export MANIFEST
+  #         aws ecr put-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
+  #           --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
+  #         # Requires higher permissions
+  #         # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
 
   # deploy-codedeploy:
   #   name: Deploy using CodeDeploy
