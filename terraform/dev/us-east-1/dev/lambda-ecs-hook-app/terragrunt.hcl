@@ -16,7 +16,6 @@ locals {
   env              = local.environment_vars.locals.env
 }
 
-
 inputs = {
   description            = "ECS lifecycle callbacks for app"
   function_name          = "${local.app_name}-ecs-app"
