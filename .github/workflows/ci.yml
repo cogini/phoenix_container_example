@@ -41,15 +41,16 @@ env:
   # IMAGE_OWNER: cogini
   # AWS ECR Docker repo "org" name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
-  # ECR_IMAGE_OWNER: ""
+  # ECR_IMAGE_OWNER: ''
   # Tag for release images, used to find the latest deployed image.
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Registry for test images
+  # Registry for internal images
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
-  # PUBLIC_REGISTRY: ""
-  PUBLIC_REGISTRY: "ghcr.io/"
+  # PUBLIC_REGISTRY: ''
+  # Assume that base image has been synced to local registry
+  PUBLIC_REGISTRY: 'ghcr.io/'
   AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
   POSTGRES_REPO_ORG: ${{ github.repository_owner }}
   RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
@@ -64,7 +65,7 @@ env:
   # AWS default region
   #   vars.AWS_REGION
   # AWS role allowing GitHub Actions to access resources and deploy
-  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
+  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action-role
   # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
   #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # S3 bucket with data for testing

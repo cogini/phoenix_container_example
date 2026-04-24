@@ -5,13 +5,9 @@ name: OpenTelemetry
 
 on:
   push:
-    # branches:
-    #   - main
-    #   - qa
-    # tags: [prod]
     paths:
       - .github/workflows/otel.yml
-      - 'deploy/aws-otel-collector.Dockerfile'
+      - deploy/aws-otel-collector.Dockerfile
       - 'otel/*'
   # pull_request:
   #   # branches: [main]
@@ -24,22 +20,36 @@ env:
   IMAGE_NAME: aws-otel-collector
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # IMAGE_OWNER: foo
-  # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
+  # IMAGE_OWNER: cogini
+  # AWS ECR Docker repo "org" name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
-  # Tag for release images
+  # ECR_IMAGE_OWNER: ''
+  # Tag for release images, used to find the latest deployed image.
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
-  # Registry for test images
+  IMAGE_VER: ${{ github.sha }}
+  # Registry for internal images
   REGISTRY: ghcr.io/
-  # Registry for public images, default is docker.io
-  PUBLIC_REGISTRY: ''
+  # Registry for public images, default (blank) is docker.io
+  # PUBLIC_REGISTRY: ''
+  # Assume that base image has been synced to local registry
+  PUBLIC_REGISTRY: 'ghcr.io/'
+  # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
-  # Give GitHub Actions access to AWS
-  AWS_ENABLED: 1
-  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
-  # AWS_REGION: us-east-1
+  # GitHub Environment secrets and variables
+  # Docker Hub credentials to pull base images without rate limits
+  #   secrets.DOCKERHUB_USERNAME
+  #   secrets.DOCKERHUB_TOKEN
+  # AWS Account
+  #   secrets.AWS_ACCOUNT_ID
+  # AWS default region
+  #   vars.AWS_REGION
+  # AWS role allowing GitHub Actions to access resources and deploy
+  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action-role
+  # GitHub Advanced Security, free for open source, otherwise a paid feature
+  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
   # Docker
   DOCKER_BUILDKIT: '1'
   DOCKER_FILE: deploy/aws-otel-collector.Dockerfile
@@ -52,34 +62,36 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    env:
+      AWS_ENABLED: '1'
     steps:
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v5
+        if: env.AWS_ENABLED == '1'
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == '1'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == '1'
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
       - name: Set vars
         run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set variables
         id: vars
@@ -100,11 +112,13 @@ jobs:
           driver-opts: network=host
 
       - name: Build image and push
-        if: ${{ env.AWS_ENABLED == 1 }}
+        if: env.AWS_ENABLED == '1'
         uses: docker/build-push-action@v6
         env:
-          REGISTRY: "${{ env.ECR_REGISTRY }}/"
+          # REGISTRY: "${{ env.ECR_REGISTRY }}/"
           AWS_REGION: ${{ vars.AWS_REGION }}
+          # https://hub.docker.com/r/amazon/aws-otel-collector/tags
+          BASE_IMAGE_TAG: 'v0.47.0
         with:
           file: ${{ env.DOCKER_FILE }}
           context: .
@@ -121,6 +135,9 @@ jobs:
             org.opencontainers.image.created=${{ env.NOW }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ github.run_number }}
+            app.kubernetes.io/name=${{ env.IMAGE_NAME }}
+            app.kubernetes.io/part-of=${{ github.repository }}
+            app.kubernetes.io/version=${{ github.run_number }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
