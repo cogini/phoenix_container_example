@@ -116,13 +116,13 @@ jobs:
 
       - name: Set up Docker buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           driver-opts: network=host
 
       - name: Build image and push
         if: env.AWS_ENABLED == '1'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
           # https://hub.docker.com/r/amazon/aws-otel-collector/tags
