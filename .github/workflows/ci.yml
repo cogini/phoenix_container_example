@@ -15,7 +15,7 @@ on:
     #   - qa
     # tags: [prod]
     paths-ignore:
-      - "README.md"
+      - README.md
       # - '.github/**'
       - .vscode
       - .gitignore
@@ -45,7 +45,7 @@ env:
   # Tag for release images, used to find the latest deployed image.
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Registry for internal images
+  # Registry to pull internal images from
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
   # PUBLIC_REGISTRY: ''
@@ -63,9 +63,9 @@ env:
   # AWS Account
   #   secrets.AWS_ACCOUNT_ID
   # AWS default region
-  #   vars.AWS_REGION
+  #   vars.AWS_REGION: us-east-1
   # AWS role allowing GitHub Actions to access resources and deploy
-  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action-role
+  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action
   # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
   #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
   # S3 bucket with data for testing
@@ -78,7 +78,7 @@ env:
   #   secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
   #   secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # AWS Systems Manager Parameter Store prefix for config keys
-  #   vars.AWS_PS_PREFIX
+  #   vars.AWS_PS_PREFIX: cogini/foo/prod
   # AWS CloudFront distribution ID to invalidate cache after deploy
   #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # AppSignal API key for error reporting
@@ -93,7 +93,6 @@ env:
   # secrets.SNYK_TOKEN
   # Target port for prod image tests
   APP_PORT: 4000
-  # MIX_ENV: foo
   # Elixir module, used in health checks
   ELIXIR_MODULE: PhoenixContainerExample
   # Elixir module Erlang app name
