@@ -5,7 +5,13 @@ defmodule PhoenixContainerExample.Config.Endpoint do
 
   require Logger
 
-  @doc "Get https options from OS environment."
+  @doc """
+  Get https options from OS environment.
+
+  `env` is a map of environment variable names to values.
+  `names` is a from environment variables names to keys in the endpoint https configuration.
+  `default_opts` are default options for the endpoint https configuration.
+  """
   @spec https_opts(map(), map(), keyword()) :: keyword() | false
   def https_opts(env, names, default_opts \\ []) do
     opts =
@@ -16,9 +22,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     if Enum.empty?(opts) do
       false
     else
-      result = adapter_opts(default_opts, opts)
-      Logger.info("HTTPS options: #{inspect(result)}")
-      result
+      adapter_opts(default_opts, opts)
     end
   end
 
@@ -33,7 +37,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   defp convert_opt(:port, value) when is_binary(value), do: String.to_integer(value)
   defp convert_opt(:port, value) when is_integer(value), do: value
 
-  @doc "Convert PEM-encoded certificate to Erlang public_key format."
+  @doc "Parse PEM-encoded certificate to DER format."
   @spec convert_pem_cert(binary()) :: [:public_key.pem_entry()]
   def convert_pem_cert(value) do
     value
