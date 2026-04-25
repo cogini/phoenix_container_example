@@ -1,5 +1,5 @@
 import Config
-# import Dotenvy
+import Dotenvy
 
 alias Elixir.Cluster.Strategy.DNSPoll
 alias PhoenixContainerExample.Config.Endpoint, as: EndpointConfig
