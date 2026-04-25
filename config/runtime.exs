@@ -22,8 +22,8 @@ env_config = [
   {"BUGSNAG_API_KEY", :string, :bugsnag, :api_key},
   {"BUGSNAG_APP_VERSION", :string, :bugsnag, :app_version},
   {"BUGSNAG_RELEASE_STAGE", :string, :bugsnag, :release_stage},
-  {"DB_POOL_SIZE", :integer, :cogito, PhoenixContainerExample.Repo, :pool_size},
-  {"ECTO_LOG", :atom, :cogito, PhoenixContainerExample.Repo, :log},
+  {"DB_POOL_SIZE", :integer, :phoenix_container_example, PhoenixContainerExample.Repo, :pool_size},
+  {"ECTO_LOG", :atom, :phoenix_container_example, PhoenixContainerExample.Repo, :log},
   {"LIBCLUSTER_DEBUG", :boolean, :libcluster, :debug}
 ]
 
@@ -35,37 +35,13 @@ for {env, type, app, parent_key, key} <- env_config, value = env!(env, type, nil
   config(app, parent_key, [{key, value}])
 end
 
-config :ex_aws,
-  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
-  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
-  region: System.get_env("AWS_REGION", "us-east-1")
-
-if env!("OTEL_DEBUG", :boolean, false) do
-  config :opentelemetry, :processors,
-    otel_batch_processor: %{
-      exporter: {:otel_exporter_stdout, []}
-    }
-end
-
 if config_env() == :prod do
-  database_url =
-    System.get_env("DATABASE_URL") ||
-      raise """
-      environment variable DATABASE_URL is missing.
-      For example: ecto://USER:PASS@HOST/DATABASE
-      """
+  database_url = env!("DATABASE_URL", :string!)
 
   maybe_ecto_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
   maybe_ecto_ssl = System.get_env("ECTO_SSL") in ~w(true 1)
   # Logger log level for query. Can be any of Logger.level/0 values or false
   ecto_log = System.get_env("ECTO_LOG") || false
-
-  secret_key_base =
-    System.get_env("SECRET_KEY_BASE") ||
-      raise """
-      environment variable SECRET_KEY_BASE is missing.
-      You can generate one by calling: mix phx.gen.secret
-      """
 
   host = System.get_env("PHX_HOST", "example.com")
   port = String.to_integer(System.get_env("PORT", "4000"))
@@ -85,7 +61,7 @@ if config_env() == :prod do
     # adapter: Phoenix.Endpoint.Cowboy2Adapter
     url: [host: host, port: 443, scheme: "https"],
     # static_url: [host: "assets." <> host, port: 443, scheme: "https"],
-    secret_key_base: secret_key_base,
+    secret_key_base: env!("SECRET_KEY_BASE", :string!),
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -109,8 +85,8 @@ if config_env() == :prod do
           # "HTTPS_PORT" => :port
         },
         port: String.to_integer(System.get_env("HTTPS_PORT", "4443")),
-        cipher_suite: :strong,
-        log_level: :warning
+        cipher_suite: :strong
+        # log_level: :warning
       )
 
   config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
@@ -124,7 +100,37 @@ if config_env() == :prod do
     config :swoosh, local: false
   end
 
-  config :libcluster, debug: true
+config :ex_aws,
+  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
+  region: System.get_env("AWS_REGION", "us-east-1")
+
+if env!("OTEL_DEBUG", :boolean, false) do
+  config :opentelemetry, :processors,
+    otel_batch_processor: %{
+      exporter: {:otel_exporter_stdout, []}
+    }
+end
+
+
+if config_env() == :prod do
+  config :phoenix_container_example, PhoenixContainerExample.PromEx,
+    metrics_server: [
+      port: env!("PROMETHEUS_PORT", :integer, 9111)
+    ]
+end
+
+grafana_host = System.get_env("GRAFANA_HOST")
+
+if grafana_host && String.starts_with?(grafana_host, "http") do
+  config :phoenix_container_example, PhoenixContainerExample.PromEx,
+    grafana: [
+      host: env!("GRAFANA_HOST", :string),
+      auth_token: env!("GRAFANA_AUTH_TOKEN", :string),
+      # upload_dashboards_on_start: true
+      annotate_app_lifecycle: true
+    ]
+end
 
   # https://dmblake.com/elixir-clustering-with-libcluster-and-aws-ecs-fargate-in-cdk
   case System.get_env("LIBCLUSTER_STRATEGY", "none") do
