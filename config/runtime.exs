@@ -4,6 +4,12 @@ import Dotenvy
 alias Elixir.Cluster.Strategy.DNSPoll
 alias PhoenixContainerExample.Config.Endpoint, as: EndpointConfig
 
+source([
+  # ".env.default",
+  # ".env.#{config_env()}",
+  System.get_env()
+])
+
 roles = "ROLES" |> System.get_env("app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
 
