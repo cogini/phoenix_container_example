@@ -80,6 +80,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
       {:dns_cluster, "~> 0.2.0"},
+      {:dotenvy, "~> 1.1.0"},
       {:ecto_sql, "~> 3.10"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:ex_aws, "~> 2.5"},
