@@ -100,37 +100,36 @@ if config_env() == :prod do
     config :swoosh, local: false
   end
 
-config :ex_aws,
-  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
-  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
-  region: System.get_env("AWS_REGION", "us-east-1")
+  config :ex_aws,
+    access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+    secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
+    region: System.get_env("AWS_REGION", "us-east-1")
 
-if env!("OTEL_DEBUG", :boolean, false) do
-  config :opentelemetry, :processors,
-    otel_batch_processor: %{
-      exporter: {:otel_exporter_stdout, []}
-    }
-end
+  if env!("OTEL_DEBUG", :boolean, false) do
+    config :opentelemetry, :processors,
+      otel_batch_processor: %{
+        exporter: {:otel_exporter_stdout, []}
+      }
+  end
 
+  if config_env() == :prod do
+    config :phoenix_container_example, PhoenixContainerExample.PromEx,
+      metrics_server: [
+        port: env!("PROMETHEUS_PORT", :integer, 9111)
+      ]
+  end
 
-if config_env() == :prod do
-  config :phoenix_container_example, PhoenixContainerExample.PromEx,
-    metrics_server: [
-      port: env!("PROMETHEUS_PORT", :integer, 9111)
-    ]
-end
+  grafana_host = System.get_env("GRAFANA_HOST")
 
-grafana_host = System.get_env("GRAFANA_HOST")
-
-if grafana_host && String.starts_with?(grafana_host, "http") do
-  config :phoenix_container_example, PhoenixContainerExample.PromEx,
-    grafana: [
-      host: env!("GRAFANA_HOST", :string),
-      auth_token: env!("GRAFANA_AUTH_TOKEN", :string),
-      # upload_dashboards_on_start: true
-      annotate_app_lifecycle: true
-    ]
-end
+  if grafana_host && String.starts_with?(grafana_host, "http") do
+    config :phoenix_container_example, PhoenixContainerExample.PromEx,
+      grafana: [
+        host: env!("GRAFANA_HOST", :string),
+        auth_token: env!("GRAFANA_AUTH_TOKEN", :string),
+        # upload_dashboards_on_start: true
+        annotate_app_lifecycle: true
+      ]
+  end
 
   # https://dmblake.com/elixir-clustering-with-libcluster-and-aws-ecs-fargate-in-cdk
   case System.get_env("LIBCLUSTER_STRATEGY", "none") do
