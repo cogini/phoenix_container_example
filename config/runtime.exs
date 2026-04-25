@@ -24,7 +24,7 @@ env_config = [
   {"BUGSNAG_RELEASE_STAGE", :string, :bugsnag, :release_stage},
   {"DB_POOL_SIZE", :integer, :cogito, PhoenixContainerExample.Repo, :pool_size},
   {"ECTO_LOG", :atom, :cogito, PhoenixContainerExample.Repo, :log},
-  {"LIBCLUSTER_DEBUG", :boolean, :libcluster, :debug},
+  {"LIBCLUSTER_DEBUG", :boolean, :libcluster, :debug}
 ]
 
 for {env, type, app, key} <- env_config, value = env!(env, type, nil) do
@@ -34,7 +34,6 @@ end
 for {env, type, app, parent_key, key} <- env_config, value = env!(env, type, nil), value != nil do
   config(app, parent_key, [{key, value}])
 end
-
 
 config :ex_aws,
   access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
@@ -47,7 +46,6 @@ if env!("OTEL_DEBUG", :boolean, false) do
       exporter: {:otel_exporter_stdout, []}
     }
 end
-
 
 if config_env() == :prod do
   database_url =
