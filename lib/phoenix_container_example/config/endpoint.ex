@@ -3,7 +3,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   Utility functions for configuring endpoint.
   """
 
-  require Logger
+  # require Logger
 
   @doc """
   Get https options from OS environment.
