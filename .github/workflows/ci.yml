@@ -97,9 +97,6 @@ env:
   ELIXIR_MODULE: PhoenixContainerExample
   # Elixir module Erlang app name
   ELIXIR_APP: phoenix_container_example
-  CODEDEPLOY_APPLICATION: foo-app
-  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
-  CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
   # APPSIGNAL_APP_NAME: bounce
@@ -142,7 +139,7 @@ jobs:
       deploy: '1'
 
       # Whether to sync 3rd-party images to GHCR and ECR
-      # sync-images: "${{ steps.get-sync-images.outputs.result }}"
+      # sync-images: '${{ steps.get-sync-images.outputs.result }}'
       sync-images: '1'
 
       # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
@@ -179,6 +176,9 @@ jobs:
 
       # Create GitHub release for this build
       create-release: '0'
+
+      # Deploy using AWS CodeDeploy
+      deploy-codedeploy: '0'
 
       # Send results to Datadog
       datadog: '0'
@@ -468,7 +468,6 @@ jobs:
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
-        # https://github.com/marketplace/actions/docker-login
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -810,7 +809,6 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-      # MIX_ENV: prod
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
       - name: Debug environment
@@ -1038,9 +1036,8 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:build-${{ github.run_number }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:version-${{ env.APP_VERSION }}
 
-          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-
+        # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+        # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
         # secrets: |
         #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
         #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -1062,11 +1059,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
     env:
+      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      CREATE_RELEASE: ${{ needs.config.outputs.create-release == '1' && '1' || '0' }}
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       # GH_TOKEN: ${{ github.token }}
       IMAGE_VER: ${{ github.sha }}
-      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -1152,7 +1150,7 @@ jobs:
 
       # - name: Initialize database
       #   run: |
-      #     # Rundandant with bin/start-docker
+      #     # Redundant with bin/start-docker
       #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
       #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
       #     docker compose run --entrypoint bin/prod prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
@@ -1208,35 +1206,38 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
-      # - name: Copy Erlang release files from container
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+      - name: Copy Erlang release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
-      # - name: Copy CodeDeploy release files from container
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+      - name: Copy CodeDeploy release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
-      # - name: Copy Ansible release files from container
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+      - name: Copy Ansible release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
   scan:
     name: Security scan prod image
@@ -1332,11 +1333,12 @@ jobs:
       #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
+
   deploy-ecs:
     name: Deploy to AWS ECS
     if: needs.config.outputs.deploy == '1'
-    # needs: [test-prod, test, test-dialyzer, upload-assets, config]
-    needs: [test-prod, test, config]
+    # needs: [test, test-prod, test-dialyzer, upload-assets, config]
+    needs: [test, test-prod, config]
     permissions:
       id-token: write
       contents: read
@@ -1352,20 +1354,14 @@ jobs:
       # ECR_REGISTRY_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       IMAGE_TAG: ${{ github.sha }}
+      CODEDEPLOY_APPLICATION: foo-app
+      CODEDEPLOY_DEPLOYMENT_GROUP: foo-app
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set vars
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
-        # echo "ECR_REGISTRY=${{ env.ECR_REGISTRY_ID }}.dkr.ecr.${{ env.ECR_REGISTRY_REGION }}.amazonaws.com" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -1376,6 +1372,14 @@ jobs:
           echo "GIT_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
           echo "GIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
           echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+        # echo "ECR_REGISTRY=${{ env.ECR_REGISTRY_ID }}.dkr.ecr.${{ env.ECR_REGISTRY_REGION }}.amazonaws.com" >> "$GITHUB_ENV"
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
@@ -1411,7 +1415,6 @@ jobs:
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        if: env.AWS_ENABLED == '1'
         with:
           task-definition: /tmp/task-definition.app.json
           cluster: foo
@@ -1506,6 +1509,93 @@ jobs:
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
 
+
+  deploy-codedeploy:
+    name: Deploy using CodeDeploy
+    if: needs.config.outputs.deploy-codedeploy == '1'
+    # needs: [test, test-prod, test-dialyzer, upload-assets, config]
+    needs: [test, test-prod, create-release, config]
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
+    env:
+      CODEDEPLOY_APPLICATION: foo-app
+      CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
+      CODEDEPLOY_DEPLOYMENT_GROUP: foo-app
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.create-release.outputs.release-tag }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set vars for runtime info
+        shell: bash
+        run: |
+          echo "GIT_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
+          echo "GIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
+
+      - name: Download release files
+        run: |
+          gh release download "${RELEASE_TAG}" -p "codedeploy-revision-${{ github.run_number }}-${VAR}.zip"
+          mkdir -p revision
+          unzip -o "codedeploy-revision-${{ github.run_number }}-${VAR}.zip" -d revision
+
+      - name: Set vars
+        # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{ github.run_number }}-${{env.VAR}}.zip" >> $GITHUB_ENV
+        # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
+        # echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
+        run: |
+          echo "RELEASE_TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+          echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
+          echo "GIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
+
+      - name: Copy Erlang release file to S3
+        env:
+          ERLANG_RELEASE_FILE: "erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+        run: |
+          gh release download "${RELEASE_TAG}" -p "${ERLANG_RELEASE_FILE}"
+          aws s3 cp "${ERLANG_RELEASE_FILE}" "s3://${CODEDEPLOY_BUCKET}/erlang-release/${{ github.run_number }}/${VAR}/public.tar.gz"
+
+      - name: Copy Ansible release file to S3
+        env:
+          # Convert matrix os/version name to name in Ansible inventory
+          ANSIBLE_OS: ${{(matrix.os == 'alma' && 'AlmaLinux') || (matrix.os == 'centos7' && 'CentOS') || (matrix.os == 'rocky' && 'Rocky') || (matrix.os == 'ubuntu' && 'Ubuntu') }}
+          ANSIBLE_OS_VER: ${{ (matrix.os == 'ubuntu' && matrix.prod_os_ver == 'jammy' && '22') || (matrix.os == 'ubuntu' && matrix.prod_os_ver == 'noble' && '24') || (matrix.os != 'ubuntu' && matrix.build_os_ver) || (matrix.os == 'centos7' && '7') }}
+          ANSIBLE_RELEASE_FILE: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+        run: |
+          gh release download "${RELEASE_TAG}" -p "${ANSIBLE_RELEASE_FILE}"
+          aws s3 cp "${ANSIBLE_RELEASE_FILE}" "s3://${CODEDEPLOY_BUCKET}/ansible-release/${{ github.run_number }}/ansible-release-${ANSIBLE_OS}-${ANSIBLE_OS_VER}.zip"
+
+      - name: Create CodeDeploy revision
+        run: |
+          aws deploy push --application-name "${CODEDEPLOY_APPLICATION}" \
+            --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}" \
+            --s3-location "s3://${CODEDEPLOY_BUCKET}/${REVISION_FILE}" \
+            --source revision
+
+      - name: Create CodeDeploy deployment
+        run: |
+          aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
+            --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}-${{ matrix.os }}" \
+            --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
+            --description "Bounce ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
+
+
   # tag:
   #   name: Tag prod images as latest
   #   if: needs.config.outputs.deploy == '1'
@@ -1580,84 +1670,6 @@ jobs:
   #           --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
   #         # Requires higher permissions
   #         # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
-
-  # deploy-codedeploy:
-  #   name: Deploy using CodeDeploy
-  #   # if: env.AWS_ENABLED == '1'
-  #   # needs: [test-prod, test, test-dialyzer, upload-assets, config]
-  #   needs: [test, test-dialyzer, test-prod, config, create-release]
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #     packages: write
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-  #   # environment: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'staging') || 'staging' }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
-  #   env:
-  #     DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-  #     VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-  #     GH_TOKEN: ${{ github.token }}
-  #     RELEASE_TAG: ${{ needs.create-release.outputs.release-tag }}
-  #     AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       if: env.AWS_ENABLED == '1'
-  #       uses: aws-actions/configure-aws-credentials@v6
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-  #         aws-region: ${{ vars.AWS_REGION }}
-  #
-  #     - name: Check out source
-  #       uses: actions/checkout@v6
-  #
-  #     - name: Set variables
-  #       id: vars
-  #       run: |
-  #         echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-  #
-  #     - name: Download release files
-  #       run: |
-  #         gh release download "${RELEASE_TAG}" -p "codebuild-revision-${VAR}.zip"
-  #         mkdir -p revision
-  #         unzip -o "codebuild-revision-${VAR}.zip" -d revision
-  #
-  #     - name: Set variables
-  #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-$(date +'%Y%m%d%H%M%S')-${{ github.run_number }}-${{env.VAR}}.zip" >> $GITHUB_ENV
-  #       # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
-  #       # echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
-  #       run: |
-  #         echo "RELEASE_TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
-  #         echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
-  #
-  #     # - name: Copy Ansible release files to S3
-  #     #   run: |
-  #     #     gh release download "${RELEASE_TAG}" -p "ansible-release-${VAR}.zip"
-  #     #     aws s3 cp "ansible-release-${VAR}.zip" "s3://${CODEDEPLOY_BUCKET}/ansible-release-${VAR}-${RELEASE_TIMESTAMP}.zip"
-  #
-  #     - name: Create CodeDeploy revision
-  #       run: |
-  #         aws deploy push --application-name "${CODEDEPLOY_APPLICATION}" \
-  #           --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}" \
-  #           --s3-location s3://${CODEDEPLOY_BUCKET}/${REVISION_FILE} \
-  #           --source revision
-  #
-  #     - name: Create CodeDeploy deployment for dev servers
-  #       run: |
-  #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
-  #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}-dev-${{ matrix.os }}" \
-  #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
-  #           --description "Bounce ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
-  #
-  #     - name: Create CodeDeploy deployment
-  #       # if: ${{ matrix.os == 'debian' }}
-  #       run: |
-  #         aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
-  #           --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}" \
-  #           --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
-  #           --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
 
   # Copy Elixir and OS base images to GHCR
   # Avoids rate limits and speeds up pull performance
