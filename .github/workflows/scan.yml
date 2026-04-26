@@ -16,266 +16,1215 @@ env:
   IMAGE_NAME: foo-app
   # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # IMAGE_OWNER: foo
-  # ECR Docker repo org name (may be blank, otherwise must have trailing slash)
+  # IMAGE_OWNER: cogini
+  # AWS ECR Docker repo "org" name (may be blank, otherwise must have trailing slash)
   ECR_IMAGE_OWNER: cogini/
-  # Tag for release images
-  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  # ECR_IMAGE_OWNER: ''
+  # Tag for release images, used to find the latest deployed image.
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Registry for test images
+  # Registry to pull internal images from
   REGISTRY: ghcr.io/
-  # Registry for public images, default is docker.io
-  PUBLIC_REGISTRY: ''
-  # Give GitHub Actions access to AWS
-  AWS_ENABLED: 1
-  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cogini-foo-dev-app-github-action
-  # AWS_REGION: us-east-1
-  # S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
-  # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
-  # S3_BUCKET_CI: cogini-prod-foo-ci
-  # Health check port for app
+  # Registry for public images, default (blank) is docker.io
+  # PUBLIC_REGISTRY: ''
+  # Assume that base image has been synced to local registry
+  PUBLIC_REGISTRY: 'ghcr.io/'
+  AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
+  POSTGRES_REPO_ORG: ${{ github.repository_owner }}
+  RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
+  # Git "main" branch. This might be "master" for old repos
+  MAIN_BRANCH: main
+  # GitHub Environment secrets and variables
+  # Docker Hub credentials to pull base images without rate limits
+  #   secrets.DOCKERHUB_USERNAME
+  #   secrets.DOCKERHUB_TOKEN
+  # AWS Account
+  #   secrets.AWS_ACCOUNT_ID
+  # AWS default region
+  #   vars.AWS_REGION: us-east-1
+  # AWS role allowing GitHub Actions to access resources and deploy
+  #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action
+  # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
+  #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
+  # S3 bucket with data for testing
+  #   vars.S3_BUCKET_CI: cogini-prod-foo-ci
+  # SSH key to access private repos during build
+  #   secrets.SSH_PRIVATE_KEY
+  # GitHub access token to access other repositories during build
+  #   secrets.DEVOPS_ACCESS_TOKEN
+  # AWS ECS deployment role names to put in task definition
+  #   secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  #   secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
+  # AWS Systems Manager Parameter Store prefix for config keys
+  #   vars.AWS_PS_PREFIX: cogini/foo/prod
+  # AWS CloudFront distribution ID to invalidate cache after deploy
+  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
+  # AppSignal API key for error reporting
+  #   secrets.APPSIGNAL_PUSH_API_KEY
+  # DataDog API key for reporting test results
+  #   secrets.ACTIONS_DD_API_KEY
+  #   secrets.DD_API_KEY
+  # Oban Pro license
+  #   secrets.OBAN_KEY_FINGERPRINT
+  #   secrets.OBAN_LICENSE_KEY
+  # secrets.GITLEAKS_LICENSE
+  # secrets.SNYK_TOKEN
+  # Target port for prod image tests
   APP_PORT: 4000
-  # Datadog
-  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-  # DD_ENV: ci
-  # DD_TAGS: "environment:ci"
-  # MIX_ENV: foo
+  # Elixir module, used in health checks
   ELIXIR_MODULE: PhoenixContainerExample
-  ECS_CLUSTER: foo
-  ECS_SERVICE: foo-app
-  ECS_CONTAINER: foo-app
-  ECS_CPU: 256
-  ECS_RAM: 2048
-  CODEDEPLOY_APPLICATION: foo-app
-  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
-  # CODEDEPLOY_BUCKET: foo-prod-bounce-public-deploy
-  TASKDEF: ecs/task-definition.json
-  ECS_SERVICE_WORKER: foo-worker
-  ECS_CONTAINER_WORKER: foo-worker
-  ECS_CPU_WORKER: 256
-  ECS_RAM_WORKER: 2048
-  TASKDEF_WORKER: ecs/task-definition.worker.json
-  APPSPEC: ecs/appspec.yml
+  # Elixir module Erlang app name
+  ELIXIR_APP: phoenix_container_example
   # AWS SSM Parameter Store name prefix
   # AWS_PS_PREFIX: cogini/foo/dev
   # APPSIGNAL_APP_NAME: bounce
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
-  # TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
-  # EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
-  # GitHub Advanced Security, free for open source, otherwise a paid feature
-  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
-  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-  GITHUB_ADVANCED_SECURITY: 0
-  DEPLOY_DOCKER_HUB: 0
+  # secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
+  # secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
-  setup-matrix:
-    name: Set up build matrix
+  config:
+    name: Configure build
     runs-on: ubuntu-latest
     outputs:
-      # Elixir/Erlang/OS combinations for tests
+      # Combinations of Elixir/Erlang/OS to run internal tests on
       # Generally this will match prod
       test-matrix: ${{ steps.common-matrix.outputs.result }}
+      # Combinations to tests on in parallel, i.e., mix test with partitions
+      test-matrix-parallel: ${{ steps.test-matrix-parallel.outputs.result }}
       # Combinations for prod images
       # Used for the final deploy image as well as external tests
       prod-matrix: ${{ steps.prod-matrix.outputs.result }}
-      # Combinations to deploy to prod (or staging)
-      # Generally this will only be a single variant
+      # Combinations to deploy (to prod or another environment)
+      # Usually only a single variant
       deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
       # Combinations used to build assets
-      # Generally this will only be a single variant
+      # Usually only a single variant
       assets-matrix: ${{ steps.assets-matrix.outputs.result }}
+      # Combinations to sync images to GHCR for
+      sync-matrix: ${{ steps.common-matrix.outputs.result }}
+
+      # Select environment to deploy to based on git branch/tag
+      environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
+
+      # Whether to deploy. Only standard tags/branches deploy, not other dev branches.
+      # deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
+      deploy: '1'
+
+      # Sync base and 3rd-party images to GHCR
+      # sync-images: '${{ steps.get-sync-images.outputs.result }}'
+      sync-images: '1'
+
+      # Sync 3rd-party images to ECR
+      # sync-images-ecr: '${{ steps.get-sync-images.outputs.result }}'
+      sync-images-ecr: '0'
+
+      # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
+      image-tag: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
+
+      # Tag for ECR images. Repos are separate between environments, so each gets "latest" tag
+      image-tag-ecr: ${{ contains(fromJson('["main", "staging", "prod"]'), github.ref_name) && 'latest' || github.ref_name }}
+
+      image-tag-deploy: ${{ steps.get-image-tag-deploy.outputs.result }}
+
+      # Enable AWS interactions in the build, including deploys.
+      aws-enabled: '1'
+
+      # Run unit tests
+      test: '1'
+
+      # Run dialyzer
+      test-dialyzer: '0'
+
+      # Security scan prod image
+      scan-prod-image: '0'
+
+      # Security scan code image
+      scan-code: '0'
+
+      # GitHub Advanced Security, free for open source, otherwise a paid feature
+      # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+      github-advanced-security: '0'
+
+      # Upload assets to S3
+      upload-assets: '0'
+
+      # Create GitHub release for this build
+      create-release: '0'
+
+      # Deploy using AWS CodeDeploy
+      deploy-codedeploy: '0'
+
+      # Send results to Datadog
+      datadog: '0'
     steps:
-      - uses: actions/github-script@v7
+      - name: Configure common-matrix
         id: common-matrix
+        uses: actions/github-script@v8
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
                 # {
                 #   os: "alma",
                 #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "10",
-                #   prod_os_ver: "10"
+                #   otp: "28.1",
+                #   build_os_ver: "8",
+                #   prod_os_ver: "8"
                 # },
                 # {
-                #   os: "alpine",
+                #   os: "centos7",
                 #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "3.21.3",
-                #   prod_os_ver: "3.21.3"
-                # },
-                # {
-                #   os: "distroless",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "bookworm-20250630-slim",
-                #   prod_os_ver: "bookworm-slim"
-                # },
-                # {
-                #   os: "rocky",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "9",
-                #   prod_os_ver: "9"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "chiseled",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "noble-20250619",
-                #   prod_os_ver: "noble"
+                #   otp: "28.1",
+                #   build_os_ver: "7.9.2009",
+                #   prod_os_ver: "7.9.2009"
                 # },
         with:
           script: |
             return {
               include: [
                 {
-                  os: "centos7",
-                  elixir: "1.18.4",
-                  otp: "28.0.1",
-                  build_os_ver: "7",
-                  prod_os_ver: "7"
-                },
-                {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.0.1",
-                  build_os_ver: "bookworm-20250630-slim",
-                  prod_os_ver: "bookworm-slim"
+                  elixir: "1.19.5",
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
 
-      # druzan/setup-matrix is slow, taking about 15 seconds to initialize
-      #  - name: Define matrix for test containers
-      #    id: test-matrix
-      #    uses: druzsan/setup-matrix@v2
-      #    with:
-      #      matrix: |
-      #        include:
-      #          - elixir: 1.16.3
-      #            otp: 26.2.5
-      #            build_os_ver: bullseye-20240513
-      #            prod_os_ver: bullseye-slim
-      #            os: debian
+      - name: Configure test-matrix-parallel
+        id: test-matrix-parallel
+        uses: actions/github-script@v8
+        with:
+          script: |
+            let platforms = [
+              {
+                os: "debian",
+                elixir: "1.19.5",
+                otp: "28.5",
+                build_os_ver: "trixie-20260421-slim",
+                prod_os_ver: "trixie-20260421-slim"
+              },
+            ]
+            let ci_nodes = [1, 2]
+            let ci_node_total = ci_nodes.length
 
-                # {
-                #   os: "alma",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "10",
-                #   prod_os_ver: "10"
-                # },
-                # {
-                #   os: "alpine",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "3.21.3",
-                #   prod_os_ver: "3.21.3"
-                # },
-                # {
-                #   os: "rocky",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "9",
-                #   prod_os_ver: "9"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "chiseled",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "jammy-20250619",
-                #   prod_os_ver: "jammy"
-                # },
-                # {
-                #   os: "ubuntu",
-                #   elixir: "1.18.4",
-                #   otp: "28.0.1",
-                #   build_os_ver: "noble-20250619",
-                #   prod_os_ver: "noble"
-                # },
-      - uses: actions/github-script@v7
+            let matrix = []
+            for (let i = 0; i < platforms.length; i++) {
+              for (let j = 0; j < ci_nodes.length; j++) {
+                matrix.push(Object.assign({}, platforms[i], {ci_node_total: ci_node_total, ci_node_index: ci_nodes[j]}) )
+              }
+            }
+
+            return { include: matrix }
+
+      - name: Configure prod-matrix
         id: prod-matrix
+        uses: actions/github-script@v8
+                # {
+                #   os: "alma",
+                #   elixir: "1.18.4",
+                #   otp: "28.1",
+                #   build_os_ver: "8",
+                #   prod_os_ver: "8"
+                # },
+                # {
+                #   os: "centos7",
+                #   elixir: "1.18.4",
+                #   otp: "28.1",
+                #   build_os_ver: "7",
+                #   prod_os_ver: "7"
+                # },
         with:
           script: |
             return {
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.0.1",
-                  build_os_ver: "bookworm-20250630-slim",
-                  prod_os_ver: "bookworm-slim"
+                  elixir: "1.19.5",
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
 
-      - uses: actions/github-script@v7
+      - name: Configure deploy-matrix
         id: deploy-matrix
+        uses: actions/github-script@v8
         with:
           script: |
             return {
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.0.1",
-                  build_os_ver: "bookworm-20250630-slim",
-                  prod_os_ver: "bookworm-slim",
+                  elixir: "1.19.5",
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
 
-      - uses: actions/github-script@v7
+      - name: Configure assets-matrix
+        uses: actions/github-script@v8
         id: assets-matrix
-        # Specify versions of Erlang, Elixir, and base OS
-        # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
         with:
           script: |
             return {
               include: [
                 {
                   os: "debian",
-                  elixir: "1.18.4",
-                  otp: "28.0.1",
-                  build_os_ver: "bookworm-20250630-slim",
-                  prod_os_ver: "bookworm-slim",
+                  elixir: "1.19.5",
+                  otp: "28.5",
+                  build_os_ver: "trixie-20260421-slim",
+                  prod_os_ver: "trixie-20260421-slim"
                 },
               ]
             }
+
+      # Select GitHub Actions environment based on branch or tag name
+      # This also implicitly selects the AWS deploy environment.
+      # * `main` branch or `test` tag deploys to test
+      # * `staging` or `staging-*` tag/branch deploys to staging
+      # * `qa` or `qa-*` tag/branch deploys to qa
+      # * `prod` tag deploys to prod and dr
+      - name: Configure environment
+        id: get-environment
+        uses: actions/github-script@v8
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+            ref_name = process.env.GITHUB_REF_NAME
+
+            var environments = {
+              'test': 'test',
+              'main': 'test',
+              'staging': 'staging',
+              'qa': 'qa',
+              'prod': 'prod',
+              'dr': 'prod',
+              'media': 'prod',
+            }
+
+            if (ref_name in environments) {
+              result = environments[ref_name]
+            } else {
+              if (ref_name.startsWith('staging-')) {
+                result = 'staging'
+              } else if (ref_name.startsWith('qa-')) {
+                result = 'qa'
+              } else {
+                result = 'test'
+              }
+            }
+
+            return result
+
+      # Get image tag for deploy based on environment
+      # In test, staging, and qa, deploy is based on GitHub SHA
+      # In prod, deploy is based on staging ECR repo
+      # In dr, deploy is based on prod ECR repo in DR region
+      - name: Configure image-tag-deploy
+        id: get-image-tag-deploy
+        uses: actions/github-script@v8
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+            ref_name = process.env.GITHUB_REF_NAME
+            if (ref_name == 'prod' || ref_name == 'dr') {
+              result = 'prod'
+            } else {
+              result = context.sha
+            }
+            return result
+
+      # Determine whether to deploy to AWS based on branch or tag name
+      - name: Configure deploy
+        id: get-deploy
+        uses: actions/github-script@v8
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+            ref_name = process.env.GITHUB_REF_NAME
+            if (ref_name == 'main' || ref_name == 'staging' || ref_name.startsWith('staging-')) {
+              result = '1'
+            } else if (ref_name == 'qa' || ref_name.startsWith('qa-')) {
+              result = '1'
+            } else if (ref_name == 'testing' || ref_name.startsWith('devops-')) {
+              result = '1'
+            } else {
+              result = '0'
+            }
+            return result
+
+      - name: Configure sync-images
+        id: get-sync-images
+        uses: actions/github-script@v8
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+            ref_name = process.env.GITHUB_REF_NAME
+            if (ref_name == 'main' || ref_name == 'staging' || ref_name.startsWith('staging-')) {
+              result = '1'
+            } else if (ref_name == 'testing' || ref_name.startsWith('devops-')) {
+              result = '1'
+            } else if (ref_name == 'qa' || ref_name.startsWith('qa-')) {
+              result = '1'
+            } else {
+              result = '0'
+            }
+            return result
+
+  create-release:
+    name: Create GitHub release
+    needs: [config]
+    if: needs.config.outputs.create-release == '1'
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: build-${{ github.run_number }}
+      upload-url: ${{ steps.release-view.outputs.upload-url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: build-${{ github.run_number }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      # - name: Tag repository
+      #   run: |
+      #     echo "$RELEASE_TAG"
+      #     git tag "$RELEASE_TAG"
+      #     git push origin "$RELEASE_TAG"
+
+      - name: Create release
+        if: ${{ github.run_attempt == '1' }}
+        run: gh release create "$RELEASE_TAG" -n "Build $RELEASE_TAG"
+
+      - name: Get release info
+        id: release-view
+        run: |
+          UPLOAD_URL="$(gh release view "$RELEASE_TAG" --json uploadUrl --jq .uploadUrl | cut -d'{' -f'1')"
+          echo "upload-url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
+
+  build-test:
+    name: Build test image
+    needs: [config]
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.test-matrix) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set variables
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Debug environment
+      #   # env.ACTIONS_STEP_DEBUG == 'true'
+      #   run: |
+      #     # echo "github.event_name: ${{ github.event_name }}"
+      #     # echo "ref: ${{ github.ref }}"
+      #     # echo "ref_name: ${{ github.ref_name }}"
+      #     # echo "environment: ${{ needs.config.outputs.environment }}"
+      #     # echo "components: ${{ needs.config.outputs.components }}"
+      #     # echo -n "AWS_ACCOUNT_ID: "
+      #     # echo ${{ secrets.AWS_ACCOUNT_ID }} | sed 's/./& /g'
+      #     # echo "AWS_REGION var: ${{ vars.AWS_REGION }}"
+
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # Configure machine key or deploy keys to access private repos from build
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set env vars for builds
+        run: |
+          echo 'DATABASE_HOST=postgres' >> ./.env.test
+
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
+
+      # - name: Display available platforms
+      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      # - name: Configure AWS credentials
+      #   if: env.AWS_ENABLED == '1'
+      #   uses: aws-actions/configure-aws-credentials@v6
+      #   # https://github.com/aws-actions/configure-aws-credentials
+      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
+
+      # - name: Get test data files
+      #   if: env.AWS_ENABLED == '1'
+      #   run: |
+      #     mkdir -p test/bert
+      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
+      #     unzip -o test-data.zip -d test/data
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: network=host
+
+      - name: Build test image and push to GHCR
+        uses: docker/build-push-action@v7
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: test-image
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-test${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-test${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-test${{ env.VAR }}-${{ github.ref_name }},mode=max
+          no-cache: ${{ github.run_attempt != '1' }}
+          # platforms: linux/amd64,linux/arm64
+          # ssh: default
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.VAR }}${{ env.IMAGE_VER }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  test:
+    name: Run tests
+    if: needs.config.outputs.test == '1'
+    needs: [build-test, config]
+    environment: ${{ needs.config.outputs.environment }}
+    permissions:
+      packages: read
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.test-matrix-parallel) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet --include-deps test
+          docker images --no-trunc
+
+      - name: Start services
+        run: docker compose up --detach test
+
+      - name: Show docker logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps postgres
+          docker compose logs --timestamps test
+          docker compose ps --format json | jq .
+
+      - name: Display health check results
+        if: failure()
+        run: |
+          echo postgres
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+
+      - name: Debug env
+        if: failure()
+        run: |
+          docker compose run test env
+
+      - name: Initialize test database
+        run: docker compose run test mix 'do' ecto.setup
+
+      - name: Run tests
+        # continue-on-error: true
+        # run: docker compose run test mix test --cover
+        run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
+        # run: docker compose run test mix test
+
+      - name: Run quality checks
+        # run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --mute-exit-status --all, hex.audit, deps.audit, sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
+        run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --all --mute-exit-status, hex.audit, deps.audit, sobelow
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: (!cancelled())
+        with:
+          # Volume mounted from local filesystem into build by docker compose
+          files: junit-reports/*.xml
+
+      - name: Upload test results to Datadog
+        if: (needs.config.outputs.datadog == '1' && !cancelled())
+        continue-on-error: true
+        env:
+          DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+          DD_ENV: ci
+          DD_TAGS: "environment:ci"
+        run: |
+          npm install -g @datadog/datadog-ci
+          datadog-ci junit upload --service api-graphql junit-reports/
+
+  test-dialyzer:
+    name: Run dialyzer
+    if: needs.config.outputs.test-dializer == '1'
+    needs: [build-test, config]
+    environment: ${{ needs.config.outputs.environment }}
+    permissions:
+      contents: read
+      packages: read
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.test-matrix) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet test
+          # docker images --no-trunc
+
+      - name: Run dialyzer
+        run: docker compose run test mix dialyzer --no-check --quiet-with-result --format github
+        # run: docker compose run test mix dialyzer --no-check --ignore-exit-status --format github
+
+  test-scan:
+    name: Security scan code
+    needs: [build-test, config]
+    if: needs.config.outputs.scan-code == '1'
+    environment: ${{ needs.config.outputs.environment }}
+    permissions:
+      contents: read
+      packages: read
+      checks: write
+      pull-requests: write
+      issues: read
+      # Upload SARIF report files
+      security-events: write
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v6
+        # with:
+        #   # Fetch all history for all branches and tags for Gitleaks
+        #   fetch-depth: 0
+
+      - name: Manual Trivy Setup
+        uses: aquasecurity/setup-trivy@v0.2.6
+        with:
+          cache: true
+          version: v0.68.2
+
+      - name: Scan code with trivy
+        uses: aquasecurity/trivy-action@0.69.3
+        # https://github.com/marketplace/actions/aqua-security-trivy
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          ignore-unfixed: true
+          severity: 'CRITICAL'
+          # trivy-config: trivy.yaml
+          format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
+          # output: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'trivy-results.sarif' }}
+          skip-setup-trivy: true
+
+      - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        run: cat trivy-results.sarif | jq .
+
+      - name: Upload trivy scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy
+
+      - name: Scan code with Grype
+        uses: anchore/scan-action@v6
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          path: .
+          output-format: table
+          # output-format: 'sarif'
+          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
+          fail-build: false
+          # severity-cutoff: critical
+
+      - name: Display scan results
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
+
+      - name: Upload grype scan results to GitHub Security tab
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+      # - name: Scan with Gitleaks
+      #   uses: gitleaks/gitleaks-action@v2
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #     GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+      #     # upload sarif artifact when secrets are detected
+      #     GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+
+  build-prod:
+    name: Build prod image
+    needs: [config]
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+    steps:
+      - name: Debug environment
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "ref: ${{ github.ref }}"
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "environment: ${{ needs.config.outputs.environment }}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        if: env.AWS_ENABLED == '1'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: env.AWS_ENABLED == '1'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        # with:
+        #   registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || vars.AWS_ACCOUNT }}
+
+      - name: Set vars
+        if: env.AWS_ENABLED == '1'
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+
+      - name: Set vars
+        run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Get app version
+        run: |
+          APP_VERSION=$(cat mix.exs | grep version: | awk -F'"' '{print $2}')
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Build assets on host and copy into container
+      # Doing it outside of the prod image speeds up the build, as we don't
+      # have to copy big static files around.
+      # We do it here instead of a separate task, as we need
+      # priv/static/cache_manifest.json in the build.
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache deps
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-elixir-deps-${{ github.ref_name }}
+        with:
+          path: |
+            **/deps
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache compiled build
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-compiled-build-${{ github.ref_name }}
+        with:
+          path: |
+            **/_build
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles( '**/lib/**/*.{ex,eex}', '**/config/*.exs', '**/mix.exs' ) }}
+          restore-keys: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Cache node-modules
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-node-modules-${{ github.ref_name }}
+        with:
+          path: assets/node_modules
+          key: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+
+      - name: Install build tools
+        run: mix 'do' local.rebar --force, local.hex --force
+
+      # Force full recompile on builds that are retried.
+      - name: Clean deps to avoid flaky incremental builds
+        if: ${{ github.run_attempt != '1' }}
+        run: |
+          mix deps.clean --all
+          mix clean
+        shell: sh
+
+      - name: Get Elixir deps
+        run: mix deps.get
+
+      - name: Compile deps
+        run: mix deps.compile
+
+      - name: Compile
+        run: mix compile
+
+      - name: Setup
+        run: |
+          mkdir -p ./assets
+          mix assets.setup
+
+      # - name: npm install
+      #   working-directory: assets
+      #   run: npm install
+
+      # - name: npm run deploy
+      #   working-directory: assets
+      #   run: npm run deploy
+
+      # - name: yarn install
+      #   working-directory: assets
+      #   run: yarn install --prod
+
+      # - name: Build digested assets
+      #   run: mix phx.digest --no-vsn
+
+      - name: Build and deploy assets
+        run: mix assets.deploy
+
+      - name: Copy assets to S3
+        if: env.AWS_ENABLED == '1'
+        # Copying is faster than syncing. With digested files, multiple versions
+        # can coexist on the server, and the app will choose the right ones.
+        run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
+
+      # - name: Sync assets to S3
+      #   working-directory: app
+      #   run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }} --delete
+
+      # We don't have to invalidate when using digested files.
+      # - name: Create CloudFront invalidation
+      #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: network=host
+
+      - name: Build prod image and push
+        uses: docker/build-push-action@v7
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+            BUILD_NUM=${{ github.run_number }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }},mode=max
+          no-cache: ${{ github.run_attempt != '1' }}
+          # ssh: default
+          # https://github.com/opencontainers/image-spec/blob/main/annotations.md
+          # https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.created=${{ env.NOW }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.run_number }}
+            app.kubernetes.io/name=${{ env.IMAGE_NAME }}
+            app.kubernetes.io/part-of=${{ github.repository }}
+            app.kubernetes.io/version=${{ github.run_number }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:build-${{ github.run_number }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:version-${{ env.APP_VERSION }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:git-${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:build-${{ github.run_number }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:version-${{ env.APP_VERSION }}
+
+        # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+        # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+        # secrets: |
+        #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+        #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+        #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  test-prod:
+    name: Run external API tests
+    needs: [build-prod, config]
+    permissions:
+      id-token: write
+      packages: read
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
+    env:
+      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      CREATE_RELEASE: ${{ needs.config.outputs.create-release == '1' && '1' || '0' }}
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      # GH_TOKEN: ${{ github.token }}
+      IMAGE_VER: ${{ github.sha }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      # - name: Configure AWS credentials
+      #   if: env.AWS_ENABLED == '1'
+      #   uses: aws-actions/configure-aws-credentials@v6
+      #   # https://github.com/aws-actions/configure-aws-credentials
+      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
+
+      # - name: Get test data files
+      #   if: env.AWS_ENABLED == '1'
+      #   run: |
+      #     mkdir -p test-data
+      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
+      #     unzip -o test-data.zip -d test-data
+
+      # Log into AWS to avoid rate limits on public ECR images
+      # - name: Configure AWS credentials
+      #   if: env.AWS_ENABLED == '1'
+      #   uses: aws-actions/configure-aws-credentials@v6
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: ${{ vars.AWS_REGION }}
+
+      # - name: Log in to Amazon ECR
+      #   if: env.AWS_ENABLED == '1'
+      #   id: ecr-login
+      #   uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Pull repos
+        # Pull images separately to make timing clearer
+        # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
+        # docker compose pull --quiet newman
+        # docker images --no-trunc
+        run: |
+          docker compose pull --quiet --include-deps prod
+
+      - name: Start services
+        env:
+          LOG_CONSOLE: true
+          LOG_LEVEL: debug
+        run: |
+          env | sort
+          docker compose up --wait prod
+
+      - name: Display logs
+        if: failure()
+        run: |
+          echo "ps"
+          docker compose ps --format json | jq .
+          echo "postgres logs"
+          docker compose logs --timestamps postgres
+          echo "prod logs"
+          docker compose logs --timestamps prod
+          echo "postgres health"
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          echo "prod health"
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q prod)" | jq
+
+      # - name: Debug env
+      #   if: failure()
+      #   run: |
+      #     docker compose run --entrypoint /bin/bash prod env
+      #     docker compose run --entrypoint /bin/bash prod env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+      #     # docker compose run --entrypoint /bin/bash prod pg_isready -h postgres -p 5432 -d postgres -U postgres
+
+      # - name: Initialize database
+      #   run: |
+      #     # Redundant with bin/start-docker
+      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
+      #     # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
+      #     docker compose run --entrypoint bin/prod prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
+
+      # Basic smoke test to make sure service came up
+      - name: Run health check
+        run: for _i in 1 2 3 4 5 6 7 8 9 10; do curl -v "http://localhost:${APP_PORT}/healthz" && break || sleep 1; done
+
+      - name: Display logs
+        if: failure()
+        run: |
+          echo "postgres logs"
+          docker compose logs --timestamps postgres
+          echo "postgres health"
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          echo "prod logs"
+          docker compose logs --timestamps prod
+          echo "prod health"
+          docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q prod)" | jq
+          echo "ps"
+          docker compose ps --format json | jq .
+
+      # - name: Run API tests
+      #   env:
+      #     NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
+      #     # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
+      #   # https://hub.docker.com/r/postman/newman/
+      #   run: |
+      #     mkdir -p junit-reports
+      #     docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+
+      # - name: Display logs
+      #   if: failure()
+      #   run: |
+      #     echo "postgres logs"
+      #     docker compose logs --timestamps postgres
+      #     echo "postgres health"
+      #     docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+      #     echo "prod logs"
+      #     docker compose logs --timestamps prod
+      #     echo "prod health"
+      #     docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+      #     echo "ps"
+      #     docker compose ps --format json | jq .
+      #     docker compose logs --timestamps newman
+
+      # - name: Publish unit test results to GitHub
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   # Run even if tests fail
+      #   if: (!cancelled())
+      #   with:
+      #     # Volume mounted from local filesystem into build
+      #     junit_files: ./junit-reports/*.xml
+      #     check_name: "External API Tests"
+
+      - name: Copy Erlang release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+
+      - name: Copy CodeDeploy release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
+
+      - name: Copy Ansible release files from container
+        if: env.CREATE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
   scan:
     name: Security scan prod image
-    needs: [setup-matrix]
+    if: needs.config.outputs.scan-prod-image == '1'
+    needs: [config]
     permissions:
       id-token: write
       contents: read
@@ -288,13 +1237,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-matrix.outputs.prod-matrix) }}
+      matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+      GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -304,27 +1254,25 @@ jobs:
         run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          image-ref: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
           # cache-dir: /var/cache
-          # format: 'sarif'
-          format: 'table'
-          # format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
-          output: 'trivy.sarif'
+          format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
+          # output: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'trivy-results.sarif' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat trivy-results.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -335,30 +1283,29 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
           # output-format: 'sarif'
           output-format: table
-          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == 1 && 'sarif' || 'table' }}
+          # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
       # - name: Scan image with Snyk
-      #   # if: github.event_name != 'pull_request'
       #   uses: snyk/actions/docker@master
       #   continue-on-error: true
       #   env:
