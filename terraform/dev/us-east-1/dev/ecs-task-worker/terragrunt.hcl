@@ -22,22 +22,30 @@ dependency "s3" {
 inputs = {
   comp = "worker"
 
-  # image = "${dependency.ecr.outputs.repository_url}:latest"
-  image = "public.ecr.aws/docker/library/httpd:2.4"
+  image = "${dependency.ecr.outputs.repository_url}:latest"
+  # image = "public.ecr.aws/docker/library/httpd:2.4"
 
   port_mappings = [
+    # Settings for HTTP
     {
       containerPort = 4000
       hostPort      = 4000
       appProtocol   = "http"
       protocol      = "tcp"
+    },
+    # Settings for HTTPS
+    {
+      containerPort = 4001
+      hostPort      = 4001
+      appProtocol   = "http"
+      protocol      = "tcp"
     }
   ]
 
-  entrypoint = ["sh", "-c"]
-  command = [
-    "/bin/sh -c \"echo '<html><head><title>ECS App</title></head><h1>ECS App</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4000'\""
-  ]
+  # entrypoint = ["sh", "-c"]
+  # command = [
+  #   "/bin/sh -c \"echo '<html><head><title>ECS App</title></head><h1>ECS App</h1><p>It works!</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground -c 'Listen 4000'\""
+  # ]
 
   environment = []
   # environment = [
@@ -90,52 +98,6 @@ inputs = {
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
 
-  # container_definitions = file("${get_terragrunt_dir()}/container_definitions.json")
-
-  # container_definitions = <<DEFINITION
-  # [
-  #   {
-  #     "name": "${local.task_name}",
-  #     "image": "${dependency.ecr.outputs.repository_url}:latest",
-  #     "portMappings": [
-  #       {
-  #         "containerPort": 4000,
-  #          "hostPort": 4000,
-  #          "protocol": "tcp"
-  #       }
-  #     ],
-  #     "environment": [
-  #       {
-  #         "name": "CONFIG_S3_BUCKET",
-  #         "value": "${dependency.s3.outputs.buckets["config"].id}"
-  #       },
-  #       {
-  #         "name": "CONFIG_S3_PREFIX",
-  #         "value": "app"
-  #       }
-  #     ],
-  #     "secrets": [
-  #       {
-  #         "name": "SMTP_HOST",
-  #         "valueFrom": "arn:aws:ssm:region:aws_account_id:parameter/parameter_name"
-  #       }
-  #     ],
-  #     "logConfiguration": {
-  #       "logDriver": "awslogs",
-  #       "options": {
-  #         "awslogs-group": "/ecs/${local.service_name}",
-  #         "awslogs-region": "${local.logs_region}",
-  #         "awslogs-stream-prefix": "${local.service_name}",
-  #         "awslogs-create-group": "true"
-  #       }
-  #     }
-  #   }
-  # ]
-  # DEFINITION
-
-  task_role_arn      = dependency.iam-task.outputs.arn
-  execution_role_arn = dependency.iam-execution.outputs.arn
-
   # log_configuration = {
   #   logDriver = "awslogs"
   #   options = {
@@ -146,6 +108,9 @@ inputs = {
   #   }
   #   secretOptions = []
   # }
+
+  task_role_arn      = dependency.iam-task.outputs.arn
+  execution_role_arn = dependency.iam-execution.outputs.arn
 
   # FARGATE supported values
   # CPU value       Memory value (MiB)

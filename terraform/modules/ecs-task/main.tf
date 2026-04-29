@@ -17,7 +17,7 @@ locals {
 
 # Generate JSON continer config from vars
 module "app_container" {
-  source = "github.com/cloudposse/terraform-aws-ecs-container-definition?ref=0.60.0"
+  source = "github.com/cloudposse/terraform-aws-ecs-container-definition?ref=v0.61.2"
 
   command                      = var.command
   container_cpu                = var.container_cpu
@@ -43,36 +43,6 @@ module "app_container" {
   }
 }
 
-module "xray_container" {
-  source = "github.com/cloudposse/terraform-aws-ecs-container-definition?ref=0.60.0"
-
-  container_name               = "xray-daemon"
-  container_image              = var.xray_image
-  container_memory_reservation = 256
-  # container_cpu = 32
-  container_cpu = 0
-  essential     = false
-
-  port_mappings = [
-    {
-      containerPort = 2000
-      hostPort      = 2000
-      protocol      = "udp"
-    }
-  ]
-
-  log_configuration = {
-    logDriver = "awslogs"
-    options = {
-      "awslogs-group"         = local.awslogs_group
-      "awslogs-stream-prefix" = local.awslogs_stream_prefix
-      "awslogs-region"        = var.aws_region
-      "awslogs-create-group"  = var.awslogs_create_group
-    }
-    secretOptions = []
-  }
-}
-
 # https://www.terraform.io/docs/providers/aws/r/ecs_task_definition.html
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
 resource "aws_ecs_task_definition" "this" {
@@ -81,7 +51,6 @@ resource "aws_ecs_task_definition" "this" {
   container_definitions = <<-EOT
   [
     ${module.app_container.json_map_encoded}
-    ${var.xray ? ", ${module.xray_container.json_map_encoded}" : ""}
   ]
   EOT
 

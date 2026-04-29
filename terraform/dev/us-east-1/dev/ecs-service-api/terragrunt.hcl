@@ -31,10 +31,10 @@ dependency "listener-rule" {
   config_path = "../lb-listener-rule-api"
 }
 dependency "tg-1" {
-  config_path = "../target-group-api-ecs-1"
+  config_path = "../target-group-api-1"
 }
 dependency "tg-2" {
-  config_path = "../target-group-api-ecs-2"
+  config_path = "../target-group-api-2"
 }
 dependency "vpc" {
   config_path = "../vpc"
@@ -50,13 +50,13 @@ inputs = {
 
   load_balancer = [
     {
-      target_group_arn = dependency.tg.outputs.arn
+      target_group_arn = dependency.tg-1.outputs.arn
       # Name of container to associate with the load balancer, from task definition
       # container_name   = dependency.task.outputs.container_name
       container_name   = "foo-app"
       # Port on container to associate with the load balancer, from task definition
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
-      container_port = 4001
+      container_port   = 4001
       advanced_configuration = {
         alternate_target_group_arn = dependency.tg-2.outputs.arn
         production_listener_rule = dependency.listener-rule.outputs.arn

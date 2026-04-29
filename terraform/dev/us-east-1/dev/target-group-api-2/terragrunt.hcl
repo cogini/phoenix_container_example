@@ -28,7 +28,7 @@ locals {
 
 inputs = {
   comp = "api"
-  name = "api-ecs-2"
+  name = "api-2"
 
   # hosts = [
   #   join(".", compact(["api", local.dns_subdomain, local.dns_domain]))

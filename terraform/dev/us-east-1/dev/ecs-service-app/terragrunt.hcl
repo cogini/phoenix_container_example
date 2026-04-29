@@ -56,7 +56,7 @@ inputs = {
       container_name   = "foo-app"
       # Port on container to associate with the load balancer, from task definition
       # container_port = dependency.task.outputs.port_mappings[0].hostPort
-      container_port   = 4000
+      container_port   = 4001
       advanced_configuration = {
         alternate_target_group_arn = dependency.tg-2.outputs.arn
         production_listener_rule = dependency.listener-rule.outputs.arn

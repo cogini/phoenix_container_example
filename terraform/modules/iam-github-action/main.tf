@@ -8,10 +8,10 @@
 
 # Example config:
 # terraform {
-#   source = "${dirname(find_in_parent_folders())}/modules//iam-github-action"
+#   source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-github-action"
 # }
 # include "root" {
-#   path = find_in_parent_folders()
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "cloudfront" {
 #   config_path = "../cloudfront-app-assets"
@@ -19,11 +19,20 @@
 # dependency "codedeploy-app" {
 #   config_path = "../codedeploy-app"
 # }
-# dependency "codedeploy-deployment" {
+# dependency "codedeploy-deployment-app" {
 #   config_path = "../codedeploy-deployment-app"
+# }
+# dependency "codedeploy-api" {
+#   config_path = "../codedeploy-api"
+# }
+# dependency "codedeploy-deployment-api" {
+#   config_path = "../codedeploy-deployment-api"
 # }
 # dependency "ecr-app" {
 #   config_path = "../ecr-app"
+# }
+# dependency "ecr-api" {
+#   config_path = "../ecr-api"
 # }
 # dependency "ecr-otel" {
 #   config_path = "../ecr-otel"
@@ -33,6 +42,9 @@
 # }
 # dependency "ecs-service-app" {
 #   config_path = "../ecs-service-app"
+# }
+# dependency "ecs-service-api" {
+#   config_path = "../ecs-service-api"
 # }
 # dependency "ecs-service-worker" {
 #   config_path = "../ecs-service-worker"
@@ -50,10 +62,24 @@
 #   config_path = "../s3-app"
 # }
 #
+# locals {
+#   account_vars     = read_terragrunt_config(find_in_parent_folders("account.hcl"))
+#   region_vars      = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+#   env_vars         = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+#   common_vars      = read_terragrunt_config(find_in_parent_folders("common.hcl"))
+#
+#   org      = local.common_vars.locals.org
+#   app_name = local.common_vars.locals.app_name
+#   env      = local.env_vars.locals.env
+# }
+#
 # inputs = {
 #   comp = "app"
 #
-#   sub = "repo:cogini/foo:*"
+#   subs = [
+#     "repo:cogini/phoenix_container_example:*",
+#     "repo:cogini/absinthe_federation_example:*",
+#   ]
 #
 #   s3_buckets = [
 #     dependency.s3.outputs.buckets["assets"].id
@@ -63,6 +89,7 @@
 #
 #   ecr_arns = [
 #     dependency.ecr-app.outputs.arn,
+#     dependency.ecr-api.outputs.arn,
 #     dependency.ecr-otel.outputs.arn
 #   ]
 #
@@ -72,7 +99,14 @@
 #       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
 #       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
 #       codedeploy_application_name      = dependency.codedeploy-app.outputs.app_name
-#       codedeploy_deployment_group_name = dependency.codedeploy-deployment.outputs.deployment_group_name
+#       codedeploy_deployment_group_name = dependency.codedeploy-deployment-app.outputs.deployment_group_name
+#     },
+#     {
+#       service_arn                      = dependency.ecs-service-api.outputs.id
+#       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
+#       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
+#       codedeploy_application_name      = dependency.codedeploy-api.outputs.app_name
+#       codedeploy_deployment_group_name = dependency.codedeploy-deployment-api.outputs.deployment_group_name
 #     },
 #     {
 #       service_arn                      = dependency.ecs-service-worker.outputs.id
@@ -84,7 +118,7 @@
 #   ec2 = [
 #       {
 #         codedeploy_application_name      = dependency.codedeploy-app.outputs.app_name
-#         codedeploy_deployment_group_name = dependency.codedeploy-deployment.outputs.deployment_group_name
+#         codedeploy_deployment_group_name = dependency.codedeploy-deployment-app.outputs.deployment_group_name
 #       }
 #     ]
 #

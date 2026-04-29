@@ -205,15 +205,3 @@ variable "volume" {
   type        = list(any)
   default     = []
 }
-
-variable "xray" {
-  description = "Add a sidecar for AWS X-Ray daemon"
-  type        = bool
-  default     = false
-}
-
-variable "xray_image" {
-  description = "Image for X-Ray daemon"
-  # default     = "123456789012.dkr.ecr.us-east-2.amazonaws.com/xray-daemon"
-  default = "amazon/aws-xray-daemon"
-}

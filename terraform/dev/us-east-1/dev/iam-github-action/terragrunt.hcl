@@ -9,18 +9,6 @@ include "root" {
 dependency "cloudfront" {
   config_path = "../cloudfront-app-assets"
 }
-dependency "codedeploy-app" {
-  config_path = "../codedeploy-app"
-}
-dependency "codedeploy-deployment-app" {
-  config_path = "../codedeploy-deployment-app"
-}
-dependency "codedeploy-api" {
-  config_path = "../codedeploy-api"
-}
-dependency "codedeploy-deployment-api" {
-  config_path = "../codedeploy-deployment-api"
-}
 dependency "ecr-app" {
   config_path = "../ecr-app"
 }
@@ -88,15 +76,11 @@ inputs = {
       service_arn                      = dependency.ecs-service-app.outputs.id
       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
-      codedeploy_application_name      = dependency.codedeploy-app.outputs.app_name
-      codedeploy_deployment_group_name = dependency.codedeploy-deployment-app.outputs.deployment_group_name
     },
     {
       service_arn                      = dependency.ecs-service-api.outputs.id
       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
-      codedeploy_application_name      = dependency.codedeploy-api.outputs.app_name
-      codedeploy_deployment_group_name = dependency.codedeploy-deployment-api.outputs.deployment_group_name
     },
     {
       service_arn                      = dependency.ecs-service-worker.outputs.id
