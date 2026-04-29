@@ -161,12 +161,11 @@ if config_env() == :prod do
         ]
 
     # libcluster_ecs uses the ECS API to discover nodes in the same cluster and service
-    # https://hex.pm/packages/libcluster_ecs
     "ecs" ->
       config :libcluster,
         topologies: [
           app: [
-            strategy: Cluster.EcsStrategy,
+            strategy: Cluster.Strategy.AWS.ECS,
             config: [
               cluster_name: System.get_env("ECS_CLUSTER_NAME", "foo"),
               service_name: System.get_env("ECS_SERVICE_NAME", "foo-app"),
