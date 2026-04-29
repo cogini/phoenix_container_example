@@ -13,5 +13,6 @@
 
 # -epmd_module Elixir.Cluster.EPMD
 
-# -kernel inet_dist_listen_min 9000
-# -kernel inet_dist_listen_max 9010
+# Erlang distribution port range
+-kernel inet_dist_listen_min 9000
+-kernel inet_dist_listen_max 9010

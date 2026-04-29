@@ -111,6 +111,24 @@
           "containerPort": ((env.APP_PORT // "4000") | tonumber),
           "hostPort": ((env.APP_PORT // "4000") | tonumber),
           "name": "web"
+        },
+        {
+          "containerPort": ((env.ERL_EPMD_PORT // "4369") | tonumber),
+          "hostPort": ((env.ERL_EPMD_PORT // "4369") | tonumber),
+          "protocol": "tcp",
+          "name": "epmd"
+        },
+        {
+          "containerPortRange": "9000-9010",
+          "hostPortRange": "9000-9010",
+          "protocol": "tcp",
+          "name": "erlang_dist"
+        },
+        {
+          "appProtocol": "http",
+          "containerPort": ((env.PROMETHEUS_PORT // "9111") | tonumber),
+          "hostPort": ((env.PROMETHEUS_PORT // "9111") | tonumber),
+          "name": "prometheus"
         }
       ],
       "readonlyRootFilesystem": false,

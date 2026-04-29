@@ -10,3 +10,7 @@
 ## Enable deployment without epmd
 ## (requires changing both vm.args and remote.vm.args)
 ##-start_epmd false -erl_epmd_port 6789 -dist_listen false
+
+# Erlang distribution port range
+-kernel inet_dist_listen_min 9000
+-kernel inet_dist_listen_max 9010

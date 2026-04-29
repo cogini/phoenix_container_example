@@ -744,9 +744,6 @@ EXPOSE 9568
 # Erlang EPMD port
 EXPOSE 4369
 
-# ECS distribution port
-EXPOSE 7777
-
 # Intra-Erlang communication ports
 EXPOSE 9000-9010
 
