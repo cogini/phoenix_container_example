@@ -121,8 +121,7 @@
         {
           "containerPortRange": "9001-9003",
           "hostPortRange": "9001-9003",
-          "protocol": "tcp",
-          "name": "erlang_dist"
+          "protocol": "tcp"
         },
         {
           "appProtocol": "http",
