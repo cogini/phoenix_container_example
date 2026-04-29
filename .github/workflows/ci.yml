@@ -1395,7 +1395,6 @@ jobs:
       - name: Generate ECS task-defintion.json
         env:
           APP_CPU: 256
-          APP_PORT: 4000
           APP_RAM: 512
           ARCH: "X86_64"
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -1410,6 +1409,8 @@ jobs:
           EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
           FAMILY: "foo-app"
           GIT_HEAD_REF: ${{ github.head_ref }}
+          HTTP_PORT: 4000
+          HTTPS_PORT: 4001
           IMAGE_OTEL: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}aws-otel-collector:latest"
           IMAGE: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}"
           ROLES: "app,web"

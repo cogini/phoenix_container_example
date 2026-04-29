@@ -734,6 +734,7 @@ COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/$
 
 # App listen ports
 EXPOSE 4000
+EXPOSE 4001
 
 # Prometheus metrics
 # PromEx server port

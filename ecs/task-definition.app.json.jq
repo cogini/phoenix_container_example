@@ -108,9 +108,15 @@
       "portMappings": [
         {
           "appProtocol": (env.APP_PROTOCOL // "http"),
-          "containerPort": ((env.APP_PORT // "4000") | tonumber),
-          "hostPort": ((env.APP_PORT // "4000") | tonumber),
-          "name": "web"
+          "containerPort": ((env.HTTP_PORT // "4000") | tonumber),
+          "hostPort": ((env.HTTP_PORT // "4000") | tonumber),
+          "name": "http"
+        },
+        {
+          "appProtocol": (env.APP_PROTOCOL // "http"),
+          "containerPort": ((env.HTTPS_PORT // "4001") | tonumber),
+          "hostPort": ((env.HTTPS_PORT // "4001") | tonumber),
+          "name": "https"
         },
         {
           "containerPort": ((env.ERL_EPMD_PORT // "4369") | tonumber),
