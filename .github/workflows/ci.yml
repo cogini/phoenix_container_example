@@ -1358,8 +1358,6 @@ jobs:
       # ECR_REGISTRY_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       IMAGE_TAG: ${{ github.sha }}
-      CODEDEPLOY_APPLICATION: foo-app
-      CODEDEPLOY_DEPLOYMENT_GROUP: foo-app
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -1384,13 +1382,6 @@ jobs:
       - name: Set vars
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
         # echo "ECR_REGISTRY=${{ env.ECR_REGISTRY_ID }}.dkr.ecr.${{ env.ECR_REGISTRY_REGION }}.amazonaws.com" >> "$GITHUB_ENV"
-
-      # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
-      # - name: Generate CodeDeploy appspec.yml
-      #   env:
-      #     CONTAINER_NAME: "foo-app"
-      #     PORT: "4000"
-      #   run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
 
       - name: Generate ECS task-defintion.json
         env:
@@ -1425,9 +1416,6 @@ jobs:
           cluster: foo
           service: foo-app
           # wait-for-service-stability: true
-          # codedeploy-appspec: ecs/appspec.yml
-          # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
-          # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
       # - name: Generate ECS task-defintion.json (worker)
       #   env:
