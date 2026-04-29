@@ -13,7 +13,7 @@ locals {
   task_definition = var.task_definition == "" ? data.aws_ecs_task_definition.this.arn : var.task_definition
 }
 
-# https://www.terraform.io/docs/providers/aws/r/ecs_service.html
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service.html
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_definition_parameters.html
 resource "aws_ecs_service" "this" {
