@@ -179,7 +179,7 @@
       "secrets": [
         {
           "name": "PROMETHEUS_ENDPOINT",
-          "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/amtelco/\(env.AWS_PS_PREFIX)/app/prometheus_endpoint"
+          "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/prometheus_endpoint"
         }
       ],
       "essential": true,
