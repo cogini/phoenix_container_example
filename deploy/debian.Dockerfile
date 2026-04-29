@@ -745,7 +745,7 @@ EXPOSE 9568
 EXPOSE 4369
 
 # Intra-Erlang communication ports
-EXPOSE 9000-9010
+EXPOSE 9001-9003
 
 # :erpc default port
 EXPOSE 9090

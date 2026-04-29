@@ -119,8 +119,8 @@
           "name": "epmd"
         },
         {
-          "containerPortRange": "9000-9010",
-          "hostPortRange": "9000-9010",
+          "containerPortRange": "9001-9003",
+          "hostPortRange": "9001-9003",
           "protocol": "tcp",
           "name": "erlang_dist"
         },

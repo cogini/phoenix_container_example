@@ -20,11 +20,22 @@ dependencies {
 inputs = {
   comp = "app"
   # name = "foo-app-private" # Default app-comp
-  app_ports = [80, 443, 4000, 4001, 4443]
+  app_ports = [
+    # Normal web ports
+    80,
+    443,
+    4000,
+    4001,
+    4443,
+    # 4369, # Erlang epmd
+    # 9001, # Erlang distribution port
+    # 9002, # Erlang distribution port
+    # 9003, # Erlang distribution port
+  ]
   # app_sources = ["sg-lb-public", "sg-bastion", "sg-devops", "sg-prometheus"]
   app_sources = ["sg-lb-public"]
 
-  # prometheus_ports = [9100, 9111, 9568]
+  prometheus_ports = [9100, 9111, 9568]
   # prometheus_sources = ["sg-prometheus"]
   prometheus_sources = ["sg-devops"]
 
