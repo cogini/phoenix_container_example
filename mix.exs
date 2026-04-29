@@ -103,7 +103,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:observer_cli, "~> 1.7"},
       # {:libcluster_ecs, "~> 0.2.0"},
       # {:libcluster_ecs, github: "microdose-ai-team/libcluster_ecs"},
-      {:libcluster_ecs, github: "violet-hall-verna/libcluster_ecs"},
+      # {:libcluster_ecs, github: "violet-hall-verna/libcluster_ecs"},
+      {:libcluster_aws_ecs, github: "cogini/libcluster_aws_ecs"},
       # tls_certificate_check needs to be started before opentelemetry_exporter
       {:tls_certificate_check, "~> 1.13"},
       # opentelemetry_exporter needs to be started before the other opentelemetry modules

@@ -1,5 +1,7 @@
 import Config
 
+config :libcluster, :debug, true
+
 if System.get_env("LOGGER_FORMAT", "json") == "json" do
   config :logger, :default_handler,
     filters: [

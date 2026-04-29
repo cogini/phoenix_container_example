@@ -49,15 +49,7 @@ defmodule PhoenixContainerExample.Application do
     if Enum.empty?(topologies) do
       []
     else
-      strategy = get_in(topologies, [:app, :strategy])
-
-      case strategy do
-        Cluster.EcsStrategy ->
-          [{Cluster.EcsClusterInfo, get_in(topologies, [:app, :config])}]
-
-        _ ->
-          []
-      end ++ [{Cluster.Supervisor, [topologies, [name: PhoenixContainerExample.ClusterSupervisor]]}]
+      [{Cluster.Supervisor, [topologies, [name: PhoenixContainerExample.ClusterSupervisor]]}]
     end
   end
 

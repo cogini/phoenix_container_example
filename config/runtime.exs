@@ -29,8 +29,7 @@ env_config = [
   {"BUGSNAG_APP_VERSION", :string, :bugsnag, :app_version},
   {"BUGSNAG_RELEASE_STAGE", :string, :bugsnag, :release_stage},
   {"DB_POOL_SIZE", :integer, :phoenix_container_example, PhoenixContainerExample.Repo, :pool_size},
-  {"ECTO_LOG", :atom, :phoenix_container_example, PhoenixContainerExample.Repo, :log},
-  {"LIBCLUSTER_DEBUG", :boolean, :libcluster, :debug}
+  {"ECTO_LOG", :atom, :phoenix_container_example, PhoenixContainerExample.Repo, :log}
 ]
 
 for {env, type, app, key} <- env_config, value = env!(env, type, nil) do
@@ -172,9 +171,10 @@ if config_env() == :prod do
               cluster_name: System.get_env("ECS_CLUSTER_NAME", "foo"),
               service_name: System.get_env("ECS_SERVICE_NAME", "foo-app"),
               # app_prefix: System.get_env("RELEASE_NAME", "prod"),
-              app_prefix: System.get_env("RELEASE_VSN"),
-              region: System.get_env("AWS_REGION", "us-east-1"),
-              container_port: "DISTRIBUTION_PORT" |> System.get_env("7777") |> String.to_integer()
+              # app_prefix: System.get_env("RELEASE_VSN"),
+              app_prefix: System.get_env("ECS_SERVICE_NAME", "foo-app"),
+              region: System.get_env("AWS_REGION", "us-east-1")
+              # container_port: "DISTRIBUTION_PORT" |> System.get_env("7777") |> String.to_integer()
             ]
           ]
         ]
