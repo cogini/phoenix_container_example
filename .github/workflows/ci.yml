@@ -1417,59 +1417,40 @@ jobs:
           service: foo-app
           # wait-for-service-stability: true
 
-      # - name: Generate ECS task-defintion.json (worker)
-      #   env:
-      #     AWSLOGS_REGION: ${{ vars.AWS_REGION }}
-      #     AWSLOGS_GROUP: /ecs/foo-worker
-      #     AWSLOGS_STREAM_PREFIX: foo-worker
-      #     AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      #     AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
-      #     SERVICE_NAME: foo-worker
-      #     ECS_SERVICE: foo-worker
-      #     ECS_CONTAINER: foo-worker
-      #     EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
-      #     IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-      #     TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
-      #     CPU: 256
-      #     RAM: 2048
-      #     TASKDEF: ecs/task-definition.worker.json
-      #   run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
+      - name: Generate ECS task-defintion.json (worker)
+        env:
+          APP_CPU: 256
+          APP_RAM: 512
+          ARCH: "X86_64"
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          AWSLOGS_GROUP: /ecs/foo-worker
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_STREAM_PREFIX: foo-worker
+          BUILD_NUM: ${{ github.run_number }}
+          COMP: "worker"
+          CONTAINER_NAME: foo-app
+          ECS_SERVICE: foo-worker
+          ENV: ${{ needs.config.outputs.environment }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+          FAMILY: "foo-worker"
+          GIT_HEAD_REF: ${{ github.head_ref }}
+          HTTP_PORT: 4000
+          HTTPS_PORT: 4001
+          IMAGE_OTEL: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}aws-otel-collector:latest"
+          IMAGE: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}"
+          ROLES: "worker"
+          SERVICE: foo-worker
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+        run: jq --null-input -f "ecs/task-definition.${COMP}.json.jq" | tee "/tmp/task-definition.${COMP}.json"
 
-      # - name: Put new image ID in ECS task definition (worker)
-      #   id: task-def-worker
-      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-      #   env:
-      #     IMAGE: "${ECR_REGISTRY}/${ECR_IMAGE_OWNER}${IMAGE_NAME}:${VAR}${IMAGE_VER}"
-      #     ECS_SERVICE: foo-worker
-      #     ECS_CONTAINER: foo-worker
-      #     AWSLOGS_REGION: ${{ vars.AWS_REGION }}
-      #     AWSLOGS_GROUP: /ecs/foo-worker
-      #     AWSLOGS_STREAM_PREFIX: foo-worker
-      #   with:
-      #     # https://github.com/aws-actions/amazon-ecs-render-task-definition
-      #     task-definition: ${{ env.TASKDEF }}
-      #     # task-definition-arn: ${{ secrets.TASK_ROLE_ARN }}
-      #     # task-definition-family: ${{ env.ECS_FAMILY }}
-      #     container-name: ${{ env.ECS_CONTAINER }}
-      #     # This should match the image tag used in build-prod
-      #     image: ${{env.IMAGE}}
-      #     log-configuration-options: |
-      #       awslogs-create-group=true
-      #       awslogs-group=/ecs/${{ env.ECS_SERVICE }}
-      #       awslogs-region=${{ env.AWSLOGS_REGION }}
-      #       awslogs-stream-prefix=${{ env.AWSLOGS_STREAM_PREFIX }}
-      #     # environment-variables: |
-      #     #   ENV=${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') || 'staging
-
-      # - name: Deploy to Amazon ECS (worker)
-      #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-      #   env:
-      #     ECS_SERVICE: foo-worker
-      #   with:
-      #     task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
-      #     cluster: ${{ env.ECS_CLUSTER }}
-      #     service: ${{ env.ECS_SERVICE }}
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: /tmp/task-definition.worker.json
+          cluster: foo
+          service: foo-worker
+          # wait-for-service-stability: true
 
       # - name: Run CodeBuild
       #   uses: aws-actions/aws-codebuild-run-build@v1
