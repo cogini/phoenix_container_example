@@ -1417,6 +1417,40 @@ jobs:
           service: foo-app
           # wait-for-service-stability: true
 
+      - name: Generate ECS task-defintion.json (api)
+        env:
+          APP_CPU: 256
+          APP_RAM: 512
+          ARCH: "X86_64"
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_PS_PREFIX: ${{ vars.AWS_PS_PREFIX }}
+          AWSLOGS_GROUP: /ecs/foo-api
+          AWSLOGS_REGION: ${{ vars.AWS_REGION }}
+          AWSLOGS_STREAM_PREFIX: foo-api
+          BUILD_NUM: ${{ github.run_number }}
+          COMP: "api"
+          CONTAINER_NAME: foo-app
+          ENV: ${{ needs.config.outputs.environment }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
+          FAMILY: "foo-api"
+          GIT_HEAD_REF: ${{ github.head_ref }}
+          HTTP_PORT: 4000
+          HTTPS_PORT: 4001
+          IMAGE_OTEL: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}aws-otel-collector:latest"
+          IMAGE: "${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}"
+          ROLES: "api"
+          SERVICE: foo-api
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+        run: jq --null-input -f "ecs/task-definition.${COMP}.json.jq" | tee "/tmp/task-definition.${COMP}.json"
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: /tmp/task-definition.app.json
+          cluster: foo
+          service: foo-app
+          # wait-for-service-stability: true
+
       - name: Generate ECS task-defintion.json (worker)
         env:
           APP_CPU: 256
@@ -1771,7 +1805,7 @@ jobs:
 
   # Copy 3rd-party images to ECR
   # Avoids Docker Hub rate limits and speeds up pull performance
-  # Required if you have 3rd-party images used at runtime 
+  # Required if you have 3rd-party images used at runtime
   sync-images-ecr:
     name: Sync 3rd-party images ECR
     needs: [config]
