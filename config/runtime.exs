@@ -10,6 +10,7 @@ source([
   System.get_env()
 ])
 
+# ROLES may be app, worker or multiple separated by commas, or "all"
 roles = "ROLES" |> System.get_env("app") |> String.split(",") |> Enum.map(&String.to_atom/1)
 config :phoenix_container_example, roles: roles
 
@@ -29,6 +30,7 @@ env_config = [
   {"BUGSNAG_APP_VERSION", :string, :bugsnag, :app_version},
   {"BUGSNAG_RELEASE_STAGE", :string, :bugsnag, :release_stage},
   {"DB_POOL_SIZE", :integer, :phoenix_container_example, PhoenixContainerExample.Repo, :pool_size},
+  # Logger log level for Ecto queries. One of Logger.level/0 values
   {"ECTO_LOG", :atom, :phoenix_container_example, PhoenixContainerExample.Repo, :log}
 ]
 
@@ -87,7 +89,6 @@ if config_env() == :prod do
           # "HTTPS_PORT" => :port
         },
         port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
-        # :strong or :compatible
         cipher_suite: :strong,
         log_level: :debug
       )
