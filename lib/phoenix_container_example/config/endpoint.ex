@@ -3,7 +3,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   Utility functions for configuring endpoint.
   """
 
-  # require Logger
+  require Logger
 
   @doc """
   Get https options from OS environment.
@@ -26,9 +26,10 @@ defmodule PhoenixContainerExample.Config.Endpoint do
         adapter_opts(default_opts, opts)
       end
 
-    IO.inspect(default_opts, label: "https default_opts:", limit: :infinity)
-    IO.inspect(opts, label: "https opts:", limit: :infinity)
-    IO.inspect(result, label: "https result:", limit: :infinity)
+    # IO.inspect(default_opts, label: "https default_opts:", limit: :infinity)
+    # IO.inspect(opts, label: "https opts:", limit: :infinity)
+    # IO.inspect(result, label: "https result:", limit: :infinity)
+    Logger.info("https opts: #{inspect(result, limit: :infinity)}")
     result
   end
 
