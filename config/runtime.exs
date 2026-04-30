@@ -90,7 +90,7 @@ if config_env() == :prod do
         },
         port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
         cipher_suite: :strong,
-        log_level: :error,
+        # log_level: :error,
         adapter: Bandit.PhoenixAdapter
       )
 
