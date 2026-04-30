@@ -26,9 +26,9 @@ defmodule PhoenixContainerExample.Config.Endpoint do
         adapter_opts(default_opts, opts)
       end
 
-    IO.inspect(default_opts, label: "https default_opts:")
-    IO.inspect(opts, label: "https opts:")
-    IO.inspect(result, label: "https result:")
+    IO.inspect(default_opts, label: "https default_opts:", limit: :infinity)
+    IO.inspect(opts, label: "https opts:", limit: :infinity)
+    IO.inspect(result, label: "https result:", limit: :infinity)
     result
   end
 
