@@ -89,8 +89,8 @@ if config_env() == :prod do
           # "HTTPS_PORT" => :port
         },
         port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
-        cipher_suite: :strong,
-        log_level: :debug
+        cipher_suite: :strong
+        # log_level: :debug
       )
 
   config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")

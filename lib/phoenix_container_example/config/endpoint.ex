@@ -3,7 +3,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   Utility functions for configuring endpoint.
   """
 
-  require Logger
+  # require Logger
 
   @doc """
   Get https options from OS environment.
@@ -23,7 +23,8 @@ defmodule PhoenixContainerExample.Config.Endpoint do
       false
     else
       result = adapter_opts(default_opts, opts)
-      Logger.warning("HTTPS options: #{inspect(result)}")
+      # Logger.warning("HTTPS options: #{inspect(result)}")
+      IO.inspect(result, label: "HTTPS options:")
       result
     end
   end
