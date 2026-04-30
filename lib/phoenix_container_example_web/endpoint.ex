@@ -13,6 +13,8 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
 
   @app :phoenix_container_example
 
+  plug Uinta.Plug, Application.compile_env(@app, Uinta.Plug, [])
+
   plug KubernetesHealthCheck.Plug, mod: PhoenixContainerExample.Health
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -43,7 +45,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     param_key: "request_logger",
     cookie_key: "request_logger"
 
-  plug Uinta.Plug, Application.compile_env(@app, Uinta.Plug, [])
+  # plug Uinta.Plug, Application.compile_env(@app, Uinta.Plug, [])
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]

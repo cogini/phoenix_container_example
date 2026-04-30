@@ -30,7 +30,7 @@ config :opentelemetry,
 config :phoenix, :json_library, Jason
 
 # Disable Phoenix request logging in favor of Uinta
-config :phoenix, logger: false
+# config :phoenix, logger: false
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
 
