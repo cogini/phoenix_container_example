@@ -36,6 +36,9 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: @app
   end
 
+  # Respond to /metrics for Prometheus scraping
+  # plug PromEx.Plug, prom_ex_module: PhoenixContainerExample.PromEx
+
   plug Phoenix.LiveDashboard.RequestLogger,
     param_key: "request_logger",
     cookie_key: "request_logger"
