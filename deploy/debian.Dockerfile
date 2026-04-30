@@ -311,13 +311,12 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 RUN mix deps.compile
 
 # Use glob pattern to deal with files which may not exist
-# Must have at least one existing file
+# At least one file must exist
 COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
-ARG DIALYZER
 # Generate Dialyzer files for deps
-# This only changes when deps change, so doing it here
-# caches it to save time during testing
+# This only changes when deps change
+ARG DIALYZER
 RUN if [ "$DIALYZER" = "true" ]; then \
       mix dialyzer --plt ; \
     fi
