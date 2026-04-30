@@ -19,14 +19,17 @@ defmodule PhoenixContainerExample.Config.Endpoint do
         {key, convert_opt(key, value)}
       end
 
-    if Enum.empty?(opts) do
-      false
-    else
-      result = adapter_opts(default_opts, opts)
-      # Logger.warning("HTTPS options: #{inspect(result)}")
-      IO.inspect(result, label: "HTTPS options:")
-      result
-    end
+    result =
+      if Enum.empty?(opts) do
+        false
+      else
+        adapter_opts(default_opts, opts)
+      end
+
+    IO.inspect(default_opts, label: "https default_opts:")
+    IO.inspect(opts, label: "https opts:")
+    IO.inspect(result, label: "https result:")
+    result
   end
 
   # Convert environment variable values based on type.
