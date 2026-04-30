@@ -18,7 +18,6 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT") || "4000")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
