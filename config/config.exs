@@ -28,6 +28,8 @@ config :opentelemetry,
   propagators: [:opentelemetry_xray_propagator, :baggage]
 
 config :phoenix, :json_library, Jason
+
+# Disable Phoenix request logging in favor of Uinta
 config :phoenix, logger: false
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
