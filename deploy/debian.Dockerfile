@@ -442,55 +442,69 @@ RUN if [ "$SENTRY" = "1" ]; then \
 ARG RELEASE
 RUN mix release "$RELEASE"
 
-# ARG BUILD_NUM
-# ARG ELIXIR_VER
-# ARG OTP_VER
-# ARG BUILD_OS_VER
 
-# RUN set -exu ; \
-#     echo "build: ${BUILD_NUM}" > /app/build_meta.yml ; \
-#     echo "elixir_ver: ${ELIXIR_VER}" >> /app/build_meta.yml ; \
-#     echo "otp_ver: ${OTP_VER}" >> /app/build_meta.yml ; \
-#     echo "build_os: ubuntu" >> /app/build_meta.yml ; \
-#     echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
-#     echo "var: ${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER}" >> /app/build_meta.yml ;
+FROM prod-release AS prod-release-package
+ARG BUILD_NUM
+ARG ELIXIR_VER
+ARG OTP_VER
+ARG BUILD_OS_VER
 
-# RUN set -exu ; \
-#     echo "BUILD_NUM: ${BUILD_NUM}" > /app/build_meta.sh
+ARG MIX_ENV
+ARG RELEASE
+
+RUN set -exu ; \
+    export ARCH_LINUX=$(dpkg --print-architecture) ; \
+    export ARCH_MACHINE=$(uname -m) ; \
+    export BUILD_OS="debian" ; \
+    echo "arch_linux: ${ARCH_LINUX}" >> /app/build_meta.yml ; \
+    echo "arch_machine: ${ARCH_MACHINE}" >> /app/build_meta.yml ; \
+    echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
+    echo "build_os: ${BUILD_OS}" >> /app/build_meta.yml ; \
+    echo "build: ${BUILD_NUM}" > /app/build_meta.yml ; \
+    echo "elixir_ver: ${ELIXIR_VER}" >> /app/build_meta.yml ; \
+    echo "otp_ver: ${OTP_VER}" >> /app/build_meta.yml ; \
+    echo "var: ${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> /app/build_meta.yml ;
+
+RUN set -exu ; \
+    echo "BUILD_NUM: ${BUILD_NUM}" > /app/build_meta.sh
+
+# Generate systemd and deploy scripts
+RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
 
 # Create revision for CodeDeploy
-# WORKDIR /revision
-# COPY appspec.yml ./
-# RUN set -exu ; \
-#     mkdir -p etc bin lib systemd ; \
-#     chmod +x /app/bin/* ; \
-#     cp /app/bin/* ./bin/ ; \
-#     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
-#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
-#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
-#     echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
-#     echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER}" >> ./deploy.env ; \
-#     cp /app/build_meta.yml ./ ; \
-#     cp /app/build_meta.sh ./ ; \
-#     zip -r /revision.zip . ; \
-#     rm -rf /revision/*
+WORKDIR /revision
+COPY /app/ecs/appspec.yml ./
+RUN set -exu ; \
+    export BUILD_OS="debian" ; \
+    mkdir -p etc bin lib systemd ; \
+    chmod +x /app/bin/* ; \
+    cp /app/bin/* ./bin/ ; \
+    cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
+    echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
+    echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> ./deploy.env ; \
+    cp /app/build_meta.yml ./ ; \
+    cp /app/build_meta.sh ./ ; \
+    zip -r /revision.zip . ; \
+    rm -rf /revision/*
 
 # Create release package for Ansible
-# WORKDIR /ansible
-# RUN set -exu ; \
-#     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
-#     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
-#     # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
-#     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
-#     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
-#     mkdir -p bin lib ; \
-#     cp /app/bin/* ./bin/ ; \
-#     chmod +x ./bin/* ; \
-#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
-#     cp /app/build_meta.yml ./ ; \
-#     cp /app/build_meta.sh ./ ; \
-#     zip -r /ansible.zip . ; \
-#     rm -rf /ansible/*
+WORKDIR /ansible
+RUN set -exu ; \
+    mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
+    cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
+    # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
+    # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
+    # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
+    mkdir -p bin lib ; \
+    cp /app/bin/* ./bin/ ; \
+    chmod +x ./bin/* ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
+    cp /app/build_meta.yml ./ ; \
+    cp /app/build_meta.sh ./ ; \
+    zip -r /ansible.zip . ; \
+    rm -rf /ansible/*
 
 
 # Create staging image for files which are copied into final prod image
