@@ -56,6 +56,9 @@ ARG DEV_PACKAGES="inotify-tools"
 # Whether to build Dialyzer PLT files for deps.
 ARG DIALYZER="false"
 
+# Whether to package source code for Sentry
+ARG SENTRY="1"
+
 # Create build base image with OS dependencies
 FROM ${PUBLIC_REGISTRY}hexpm/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
 
@@ -431,10 +434,10 @@ RUN mix assets.deploy
 
 COPY --link rel ./rel
 
-# Generate systemd and deploy scripts
-# RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
-
-RUN mix sentry.package_source_code
+ARG SENTRY
+RUN if [ "$SENTRY" = "1" ]; then \
+      mix sentry.package_source_code ; \
+    fi
 
 ARG RELEASE
 RUN mix release "$RELEASE"
