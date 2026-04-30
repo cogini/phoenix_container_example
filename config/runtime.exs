@@ -49,7 +49,6 @@ if config_env() == :prod do
   ecto_log = System.get_env("ECTO_LOG") || false
 
   host = System.get_env("PHX_HOST", "example.com")
-  port = String.to_integer(System.get_env("PORT", "4000"))
 
   config :phoenix_container_example, PhoenixContainerExample.Repo,
     ssl: maybe_ecto_ssl,
@@ -62,8 +61,6 @@ if config_env() == :prod do
     socket_options: maybe_ecto_ipv6
 
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
-    adapter: Bandit.PhoenixAdapter,
-    # adapter: Phoenix.Endpoint.Cowboy2Adapter
     url: [host: host, port: 443, scheme: "https"],
     # static_url: [host: "assets." <> host, port: 443, scheme: "https"],
     secret_key_base: env!("SECRET_KEY_BASE", :string!),
@@ -74,7 +71,7 @@ if config_env() == :prod do
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       # ip: {0, 0, 0, 0, 0, 0, 0, 0},
       ip: {0, 0, 0, 0},
-      port: port
+      port: String.to_integer(System.get_env("PORT", "4000"))
     ],
     https:
       EndpointConfig.https_opts(
@@ -92,9 +89,7 @@ if config_env() == :prod do
         port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
         # :strong or :compatible
         cipher_suite: :strong,
-        transport_options: [
-          log_level: :debug
-        ]
+        log_level: :debug
       )
 
   config :phoenix_container_example, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")

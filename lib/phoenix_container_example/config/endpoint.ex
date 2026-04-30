@@ -3,7 +3,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
   Utility functions for configuring endpoint.
   """
 
-  # require Logger
+  require Logger
 
   @doc """
   Get https options from OS environment.
@@ -22,7 +22,9 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     if Enum.empty?(opts) do
       false
     else
-      adapter_opts(default_opts, opts)
+      result = adapter_opts(default_opts, opts)
+      Logger.debug("HTTPS options: #{inspect(result)}")
+      result
     end
   end
 
@@ -75,7 +77,7 @@ defmodule PhoenixContainerExample.Config.Endpoint do
     Enum.reduce(opts, bandit_opts, &bandit_opt/2)
   end
 
-  defp bandit_opt({key, value}, acc) when key in [:cacertfile, :cacerts, :cert, :key] do
+  defp bandit_opt({key, value}, acc) when key in [:cacertfile, :cacerts, :cert, :key, :log_level] do
     put_in(acc, [:thousand_island_options, :transport_options, key], value)
   end
 
