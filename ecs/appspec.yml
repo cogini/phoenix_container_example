@@ -7,5 +7,5 @@ Resources:
         TaskDefinition: "<TASK_DEFINITION>"
         LoadBalancerInfo:
           ContainerName: "foo-app"
-          ContainerPort: 4000
+          ContainerPort: 4001
         PlatformVersion: "LATEST"
