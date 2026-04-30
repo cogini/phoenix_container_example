@@ -90,7 +90,8 @@ if config_env() == :prod do
           # "HTTPS_PORT" => :port
         },
         port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
-        cipher_suite: :strong, # :strong or :compatible
+        # :strong or :compatible
+        cipher_suite: :strong,
         transport_options: [
           log_level: :debug
         ]
