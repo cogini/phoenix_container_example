@@ -79,8 +79,8 @@ if config_env() == :prod do
       EndpointConfig.https_opts(
         System.get_env(),
         %{
-          "HTTPS_CACERTS" => :cacerts,
           "HTTPS_CACERTFILE" => :cacertfile,
+          "HTTPS_CACERTS" => :cacerts,
           "HTTPS_CERT" => :cert,
           "HTTPS_CERTFILE" => :certfile,
           # "HTTPS_CIPHER_SUITE" => :cipher_suite,
