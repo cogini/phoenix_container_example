@@ -58,14 +58,6 @@
           "value": env.GIT_HEAD_REF
         },
         {
-          "name": "LIBCLUSTER_DEBUG",
-          "value": "true"
-        },
-        {
-          "name": "LIBCLUSTER_STRATEGY",
-          "value": "ecs"
-        },
-        {
           "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
           "value": "http://localhost:4317"
         },
