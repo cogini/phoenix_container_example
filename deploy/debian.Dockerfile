@@ -54,7 +54,7 @@ ARG RUNTIME_PACKAGES="ca-certificates"
 ARG DEV_PACKAGES="inotify-tools"
 
 # Whether to build Dialyzer PLT files for deps.
-ARG DIALYZER="false"
+ARG DIALYZER="1"
 
 # Whether to package source code for Sentry
 ARG SENTRY="1"
@@ -320,7 +320,7 @@ COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] tri
 # Generate Dialyzer files for deps
 # This only changes when deps change
 ARG DIALYZER
-RUN if [ "$DIALYZER" = "true" ]; then \
+RUN if [ "$DIALYZER" = "1" ]; then \
       mix dialyzer --plt ; \
     fi
 
