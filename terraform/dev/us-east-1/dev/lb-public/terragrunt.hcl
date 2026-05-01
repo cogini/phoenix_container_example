@@ -12,9 +12,6 @@ dependency "s3" {
 dependency "sg" {
   config_path = "../sg-lb-public"
 }
-dependency "tg" {
-  config_path = "../target-group-default"
-}
 dependency "vpc" {
   config_path = "../vpc"
 }
@@ -44,6 +41,14 @@ inputs = {
   access_logs_bucket_id = dependency.s3.outputs.buckets["logs"].id
   subnet_ids            = dependency.vpc.outputs.subnets["public"]
   security_group_ids    = [dependency.sg.outputs.security_group_id]
-  target_group_arn      = dependency.tg.outputs.arn
   dns_domain            = join(".", compact([local.dns_subdomain, local.dns_domain]))
+
+  default_action = {
+    type             = "fixed-response",
+    fixed_response  = {
+      content_type = "text/html",
+      message_body = "<h1>Error</h1><p>Default page.</p>",
+      status_code  = 200
+    }
+  }
 }

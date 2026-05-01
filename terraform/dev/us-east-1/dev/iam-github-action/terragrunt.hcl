@@ -12,9 +12,6 @@ dependency "cloudfront" {
 dependency "ecr-app" {
   config_path = "../ecr-app"
 }
-dependency "ecr-api" {
-  config_path = "../ecr-api"
-}
 dependency "ecr-otel" {
   config_path = "../ecr-otel"
 }
@@ -23,9 +20,6 @@ dependency "ecs-cluster" {
 }
 dependency "ecs-service-app" {
   config_path = "../ecs-service-app"
-}
-dependency "ecs-service-api" {
-  config_path = "../ecs-service-api"
 }
 dependency "ecs-service-worker" {
   config_path = "../ecs-service-worker"
@@ -67,18 +61,12 @@ inputs = {
 
   ecr_arns = [
     dependency.ecr-app.outputs.arn,
-    dependency.ecr-api.outputs.arn,
     dependency.ecr-otel.outputs.arn
   ]
 
   ecs = [
     {
       service_arn                      = dependency.ecs-service-app.outputs.id
-      task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
-      execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
-    },
-    {
-      service_arn                      = dependency.ecs-service-api.outputs.id
       task_role_arn                    = dependency.iam-ecs-task-role.outputs.arn
       execution_role_arn               = dependency.iam-ecs-task-execution.outputs.arn
     },

@@ -61,9 +61,37 @@ resource "aws_lb_listener" "http" {
   port              = "80"
   protocol          = "HTTP"
 
-  default_action {
-    target_group_arn = var.target_group_arn
-    type             = "forward"
+  dynamic "default_action" {
+    for_each = var.target_group_arn[*]
+    content {
+      type             = "forward"
+      target_group_arn = default_action.value
+    }
+  }
+
+  dynamic "default_action" {
+    for_each = var.default_action[*]
+    content {
+      type             = lookup(default_action.value, "type")
+
+      dynamic "redirect" {
+        for_each = lookup(default_action.value, "redirect")[*]
+        content {
+           port        = lookup(redirect.value, "port", null)
+           protocol    = lookup(redirect.value, "protocol", null)
+           status_code = lookup(redirect.value, "status_code", null)
+        }
+      }
+
+      dynamic "fixed_response" {
+        for_each = lookup(default_action.value, "fixed_response")[*]
+        content {
+          content_type = lookup(fixed_response.value, "content_type", null)
+          message_body = lookup(fixed_response.value, "message_body", null)
+          status_code  = lookup(fixed_response.value, "status_code", null)
+        }
+      }
+    }
   }
 }
 
@@ -92,9 +120,37 @@ resource "aws_lb_listener" "https-acm" {
   ssl_policy        = var.ssl_policy
   certificate_arn   = data.aws_acm_certificate.acm[0].arn
 
-  default_action {
-    type             = "forward"
-    target_group_arn = var.target_group_arn
+  dynamic "default_action" {
+    for_each = var.target_group_arn[*]
+    content {
+      type             = "forward"
+      target_group_arn = default_action.value
+    }
+  }
+
+  dynamic "default_action" {
+    for_each = var.default_action[*]
+    content {
+      type             = lookup(default_action.value, "type")
+
+      dynamic "redirect" {
+        for_each = lookup(default_action.value, "redirect")[*]
+        content {
+           port        = lookup(redirect.value, "port", null)
+           protocol    = lookup(redirect.value, "protocol", null)
+           status_code = lookup(redirect.value, "status_code", null)
+        }
+      }
+
+      dynamic "fixed_response" {
+        for_each = lookup(default_action.value, "fixed_response")[*]
+        content {
+          content_type = lookup(fixed_response.value, "content_type", null)
+          message_body = lookup(fixed_response.value, "message_body", null)
+          status_code  = lookup(fixed_response.value, "status_code", null)
+        }
+      }
+    }
   }
 }
 
@@ -106,8 +162,36 @@ resource "aws_lb_listener" "https-iam" {
   ssl_policy        = var.ssl_policy
   certificate_arn   = data.aws_iam_server_certificate.iam[0].arn
 
-  default_action {
-    type             = "forward"
-    target_group_arn = var.target_group_arn
+  dynamic "default_action" {
+    for_each = var.target_group_arn[*]
+    content {
+      type             = "forward"
+      target_group_arn = default_action.value
+    }
+  }
+
+  dynamic "default_action" {
+    for_each = var.default_action[*]
+    content {
+      type             = lookup(default_action.value, "type")
+
+      dynamic "redirect" {
+        for_each = lookup(default_action.value, "redirect")[*]
+        content {
+           port        = lookup(redirect.value, "port", null)
+           protocol    = lookup(redirect.value, "protocol", null)
+           status_code = lookup(redirect.value, "status_code", null)
+        }
+      }
+
+      dynamic "fixed_response" {
+        for_each = lookup(default_action.value, "fixed_response")[*]
+        content {
+          content_type = lookup(fixed_response.value, "content_type", null)
+          message_body = lookup(fixed_response.value, "message_body", null)
+          status_code  = lookup(fixed_response.value, "status_code", null)
+        }
+      }
+    }
   }
 }

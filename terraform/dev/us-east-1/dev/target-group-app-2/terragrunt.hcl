@@ -35,13 +35,14 @@ inputs = {
   #   join(".", compact([local.dns_subdomain, local.dns_domain]))
   # ]
 
-  port     = 4001
-  protocol = "HTTPS"
+  port     = 4000
+  # protocol = "HTTPS"
 
   health_check = {
     # If you don't specify the port, it uses the same as the traffic port.
     # You still need to specify HTTPS, though.
-    protocol = "HTTPS" # default HTTP
+    # port = 4000
+    # protocol = "HTTPS" # default HTTP
     # path = "/"
     path = "/healthz/liveness"
     # interval = 10 # default 30
