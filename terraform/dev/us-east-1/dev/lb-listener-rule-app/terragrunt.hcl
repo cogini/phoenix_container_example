@@ -61,6 +61,7 @@ inputs = {
       host_header = {
         values = [
           join(".", compact(["app", local.dns_subdomain, local.dns_domain])),
+          # join(".", compact(["api", local.dns_subdomain, local.dns_domain])),
           join(".", compact([local.dns_subdomain, local.dns_domain]))
         ]
       }
