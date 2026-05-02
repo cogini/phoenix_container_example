@@ -36,8 +36,9 @@ inputs = {
   # ]
 
   port     = 4000
-  # protocol = "HTTPS"
   protocol = "HTTP"
+  # port     = 4001
+  # protocol = "HTTPS"
 
   health_check = {
     # If you don't specify the port, it uses the same as the traffic port.
