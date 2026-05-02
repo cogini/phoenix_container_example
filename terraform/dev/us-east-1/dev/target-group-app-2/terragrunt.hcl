@@ -36,6 +36,8 @@ inputs = {
   # ]
 
   port     = 4000
+  protocol = "HTTP"
+  # port     = 4001
   # protocol = "HTTPS"
 
   health_check = {
