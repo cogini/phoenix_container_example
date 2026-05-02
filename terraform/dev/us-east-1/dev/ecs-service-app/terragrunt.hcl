@@ -131,13 +131,13 @@ inputs = {
   #   # log_configuration = {
   #   #   log_driver = "awslogs"
   #   # }
-  #   # namespace name or ARN of aws_service_discovery_http_namespace
+  #   # Namespace name or ARN of aws_service_discovery_http_namespace
   #   namespace = dependency.sd-service.outputs.arn
   #   service = [
   #     {
-  #       port_name =  "web"
-  #       # discovery_name = "ai-app"
-  #       # client_alias = ["ai-app.ai.internal"]
+  #       port_name =  "http"
+  #       # discovery_name = "foo-app"
+  #       # client_alias = ["foo-app.foo.internal"]
   #     }
   #   ]
   # }
