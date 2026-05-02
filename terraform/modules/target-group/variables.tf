@@ -54,8 +54,7 @@ variable "name" {
 variable "paths" {
   description = "Listener rule paths condition"
   type        = list(string)
-  # default     = ["/*"]
-  default = []
+  default     = []
 }
 
 variable "port" {
