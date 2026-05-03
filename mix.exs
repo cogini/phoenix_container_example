@@ -3,12 +3,10 @@ defmodule PhoenixContainerExample.MixProject do
 
   def project do
     [
-      app: :phoenix_container_example,
-      version: "0.1.0",
-      elixir: "~> 1.14",
-      elixirc_paths: elixirc_paths(Mix.env()),
-      start_permanent: Mix.env() == :prod,
       aliases: aliases(),
+      app: :phoenix_container_example,
+      default_release: :prod,
+      deps: deps(),
       dialyzer: [
         plt_add_apps: [:mix, :ex_unit]
         # plt_add_deps: :project,
@@ -17,10 +15,56 @@ defmodule PhoenixContainerExample.MixProject do
         # flags: ["-Wunmatched_returns", :error_handling, :race_conditions, :underspecs],
         # ignore_warnings: "dialyzer.ignore-warnings"
       ],
-      test_coverage: [tool: ExCoveralls],
-      default_release: :prod,
+      elixir: "~> 1.14",
+      elixirc_paths: elixirc_paths(Mix.env()),
       releases: releases(),
-      deps: deps()
+      start_permanent: Mix.env() == :prod,
+      test_coverage: [tool: ExCoveralls],
+      version: "0.1.0"
+    ]
+  end
+
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["tailwind default", "esbuild default --sourcemap"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"],
+      quality: [
+        "format --check-formatted",
+        # "credo",
+        "credo --mute-exit-status",
+        # Run `mix deps.clean --unlock --unused` to clean things identified below
+        "deps.unlock --check-unused",
+        # mix deps.update
+        # "hex.outdated",
+        # "hex.audit",
+        "deps.audit",
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
+        "dialyzer --quiet-with-result"
+      ],
+      "quality.ci": [
+        "format --check-formatted",
+        "deps.unlock --check-unused",
+        # "hex.outdated",
+        "hex.audit",
+        "deps.audit",
+        "credo",
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
+        "dialyzer --quiet-with-result"
+      ]
+    ]
+  end
+
+  def application do
+    [
+      mod: {PhoenixContainerExample.Application, []},
+      extra_applications:
+        [:logger, :runtime_tools, :eex, :sentry] ++
+          extra_applications(Mix.env())
     ]
   end
 
@@ -36,36 +80,6 @@ defmodule PhoenixContainerExample.MixProject do
         "quality.ci": :test,
         "assets.deploy": :prod,
         deploy: :prod
-      ]
-    ]
-  end
-
-  def application do
-    [
-      mod: {PhoenixContainerExample.Application, []},
-      extra_applications:
-        [:logger, :runtime_tools, :eex, :sentry] ++
-          extra_applications(Mix.env())
-    ]
-  end
-
-  defp extra_applications(:dev), do: [:tools]
-  defp extra_applications(:test), do: [:tools]
-  defp extra_applications(_), do: []
-
-  defp elixirc_paths(:dev), do: ["lib", "test/support"]
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
-
-  defp releases do
-    [
-      prod: [
-        reboot_system_after_config: true,
-        # validate_compile_env: false,
-        include_executables_for: [:unix],
-        # Don't need to tar if we are just going to copy it
-        steps: [:assemble, :tar],
-        applications: [opentelemetry_exporter: :permanent, opentelemetry: :temporary]
       ]
     ]
   end
@@ -145,37 +159,23 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  defp aliases do
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  defp extra_applications(:dev), do: [:tools]
+  defp extra_applications(:test), do: [:tools]
+  defp extra_applications(_), do: []
+
+  defp releases do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind default", "esbuild default --sourcemap"],
-      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"],
-      quality: [
-        "format --check-formatted",
-        # "credo",
-        "credo --mute-exit-status",
-        # Run `mix deps.clean --unlock --unused` to clean things identified below
-        "deps.unlock --check-unused",
-        # mix deps.update
-        # "hex.outdated",
-        # "hex.audit",
-        "deps.audit",
-        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
-        "dialyzer --quiet-with-result"
-      ],
-      "quality.ci": [
-        "format --check-formatted",
-        "deps.unlock --check-unused",
-        # "hex.outdated",
-        "hex.audit",
-        "deps.audit",
-        "credo",
-        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
-        "dialyzer --quiet-with-result"
+      prod: [
+        reboot_system_after_config: true,
+        # validate_compile_env: false,
+        include_executables_for: [:unix],
+        # Don't need to tar if we are just going to copy it
+        steps: [:assemble, :tar],
+        applications: [opentelemetry_exporter: :permanent, opentelemetry: :temporary]
       ]
     ]
   end
