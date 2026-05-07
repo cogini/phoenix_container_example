@@ -101,10 +101,10 @@ defmodule PhoenixContainerExample.Autoscaling do
 
   # Convert Elixir-style keys in the config to AWS expected PascalCase format.
   defp map_keys(data) do
-    Enum.map(data, fn {key, value} ->
+    for {key, value} <- data, into: %{} do
       camel_key = key |> to_string() |> Macro.camelize()
       {camel_key, value}
-    end)
+    end
   end
 
   # GenServer
