@@ -5,13 +5,15 @@ defmodule PhoenixContainerExample.Autoscaling do
   """
   use GenServer
 
+  alias ExAws.Operation.JSON
+
   require Logger
 
   @tab :aws_autoscaling
-  @default_backoff_duration :timer.minutes(5)
+  @default_backoff_duration to_timeout(minute: 5)
 
   # Public API
-  
+
   @spec register_events(list) :: :ok
   def register_events(events) do
     for {event_name, event_definitions} <- events do
@@ -30,8 +32,9 @@ defmodule PhoenixContainerExample.Autoscaling do
         Logger.debug("Triggering event: #{event_name} with definition: #{inspect(event_definition)}")
 
         resource_id = Map.fetch!(event_definition, :resource_id)
-        {backoff_duration, config} = 
-          Map.pop(event_definition, :backoff_duration, @default_backoff_duration) 
+
+        {backoff_duration, config} =
+          Map.pop(event_definition, :backoff_duration, @default_backoff_duration)
 
         case PhoenixContainerExample.RateLimit.hit(resource_id, backoff_duration, 1) do
           {:allow, _count} ->
@@ -42,20 +45,21 @@ defmodule PhoenixContainerExample.Autoscaling do
               |> ExAws.request()
 
             case result do
-                {:ok, response} ->
-                  Logger.debug("AWS response for #{resource_id}: #{inspect(response)}")
-                  :ok
+              {:ok, response} ->
+                Logger.debug("AWS response for #{resource_id}: #{inspect(response)}")
+                :ok
 
-                {:error, error} ->
-                  message = "AWS API: #{resource_id}: #{inspect(error)}"
-                  Logger.error(message) 
-                  {:error, message}
+              {:error, error} ->
+                message = "AWS API: #{resource_id}: #{inspect(error)}"
+                Logger.error(message)
+                {:error, message}
             end
 
           {:deny, retry_after} ->
             Logger.debug("Rate limit #{resource_id}. Retry after: #{retry_after}ms")
             {:error, :rate_limit}
         end
+
       [] ->
         Logger.debug("Event not found: #{event_name}")
         {:error, :unknown_event}
@@ -65,7 +69,7 @@ defmodule PhoenixContainerExample.Autoscaling do
   # Utils
 
   @doc "Create ExAws operation."
-  @spec to_operation(map) :: ExAws.Operation.JSON.t()
+  @spec to_operation(map) :: JSON.t()
   # https://github.com/aws/aws-sdk-go/tree/main/models/apis/application-autoscaling/2016-02-06
   # {
   #    "MaxCapacity": number,
@@ -84,7 +88,7 @@ defmodule PhoenixContainerExample.Autoscaling do
   #    }
   # }
   def to_operation(data) do
-    %ExAws.Operation.JSON{
+    %JSON{
       http_method: :post,
       service: "application-autoscaling",
       headers: [

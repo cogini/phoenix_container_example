@@ -36,7 +36,8 @@ config :phoenix_container_example, PhoenixContainerExample.Autoscaling,
   events: [
     worker_scale_out: [
       %{
-        backoff_duration: :timer.minutes(5), # Rate limit AWS calls duration (ms)
+        # Rate limit AWS calls duration (ms)
+        backoff_duration: to_timeout(minute: 5),
         resource_id: "service/foo/foo-worker",
         scalable_dimension: "ecs:service:DesiredCount",
         service_namespace: "ecs",
@@ -52,9 +53,8 @@ config :phoenix_container_example, PhoenixContainerExample.Autoscaling,
         min_capacity: 0,
         max_capacity: 10
       }
-    ],
+    ]
   ]
-
 
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
 
