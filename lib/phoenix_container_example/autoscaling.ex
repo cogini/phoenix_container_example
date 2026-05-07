@@ -54,7 +54,7 @@ defmodule PhoenixContainerExample.Autoscaling do
   # Utils
 
   @doc "Make AWS RegisterScalableTarget request."
-  @spec aws_request(map()) :: :ok | {:error, String.t}
+  @spec aws_request(map()) :: :ok | {:error, String.t()}
   def aws_request(data) do
     result =
       data
