@@ -33,27 +33,12 @@ defmodule PhoenixContainerExample.Autoscaling do
 
         resource_id = Map.fetch!(event_definition, :resource_id)
 
-        {backoff_duration, config} =
+        {backoff_duration, api_data} =
           Map.pop(event_definition, :backoff_duration, @default_backoff_duration)
 
         case PhoenixContainerExample.RateLimit.hit(resource_id, backoff_duration, 1) do
           {:allow, _count} ->
-            result =
-              config
-              |> map_keys()
-              |> to_operation()
-              |> ExAws.request()
-
-            case result do
-              {:ok, response} ->
-                Logger.debug("AWS response for #{resource_id}: #{inspect(response)}")
-                :ok
-
-              {:error, error} ->
-                message = "AWS API: #{resource_id}: #{inspect(error)}"
-                Logger.error(message)
-                {:error, message}
-            end
+            aws_request(api_data)
 
           {:deny, retry_after} ->
             Logger.debug("Rate limit #{resource_id}. Retry after: #{retry_after}ms")
@@ -67,6 +52,27 @@ defmodule PhoenixContainerExample.Autoscaling do
   end
 
   # Utils
+
+  @doc "Make AWS RegisterScalableTarget request."
+  @spec aws_request(map()) :: :ok | {:error, String.t}
+  def aws_request(data) do
+    result =
+      data
+      |> map_keys()
+      |> to_operation()
+      |> ExAws.request()
+
+    case result do
+      {:ok, response} ->
+        Logger.debug("AWS: RegisterScalableTarget #{inspect(data)}: #{inspect(response)}")
+        :ok
+
+      {:error, error} ->
+        message = "AWS: RegisterScalableTarget #{inspect(data)}: #{inspect(error)}"
+        Logger.debug(message)
+        {:error, message}
+    end
+  end
 
   @doc "Create ExAws operation."
   @spec to_operation(map) :: JSON.t()
