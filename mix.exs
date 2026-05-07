@@ -145,7 +145,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:plugsnag, "~> 1.7"},
       {:postgrex, ">= 0.0.0"},
       {:recon, "~> 2.5"},
-      {:sentry, "~> 12.0"},
+      {:sentry, "~> 13.0"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ssl_verify_fun, "~> 1.1"},
       {:styler, "~> 1.11.0", only: [:dev, :test], runtime: false},
