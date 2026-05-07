@@ -27,6 +27,8 @@ defmodule PhoenixContainerExample.Application do
 
     # :recon_trace.calls([{:logger_formatter_json, :_, :_}, {:logger_h_common, :_, :_}, {:thoas, :_, :_}], {50, 1000})
 
+    autoscaling_config = Application.get_env(@app, PhoenixContainerExample.Autoscaling, [])
+
     children =
       List.flatten([
         PhoenixContainerExampleWeb.Telemetry,
@@ -35,6 +37,8 @@ defmodule PhoenixContainerExample.Application do
         {Phoenix.PubSub, name: PhoenixContainerExample.PubSub},
         # Start the Finch HTTP client for sending emails
         {Finch, name: PhoenixContainerExample.Finch},
+        PhoenixContainerExample.RateLimit,
+        {PhoenixContainerExample.Autoscaling, config: autoscaling_config},
         PhoenixContainerExampleWeb.Endpoint,
         cluster_supervisor()
       ])

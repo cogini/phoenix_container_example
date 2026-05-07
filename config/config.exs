@@ -32,6 +32,30 @@ config :phoenix, :json_library, Jason
 # Disable Phoenix request logging in favor of Uinta
 # config :phoenix, logger: false
 
+config :phoenix_container_example, PhoenixContainerExample.Autoscaling,
+  events: [
+    worker_scale_out: [
+      %{
+        backoff_duration: :timer.minutes(5), # Rate limit AWS calls duration (ms)
+        resource_id: "service/foo/foo-worker",
+        scalable_dimension: "ecs:service:DesiredCount",
+        service_namespace: "ecs",
+        min_capacity: 1,
+        max_capacity: 10
+      }
+    ],
+    worker_scale_in: [
+      %{
+        resource_id: "service/foo/foo-worker",
+        scalable_dimension: "ecs:service:DesiredCount",
+        service_namespace: "ecs",
+        min_capacity: 0,
+        max_capacity: 10
+      }
+    ],
+  ]
+
+
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
 
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,

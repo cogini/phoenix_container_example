@@ -104,6 +104,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 1.0"},
       {:hackney, "~> 3.2", override: true},
+      {:hammer, "~> 7.3"},
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
       {:idna, "~> 7.1", override: true},

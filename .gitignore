@@ -68,5 +68,8 @@ npm-debug.log
 /.gitconfig
 /.gnupg/
 
+# AI files
+# .claude
+
 # macOS junk
 .DS_Store
