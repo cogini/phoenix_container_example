@@ -32,12 +32,20 @@ defmodule PhoenixContainerExample.Autoscaling do
   def trigger_event(event_name, opts \\ []) do
     Logger.debug("event: #{event_name}")
 
-    with {:ok, events} <- lookup_event(event_name, opts),
-         event = events,
-         aws_data = map_keys(event),
-         {:ok, data} <- rate_limit(aws_data, opts) do
-      :ok = aws_request(request_data)
-      :ok
+    case lookup_event(event_name, opts) do
+      {:ok, events} ->
+        Enum.reduce_while(events, :ok, fn event, acc ->
+          case acc do
+            :ok ->
+              process_event(event, opts)
+
+            error ->
+              {:halt, error}
+          end
+        end)
+
+      {:error, :unknown_event} ->
+        {:error, :unknown_event}
     end
   end
 
@@ -55,13 +63,23 @@ defmodule PhoenixContainerExample.Autoscaling do
     end
   end
 
+  @spec process_event(map(), keyword()) :: :ok | {:error, :rate_limit | term()}
+  def process_event(event, opts) do
+    with {:ok, aws_data} <- map_keys(event),
+         {:ok, data} <- rate_limit(aws_data, opts),
+         do: aws_request(data)
+  end
+
   # Convert Elixir-style keys in the config to PascalCase format AWS expects.
-  @spec map_keys(map()) :: map()
+  @spec map_keys(map()) :: {:ok, map()}
   defp map_keys(data) do
-    for {key, value} <- data, into: %{} do
-      camel_key = key |> to_string() |> Macro.camelize()
-      {camel_key, value}
-    end
+    result =
+      for {key, value} <- data, into: %{} do
+        camel_key = key |> to_string() |> Macro.camelize()
+        {camel_key, value}
+      end
+
+    {:ok, result}
   end
 
   @spec rate_limit(map(), keyword()) :: {:ok, map()} | {:error, :rate_limit}
