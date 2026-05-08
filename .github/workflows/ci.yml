@@ -188,7 +188,7 @@ jobs:
       datadog: '0'
 
       # Notify AppSignal of new app revision
-      notify-appsignal: '0'
+      notify-appsignal: '1'
     steps:
       - name: Configure common-matrix
         id: common-matrix
