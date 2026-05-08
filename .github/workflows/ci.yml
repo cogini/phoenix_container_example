@@ -195,7 +195,7 @@ jobs:
       notify-appsignal: '1'
 
       # Notify Sentry of new app release
-      notify-appsignal: '0'
+      notify-sentry: '0'
     steps:
       - name: Configure common-matrix
         id: common-matrix
