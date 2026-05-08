@@ -89,6 +89,10 @@ env:
   # Oban Pro license
   #   secrets.OBAN_KEY_FINGERPRINT
   #   secrets.OBAN_LICENSE_KEY
+  # Sentry.io
+  #   secrets.SENTRY_AUTH_TOKEN
+  #   secrets.SENTRY_ORG
+  #   secrets.SENTRY_PROJECT
   # secrets.GITLEAKS_LICENSE
   # secrets.SNYK_TOKEN
   # Target port for prod image tests
@@ -189,6 +193,9 @@ jobs:
 
       # Notify AppSignal of new app revision
       notify-appsignal: '1'
+
+      # Notify Sentry of new app release
+      notify-appsignal: '0'
     steps:
       - name: Configure common-matrix
         id: common-matrix
@@ -1502,6 +1509,18 @@ jobs:
       #     custom: my environment variable
       #     requester: ${{ github.actor }}
       #     event-name: ${{ github.event_name }}
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        if: needs.config.outputs.notify-sentry == '1'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # SENTRY_URL: https://sentry.io/
+        with:
+          environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
+          dist: ${{ github.run_number }}
 
       - name: Create AppSignal revision
         env:
