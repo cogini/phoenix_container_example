@@ -186,6 +186,9 @@ jobs:
 
       # Send results to Datadog
       datadog: '0'
+
+      # Notify AppSignal of new app revision
+      notify-appsignal: '0'
     steps:
       - name: Configure common-matrix
         id: common-matrix
@@ -1508,7 +1511,7 @@ jobs:
           APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
           REVISION: ${{ env.GITHUB_SHA_SHORT }}
           # REVISION: ${{ env.GITHUB_SHA }}
-        if: env.AWS_ENABLED == '1'
+        if: needs.config.outputs.notify-appsignal == '1'
         run: |
           printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
           APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
