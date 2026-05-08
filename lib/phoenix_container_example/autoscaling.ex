@@ -34,9 +34,9 @@ defmodule PhoenixContainerExample.Autoscaling do
 
     with {:ok, events} <- lookup_event(event_name, opts),
          event = events,
-         event = map_keys(event),
-         {:ok, data} <- rate_limit(event, opts) do
-      :ok = aws_request(data)
+         aws_data = map_keys(event),
+         {:ok, data} <- rate_limit(aws_data, opts) do
+      :ok = aws_request(request_data)
       :ok
     end
   end
