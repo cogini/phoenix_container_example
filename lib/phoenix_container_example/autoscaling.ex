@@ -35,9 +35,9 @@ defmodule PhoenixContainerExample.Autoscaling do
     case lookup_event(event_name, opts) do
       {:ok, events} ->
         Enum.reduce_while(events, :ok, fn event, acc ->
-          case acc do
+          case process_event(event, opts) do
             :ok ->
-              process_event(event, opts)
+              {:cont, acc}
 
             error ->
               {:halt, error}
