@@ -6,59 +6,86 @@ defmodule PhoenixContainerExample.Autoscaling do
   use GenServer
 
   alias ExAws.Operation.JSON
+  alias PhoenixContainerExample.RateLimit
 
   require Logger
 
   @tab :aws_autoscaling
-  @default_backoff_duration to_timeout(minute: 5)
+  @default_duration to_timeout(minute: 5)
 
   # Public API
 
-  @spec register_events(list) :: :ok
-  def register_events(events) do
-    for {event_name, event_definitions} <- events do
-      for event_definition <- event_definitions do
-        true = :ets.insert(@tab, {event_name, event_definition})
-      end
+  @doc "Register events and corresponding targets."
+  @spec register_events(list(map()), keyword()) :: :ok
+  def register_events(events, opts \\ []) do
+    tab = opts[:tab] || @tab
+
+    for {event_name, targets} <- events do
+      true = :ets.insert(tab, {event_name, targets})
     end
 
     :ok
   end
 
+  @doc "Trigger event, updating associated target(s)"
   @spec trigger_event(atom) :: :ok | {:error, :unknown_event | :rate_limit | term()}
-  def trigger_event(event_name) do
-    case :ets.lookup(@tab, event_name) do
-      [{^event_name, event_definition}] ->
-        Logger.debug("Triggering event: #{event_name} with definition: #{inspect(event_definition)}")
+  def trigger_event(event_name, opts \\ []) do
+    Logger.debug("event: #{event_name}")
 
-        resource_id = Map.fetch!(event_definition, :resource_id)
+    with {:ok, events} <- lookup_event(event_name, opts),
+         event = events,
+         event = map_keys(event),
+         {:ok, data} <- rate_limit(event, opts) do
+      :ok = aws_request(data)
+      :ok
+    end
+  end
 
-        {backoff_duration, api_data} =
-          Map.pop(event_definition, :backoff_duration, @default_backoff_duration)
+  # Look up event in ETS
+  @spec lookup_event(term(), keyword()) :: {:ok, list(map())} | {:error, :unknown_event}
+  defp lookup_event(event_name, opts) do
+    tab = opts[:tab]
 
-        case PhoenixContainerExample.RateLimit.hit(resource_id, backoff_duration, 1) do
-          {:allow, _count} ->
-            aws_request(api_data)
-
-          {:deny, retry_after} ->
-            Logger.debug("Rate limit #{resource_id}. Retry after: #{retry_after}ms")
-            {:error, :rate_limit}
-        end
+    case :ets.lookup(tab, event_name) do
+      [{^event_name, events}] ->
+        {:ok, events}
 
       [] ->
-        Logger.debug("Event not found: #{event_name}")
         {:error, :unknown_event}
     end
   end
 
-  # Utils
+  # Convert Elixir-style keys in the config to PascalCase format AWS expects.
+  @spec map_keys(map()) :: map()
+  defp map_keys(data) do
+    for {key, value} <- data, into: %{} do
+      camel_key = key |> to_string() |> Macro.camelize()
+      {camel_key, value}
+    end
+  end
+
+  @spec rate_limit(map(), keyword()) :: {:ok, map()} | {:error, :rate_limit}
+  defp rate_limit(event, opts) do
+    rate_limit = opts[:rate_limit] || RateLimit
+
+    resource_id = Map.fetch!(event, :resource_id)
+    {duration, event} = Map.pop(event, :backoff_duration, @default_duration)
+
+    case rate_limit.hit(resource_id, duration, 1) do
+      {:allow, _count} ->
+        {:ok, event}
+
+      {:deny, retry_after} ->
+        Logger.debug("Rate limit #{resource_id}. Retry after: #{retry_after}ms")
+        {:error, :rate_limit}
+    end
+  end
 
   @doc "Make AWS RegisterScalableTarget request."
   @spec aws_request(map()) :: :ok | {:error, String.t()}
   def aws_request(data) do
     result =
       data
-      |> map_keys()
       |> to_operation()
       |> ExAws.request()
 
@@ -74,8 +101,8 @@ defmodule PhoenixContainerExample.Autoscaling do
     end
   end
 
-  @doc "Create ExAws operation."
-  @spec to_operation(map) :: JSON.t()
+  @doc "Create ExAws Operation from data."
+  @spec to_operation(map()) :: JSON.t()
   # https://github.com/aws/aws-sdk-go/tree/main/models/apis/application-autoscaling/2016-02-06
   # {
   #    "MaxCapacity": number,
@@ -105,37 +132,41 @@ defmodule PhoenixContainerExample.Autoscaling do
     }
   end
 
-  # Convert Elixir-style keys in the config to AWS expected PascalCase format.
-  defp map_keys(data) do
-    for {key, value} <- data, into: %{} do
-      camel_key = key |> to_string() |> Macro.camelize()
-      {camel_key, value}
-    end
-  end
-
   # GenServer
   # At this point, the only purpose of the GenServer is to manage the ETS table lifecycle.
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(arg) do
-    GenServer.start_link(__MODULE__, arg, name: __MODULE__)
+    name = Keyword.get(arg, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, arg, name: name)
   end
 
   @impl true
-  def init(arg) do
-    Logger.debug("init: #{__MODULE__} arg: #{inspect(arg)}")
+  def init(args) do
+    Logger.debug("init: #{__MODULE__} args: #{inspect(args)}")
 
-    @tab = :ets.new(@tab, [:set, :public, :named_table, {:read_concurrency, true}])
+    defaults = [
+      tab: @tab,
+      rate_limit: RateLimit
+    ]
 
-    config = arg
+    opts = Keyword.merge(defaults, args)
+    tab = opts[:tab]
+
+    ^tab = :ets.new(tab, [:set, :public, :named_table, {:read_concurrency, true}])
+
+    config = args[:config] || []
     events = config[:events] || []
-    PhoenixContainerExample.Autoscaling.register_events(events)
 
-    {:ok, arg}
+    register_events(events, opts)
+
+    {:ok, opts}
   end
 
   @impl true
-  def terminate(reason, _state) do
+  def terminate(reason, state) do
+    tab = state[:tab]
     Logger.debug("terminate: #{__MODULE__} reason #{inspect(reason)}")
-    :ets.delete(@tab)
+    :ets.delete(tab)
   end
 end
