@@ -1,3 +1,9 @@
+variable "autoscaling_targets" {
+  description = "Resource Ids of Application Auto Scaling targets"
+  type        = list(string)
+  default     = []
+}
+
 variable "name" {
   description = "Used to override the var.app_name"
   default     = ""

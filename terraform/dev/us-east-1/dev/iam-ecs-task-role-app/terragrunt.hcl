@@ -9,9 +9,6 @@ include "root" {
 # dependency "kms" {
 #   config_path = "../kms"
 # }
-# dependency "s3-codepipeline" {
-#   config_path = "../s3-codepipeline-app"
-# }
 dependencies {
   paths = [
     "../s3-app",
@@ -78,4 +75,10 @@ inputs = {
 
   # Give access to KMS CMK
   # kms_key_arn = dependency.kms.outputs.key_arn
+
+  # Allowing updating AWS Application Auto Scaling scalable targets
+  autoscaling_targets = [
+    # Hard code instead of using dependencies, otherwise there is a circular dependency
+    "service/foo/foo-worker"
+  ]
 }

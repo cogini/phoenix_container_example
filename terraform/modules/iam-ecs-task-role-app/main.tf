@@ -139,6 +139,12 @@ locals {
 }
 
 locals {
+  autoscaling_targets = [for target in var.autoscaling_targets :
+    "arn:${var.aws_partition}:application-autoscaling:${var.aws_region}:${data.aws_caller_identity.current.account_id}:scalable-target/${target}"
+  ]
+}
+
+locals {
   name = var.name == "" ? "${var.app_name}" : var.name
 }
 
@@ -351,6 +357,17 @@ data "aws_iam_policy_document" "this" {
         "kms:DescribeKey",
       ]
       resources = [var.kms_key_arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.autoscaling_targets
+    content {
+      sid = "UpdateAutoScalingTarget"
+      actions = [
+        "application-autoscaling:RegisterScalableTarget"
+      ]
+      resources = local.autoscaling_targets
     }
   }
 }
