@@ -11,7 +11,7 @@ defmodule PhoenixContainerExample.Autoscaling do
   require Logger
 
   @tab :aws_autoscaling
-  @default_duration to_timeout(minute: 5)
+  @default_backoff_duration to_timeout(minute: 5)
 
   # Public API
 
@@ -85,9 +85,10 @@ defmodule PhoenixContainerExample.Autoscaling do
   @spec rate_limit(map(), keyword()) :: {:ok, map()} | {:error, :rate_limit}
   defp rate_limit(event, opts) do
     rate_limit = opts[:rate_limit] || RateLimit
+    backoff_duration = opts[:backoff_duration] || @default_backoff_duration
 
     resource_id = Map.fetch!(event, :resource_id)
-    {duration, event} = Map.pop(event, :backoff_duration, @default_duration)
+    {duration, event} = Map.pop(event, :backoff_duration, backoff_duration)
 
     case rate_limit.hit(resource_id, duration, 1) do
       {:allow, _count} ->
@@ -165,7 +166,8 @@ defmodule PhoenixContainerExample.Autoscaling do
 
     defaults = [
       tab: @tab,
-      rate_limit: RateLimit
+      rate_limit: RateLimit,
+      backoff_duration: @default_backoff_duration
     ]
 
     opts = Keyword.merge(defaults, args)
