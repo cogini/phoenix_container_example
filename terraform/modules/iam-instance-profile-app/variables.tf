@@ -12,10 +12,6 @@ variable "assume_role_policy_principals" {
   default     = []
 }
 
-variable "comp" {
-  description = "Component, e.g., app, worker"
-}
-
 variable "cloudwatch_logs" {
   description = "CloudWatch Logs"
   type        = list(any)
@@ -30,6 +26,10 @@ variable "cloudwatch_logs_prefix" {
 variable "cloudwatch_metrics_namespace" {
   description = "CloudWatch metrics namespace, * for any"
   default     = ""
+}
+
+variable "comp" {
+  description = "Component, e.g., app, worker"
 }
 
 variable "create_instance_profile" {
@@ -74,6 +74,11 @@ variable "enable_ses" {
 
 variable "enable_ssm_management" {
   description = "Allow instance to be managed via SSM"
+  default     = false
+}
+
+variable "enable_transcribe" {
+  description = "Enable use of AWS Transcribe"
   default     = false
 }
 

@@ -4,14 +4,6 @@ variable "autoscaling_targets" {
   default     = []
 }
 
-variable "name" {
-  description = "Used to override the var.app_name"
-  default     = ""
-}
-
-variable "comp" {
-  description = "Component, e.g. app, worker"
-}
 
 variable "cloudwatch_logs" {
   description = "CloudWatch Logs"
@@ -27,6 +19,10 @@ variable "cloudwatch_logs_prefix" {
 variable "cloudwatch_metrics_namespace" {
   description = "CloudWatch metrics namespace, * for any"
   default     = ""
+}
+
+variable "comp" {
+  description = "Component, e.g., app, worker"
 }
 
 variable "efs" {
@@ -62,6 +58,11 @@ variable "enable_transcribe" {
 variable "kms_key_arn" {
   description = "KMS CMK key ARN"
   default     = null
+}
+
+variable "name" {
+  description = "Override name, default app_name"
+  default     = ""
 }
 
 variable "prometheus" {

@@ -1,9 +1,12 @@
 # Create IAM instance profile for app or other special purpose instances,
-# e.g., devops, bastion
+# e.g., devops, bastion, prometheus server, grafana server.
 
 # Example config:
 # terraform {
 #   source = "${dirname(find_in_parent_folders())}/modules//iam-instance-profile-app"
+# }
+# include "root" {
+#   path = find_in_parent_folders()
 # }
 # dependency "kms" {
 #   config_path = "../kms"
@@ -15,9 +18,6 @@
 #   paths = [
 #     "../s3-app",
 #   ]
-# }
-# include "root" {
-#   path = find_in_parent_folders()
 # }
 #
 # inputs = {
@@ -31,7 +31,9 @@
 #       config = {
 #         actions = ["s3:ListBucket", "s3:List*", "s3:Get*"]
 #       }
-#       data = {}
+#       data = {
+#         actions = ["s3:ListBucket", "s3:List*", "s3:Get*", "s3:PutObject*", "s3:DeleteObject"]
+#       }
 #       logs = {}
 #       protected_web = {}
 #       public_web = {}
@@ -40,10 +42,6 @@
 #       }
 #     }
 #   }
-#
-#   # Give access to CodeDeploy S3 buckets
-#   enable_codedeploy = true
-#   artifacts_bucket_arn = dependency.s3-codepipeline.outputs.buckets["deploy"].arn
 #
 #   # Allow writing to any log group and stream
 #   cloudwatch_logs = ["*"]
@@ -56,21 +54,14 @@
 #   # Allow writing to specific namespace
 #   # cloudwatch_metrics_namespace = "Foo"
 #
-#   # Give access to CodeDeploy S3 buckets
-#   enable_codedeploy = true
-#   artifacts_bucket_arn = dependency.s3-codepipeline.outputs.buckets["deploy"].arn
-#
 #   Allow writing to AWS Managed Prometheus workspaces
 #   prometheus = true
 #
 #   # Enable writing to AWS X-Ray
 #   xray = true
 #
-#   # Enable management via SSM
-#   enable_ssm_management = true
-#
 #   # Give acess to all SSM Parameter Store params under /org/app/env/comp
-#   # ssm_ps_params = ["*"]
+#   ssm_ps_params = ["*"]
 #   # Specify prefix and params
 #   # Give acess to all SSM Parameter Store params under /org/app/env
 #   # ssm_ps_param_prefix = "cogini/foo/dev"
@@ -79,6 +70,15 @@
 #
 #   # Allow sending email via AWS SES
 #   enable_ses = true
+#
+#   # Enable management via SSM
+#   enable_ssm_management = true
+#
+#   # Give access to CodeDeploy S3 buckets
+#   enable_codedeploy = true
+#   artifacts_bucket_arn = dependency.s3-codepipeline.outputs.buckets["deploy"].arn
+#
+#   enable_transcribe = true
 #
 #   # Give access to KMS CMK
 #   kms_key_arn = dependency.kms.outputs.key_arn
@@ -95,6 +95,8 @@
 # inputs = {
 #   comp = "bastion"
 # }
+
+data "aws_caller_identity" "current" {}
 
 data "terraform_remote_state" "s3" {
   for_each = toset(keys(var.s3_buckets))
@@ -148,11 +150,9 @@ locals {
   configure_s3 = var.enable_codedeploy || length(local.bucket_names) > 0
 }
 
-data "aws_caller_identity" "current" {}
-
-# Configure access to SSM Parameter Store parameters
 locals {
   # https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-access.html
+  # Configure access to SSM Parameter Store parameters
   ssm_ps_arn          = "arn:${var.aws_partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter"
   ssm_ps_param_prefix = var.ssm_ps_param_prefix == "" ? "${var.org}/${var.app_name}/${var.env}/${var.comp}" : var.ssm_ps_param_prefix
   ssm_ps_resources    = [for name in var.ssm_ps_params : "${local.ssm_ps_arn}/${local.ssm_ps_param_prefix}/${name}"]
@@ -164,14 +164,12 @@ locals {
   name = var.name == "" ? "${var.app_name}-${var.comp}" : var.name
 }
 
-# Configure access to CloudWatch metrics
 locals {
+  # Configure access to CloudWatch metrics
   configure_cloudwatch_metrics  = var.cloudwatch_metrics_namespace != ""
   cloudwatch_metrics_namespaces = var.cloudwatch_metrics_namespace == "*" ? [] : [var.cloudwatch_metrics_namespace]
-}
 
-# Configure access to CloudWatch Logs
-locals {
+  # Configure access to CloudWatch Logs
   cloudwatch_logs_prefix = var.cloudwatch_logs_prefix == "" ? "arn:${var.aws_partition}:logs:*:*" : var.cloudwatch_logs_prefix
   cloudwatch_logs        = [for name in var.cloudwatch_logs : "${local.cloudwatch_logs_prefix}:${name}"]
   # arn:${var.aws_partition}:logs:*:*:*
@@ -189,15 +187,17 @@ locals {
   configure_cloudwatch_logs = length(local.cloudwatch_logs) > 0
 }
 
-# Send data to to AWS X-Ray and Prometheus
 locals {
+  # Prometheus and X-Ray client
+  # Send data to to AWS X-Ray and Prometheus remote endpoints
   write_xray       = var.xray
   write_prometheus = var.prometheus
+
+  # Allow querying AWS Prometheus workspaces
+  # Used by Grafana server running in an EC2 instance
   query_prometheus = var.prometheus_query
   prometheus_query_arns = var.prometheus_query_arns
-}
 
-locals {
   # Prometheus server
   enable_ec2_readonly = var.enable_ec2_readonly
   # ECS Prometheus discovery plugin
@@ -211,6 +211,50 @@ locals {
 }
 
 data "aws_iam_policy_document" "this" {
+  dynamic "statement" {
+    for_each = local.configure_sqs ? tolist([1]) : []
+    content {
+      actions = [
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:ListQueues"
+      ]
+      resources = var.sqs_queues
+    }
+  }
+
+  # Allow S3 ListBucket actions on buckets
+  dynamic "statement" {
+    for_each = local.bucket_actions
+    content {
+      actions   = statement.value["actions"]
+      resources = [statement.value["bucket"].arn]
+    }
+  }
+
+  # Allow S3 other actions on buckets
+  dynamic "statement" {
+    for_each = local.bucket_actions_content
+    content {
+      actions   = statement.value["actions"]
+      resources = ["${statement.value["bucket"].arn}/*"]
+    }
+  }
+
+  # Allow read only access to SSM Parameter Store params
+  dynamic "statement" {
+    for_each = local.configure_ssm_ps ? tolist([1]) : []
+    content {
+      actions = [
+        "ssm:DescribeParameters",
+        "ssm:GetParameters",
+        "ssm:GetParameter*"
+      ]
+      resources = local.ssm_ps_resources
+    }
+  }
   # Allow writing to CloudWatch metrics
   # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
@@ -253,6 +297,48 @@ data "aws_iam_policy_document" "this" {
     }
   }
 
+  # Allow sending email via SES
+  dynamic "statement" {
+    for_each = var.enable_ses ? tolist([1]) : []
+    content {
+      actions = [
+        "ses:SendRawEmail"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  # KMS
+  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
+  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  # https://repost.aws/knowledge-center/s3-access-denied-error-kms
+  dynamic "statement" {
+    for_each = var.kms_key_arn == null ? [] : tolist([1])
+    content {
+      sid = "AllowKeyUsage"
+      actions = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
+      ]
+      resources = [var.kms_key_arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.enable_transcribe ? tolist([1]) : []
+    content {
+      actions = [
+        "transcribe:StartTranscriptionJob",
+        "transcribe:GetTranscriptionJob",
+        "transcribe:TagResource"
+      ]
+      resources = ["*"]
+    }
+  }
+
   # Allow querying AWS Prometheus workspaces
   # This is typically used by Grafana server running in an EC2 instance
   # This is based on the AWS Managed Policy AmazonPrometheusQueryAccess but
@@ -261,7 +347,6 @@ data "aws_iam_policy_document" "this" {
   dynamic "statement" {
     for_each = local.query_prometheus ? tolist([1]) : []
     content {
-        #  "aps:*"
       actions = [
         "aps:DescribeWorkspace",
         "aps:GetLabels",
@@ -304,38 +389,6 @@ data "aws_iam_policy_document" "this" {
     }
   }
 
-  # General S3 access configuration
-
-  # Allow S3 ListBucket actions on buckets
-  dynamic "statement" {
-    for_each = local.bucket_actions
-    content {
-      actions   = statement.value["actions"]
-      resources = [statement.value["bucket"].arn]
-    }
-  }
-
-  # Allow S3 other actions on buckets
-  dynamic "statement" {
-    for_each = local.bucket_actions_content
-    content {
-      actions   = statement.value["actions"]
-      resources = ["${statement.value["bucket"].arn}/*"]
-    }
-  }
-
-  # Allow read only access to SSM Parameter Store params
-  dynamic "statement" {
-    for_each = local.configure_ssm_ps ? tolist([1]) : []
-    content {
-      actions = [
-        "ssm:DescribeParameters",
-        "ssm:GetParameters",
-        "ssm:GetParameter*"
-      ]
-      resources = local.ssm_ps_resources
-    }
-  }
 
   # statement {
   #   actions = [
@@ -446,36 +499,6 @@ data "aws_iam_policy_document" "this" {
       resources = ["*"]
     }
   }
-
-  #   Allow sending email via SES
-  dynamic "statement" {
-    for_each = var.enable_ses ? tolist([1]) : []
-
-    content {
-      actions = [
-        "ses:SendRawEmail"
-      ]
-      resources = ["*"]
-    }
-  }
-
-  # KMS
-  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
-  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
-  dynamic "statement" {
-    for_each = var.kms_key_arn == null ? [] : tolist([1])
-    content {
-      sid = "AllowKeyUsage"
-      actions = [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
-      ]
-      resources = [var.kms_key_arn]
-    }
-  }
 }
 
 # KMS for SSM PS
@@ -545,10 +568,25 @@ resource "aws_iam_policy" "this" {
   policy      = data.aws_iam_policy_document.this.json
 }
 
-# Allow access to S3 buckets
 resource "aws_iam_role_policy_attachment" "this" {
   role       = aws_iam_role.this.name
   policy_arn = aws_iam_policy.this.arn
+}
+
+# Allow uploading segment documents and telemetry to the X-Ray API
+# https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
+resource "aws_iam_role_policy_attachment" "xray" {
+  count      = local.write_xray ? 1 : 0
+  role       = aws_iam_role.this.name
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
+# Grant write only access to AWS Managed Prometheus workspaces
+# https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
+resource "aws_iam_role_policy_attachment" "prometheus" {
+  count      = local.write_prometheus ? 1 : 0
+  role       = aws_iam_role.this.name
+  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
 # Allow access to secrets encrypted by the app custom KMS key,
@@ -597,24 +635,6 @@ resource "aws_iam_role_policy_attachment" "ec2-read-only" {
 
   role       = aws_iam_role.this.name
   policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonEC2ReadOnlyAccess"
-}
-
-# Grant write only access to AWS Managed Prometheus workspaces
-# https://docs.aws.amazon.com/prometheus/latest/userguide/security-iam-awsmanpol.html
-resource "aws_iam_role_policy_attachment" "prometheus" {
-  count      = local.write_prometheus ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
-}
-
-# Allow uploading segment documents and telemetry to the X-Ray API
-# https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html
-resource "aws_iam_role_policy_attachment" "xray" {
-  count      = local.write_xray ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${var.aws_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 # Create instance profile for role

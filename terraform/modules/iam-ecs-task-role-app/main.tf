@@ -2,10 +2,10 @@
 
 # Example config:
 # terraform {
-#   source = "${dirname(find_in_parent_folders())}/modules//iam-ecs-task-role-app"
+#   source = "${dirname(find_in_parent_folders("root.hcl"))}/modules//iam-ecs-task-role-app"
 # }
 # include "root" {
-#   path = find_in_parent_folders()
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "kms" {
 #   config_path = "../kms"
@@ -21,19 +21,19 @@
 #
 #   # Give access to S3 buckets
 #   s3_buckets = {
-#     # s3-app = {
-#     #   # assets = {}
-#     #   # Allow read only access to config bucket
-#     #   config = {
-#     #     actions = ["s3:ListBucket", "s3:List*", "s3:Get*"]
-#     #   }
-#     #   data = {
-#     #     actions = ["s3:ListBucket", "s3:List*", "s3:Get*", "s3:PutObject*", "s3:DeleteObject"]
-#     #   }
-#     #   logs = {}
-#     #   # protected_web = {}
-#     #   # public_web = {}
-#     # }
+#     s3-app = {
+#       # assets = {}
+#       # Allow read only access to config bucket
+#       config = {
+#         actions = ["s3:ListBucket", "s3:List*", "s3:Get*"]
+#       }
+#       data = {
+#         actions = ["s3:ListBucket", "s3:List*", "s3:Get*", "s3:PutObject*", "s3:DeleteObject"]
+#       }
+#       logs = {}
+#       protected_web = {}
+#       public_web = {}
+#     }
 #   }
 #
 #   # Allow writing to any log group and stream
@@ -61,11 +61,11 @@
 #   # Give acess to specific params under prefix
 #   # ssm_ps_params = ["app/*", "worker/*"]
 #
-#   # Allow use of ECS Exec
-#   enable_ssmmessages = true
-#
 #   # Allow sending email via AWS SES
 #   enable_ses = true
+#
+#   # Allow use of ECS Exec
+#   enable_ssmmessages = true
 #
 #   enable_transcribe = true
 #
@@ -111,7 +111,7 @@ locals {
       for name, attrs in buckets : {
         bucket = attrs["bucket"]
         actions = [for action in attrs["actions"] : action
-        if !contains(["s3:ListBucket", "s3:GetEncryptionConfiguration"], action)]
+        if !contains(["s3:ListBucket", "s3:ListAllMyBuckets", "s3:ListJobs", "s3:CreateJobs", "s3:GetEncryptionConfiguration"], action)]
       }
     ]
   ])
@@ -120,7 +120,7 @@ locals {
       for name, attrs in buckets : {
         bucket = attrs["bucket"]
         actions = [for action in attrs["actions"] : action
-        if contains(["s3:ListBucket", "s3:GetEncryptionConfiguration"], action)]
+        if contains(["s3:ListBucket", "s3:ListAllMyBuckets", "s3:ListJobs", "s3:CreateJobs", "s3:GetEncryptionConfiguration"], action)]
       }
     ]
   ])
@@ -171,84 +171,14 @@ locals {
   configure_cloudwatch_logs = length(local.cloudwatch_logs) > 0
 }
 
-# Send data to to AWS X-Ray and Prometheus
 locals {
+  # Prometheus and X-Ray client
+  # Send data to to AWS X-Ray and Prometheus remote endpoints
   write_xray       = var.xray
   write_prometheus = var.prometheus
 }
 
 data "aws_iam_policy_document" "this" {
-  # Allow writing to CloudWatch Logs
-  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
-  #
-  # In addition, you may want to allow writing directly to a S3 bucket for logs
-  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Sending-Logs-Directly-To-S3.html
-  # Configure that with "buckets", above
-  dynamic "statement" {
-    for_each = local.configure_cloudwatch_logs ? tolist([1]) : []
-    content {
-      actions = [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogGroups",
-        "logs:DescribeLogStreams",
-        "logs:PutRetentionPolicy",
-      ]
-      resources = local.cloudwatch_logs
-    }
-  }
-
-  # Allow writing to CloudWatch metrics
-  # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
-  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
-  dynamic "statement" {
-    for_each = local.configure_cloudwatch_metrics ? tolist([1]) : []
-    content {
-      actions = [
-        "cloudwatch:PutMetricData",
-      ]
-      resources = ["*"]
-      dynamic "condition" {
-        for_each = local.cloudwatch_metrics_namespaces
-        content {
-          test     = "StringEquals"
-          variable = "cloudwatch:namespace"
-          values   = [condition.value]
-        }
-      }
-    }
-  }
-
-  # https://hex.pm/packages/libcluster_ecs
-  # TODO: limit resources to specific cluster, service, or tasks
-  dynamic "statement" {
-    for_each = var.enable_ecs_discovery ? tolist([1]) : []
-    content {
-      actions = [
-        "ec2:DescribeInstances",
-        "ecs:DescribeContainerInstances",
-        "ecs:DescribeTasks",
-        "ecs:ListClusters",
-        "ecs:ListServices",
-        "ecs:ListTasks",
-      ]
-      resources = ["*"]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = var.enable_transcribe ? tolist([1]) : []
-    content {
-      actions = [
-        "transcribe:StartTranscriptionJob",
-        "transcribe:GetTranscriptionJob",
-        "transcribe:TagResource"
-      ]
-      resources = ["*"]
-    }
-  }
-
   dynamic "statement" {
     for_each = local.configure_sqs ? tolist([1]) : []
     content {
@@ -293,6 +223,106 @@ data "aws_iam_policy_document" "this" {
       resources = local.ssm_ps_resources
     }
   }
+  # Allow writing to CloudWatch metrics
+  # https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/iam-cw-condition-keys-namespace.html
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_metrics ? tolist([1]) : []
+    content {
+      actions = [
+        "cloudwatch:PutMetricData",
+      ]
+      resources = ["*"]
+      dynamic "condition" {
+        for_each = local.cloudwatch_metrics_namespaces
+        content {
+          test     = "StringEquals"
+          variable = "cloudwatch:namespace"
+          values   = [condition.value]
+        }
+      }
+    }
+  }
+
+  # Allow writing to CloudWatch Logs
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/EC2NewInstanceCWL.html
+  #
+  # In addition, you may want to allow writing directly to a S3 bucket for logs
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Sending-Logs-Directly-To-S3.html
+  # Configure that with "buckets", above
+  dynamic "statement" {
+    for_each = local.configure_cloudwatch_logs ? tolist([1]) : []
+    content {
+      actions = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutRetentionPolicy",
+      ]
+      resources = local.cloudwatch_logs
+    }
+  }
+
+  # Allow sending email via SES
+  dynamic "statement" {
+    for_each = var.enable_ses ? tolist([1]) : []
+    content {
+      actions = [
+        "ses:SendRawEmail"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  # KMS
+  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
+  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  # https://repost.aws/knowledge-center/s3-access-denied-error-kms
+  dynamic "statement" {
+    for_each = var.kms_key_arn == null ? [] : tolist([1])
+    content {
+      sid = "AllowKeyUsage"
+      actions = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
+      ]
+      resources = [var.kms_key_arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.enable_transcribe ? tolist([1]) : []
+    content {
+      actions = [
+        "transcribe:StartTranscriptionJob",
+        "transcribe:GetTranscriptionJob",
+        "transcribe:TagResource"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  # https://hex.pm/packages/libcluster_ecs
+  # TODO: limit resources to specific cluster, service, or tasks
+  dynamic "statement" {
+    for_each = var.enable_ecs_discovery ? tolist([1]) : []
+    content {
+      actions = [
+        "ec2:DescribeInstances",
+        "ecs:DescribeContainerInstances",
+        "ecs:DescribeTasks",
+        "ecs:ListClusters",
+        "ecs:ListServices",
+        "ecs:ListTasks",
+      ]
+      resources = ["*"]
+    }
+  }
 
   # Allow access to SSM for management
   # https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
@@ -308,17 +338,6 @@ data "aws_iam_policy_document" "this" {
         "ssmmessages:CreateDataChannel",
         "ssmmessages:OpenControlChannel",
         "ssmmessages:OpenDataChannel",
-      ]
-      resources = ["*"]
-    }
-  }
-
-  # Allow sending email via SES
-  dynamic "statement" {
-    for_each = var.enable_ses ? tolist([1]) : []
-    content {
-      actions = [
-        "ses:SendRawEmail"
       ]
       resources = ["*"]
     }
@@ -341,24 +360,6 @@ data "aws_iam_policy_document" "this" {
     }
   }
 
-  # KMS
-  # https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html
-  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
-  # https://repost.aws/knowledge-center/s3-access-denied-error-kms
-  dynamic "statement" {
-    for_each = var.kms_key_arn == null ? [] : tolist([1])
-    content {
-      sid = "AllowKeyUsage"
-      actions = [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
-      ]
-      resources = [var.kms_key_arn]
-    }
-  }
 
   dynamic "statement" {
     for_each = local.autoscaling_targets
