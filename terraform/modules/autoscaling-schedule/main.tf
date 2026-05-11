@@ -1,15 +1,14 @@
-# Create an ASG for an app which responds to client requests
-# via the load balancer.
+# Create autoscaling schedule.
 
 # Example config:
 # terraform {
-#   source = "${get_terragrunt_dir()}/../../../modules//autoscaling-schedule"
+#   source = "${get_terragrunt_dir("root.hcl")}/modules//autoscaling-schedule"
+# }
+# include "root" {
+#   path = find_in_parent_folders("root.hcl")
 # }
 # dependency "asg" {
 #   config_path = "../asg-app"
-# }
-# include {
-#   path = find_in_parent_folders()
 # }
 #
 # inputs = { 
