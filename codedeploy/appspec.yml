@@ -1,0 +1,53 @@
+version: 0.0
+os: linux
+files:
+  - source: bin
+    destination: /opt/foo/bin
+  # - source: lib
+  #   destination: /opt/dmpro/log-receiver/lib
+  - source: systemd
+    destination: /lib/systemd/system
+# https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-permissions.html
+# permissions:
+#   - object: /opt/foo
+#     owner: deploy
+#     group: app
+#     mode: 750
+#     type:
+#       - directory
+#   - object: /opt/foo/bin
+#     owner: deploy
+#     group: app
+#     mode: 750
+#     type:
+#       - file
+# permissions:
+#   - object: /opt/foo/current
+#     owner: deploy
+#     group: dmpro
+#    context:
+#      user: unconfined_u
+#      type: httpd_sys_content_t
+#      range: s0
+# https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html
+hooks:
+  ApplicationStop:
+    - location: bin/deploy-stop
+      timeout: 300
+  BeforeInstall:
+    - location: bin/deploy-create-users
+    - location: bin/deploy-create-dirs
+    - location: bin/deploy-clean-target
+  AfterInstall:
+    - location: bin/deploy-extract-release
+    - location: bin/deploy-set-perms
+    - location: bin/deploy-enable
+  ApplicationStart:
+    # - location: bin/deploy-migrate
+    #   runas: app
+    #   timeout: 300
+    - location: bin/deploy-start
+      timeout: 3600
+  ValidateService:
+    - location: bin/validate-service
+      timeout: 300
