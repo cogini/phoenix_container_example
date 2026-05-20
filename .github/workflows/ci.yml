@@ -136,10 +136,9 @@ jobs:
       environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
 
       # Whether to deploy. Only standard tags/branches deploy, not other dev branches.
-      # deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
-      deploy: '1'
+      deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
 
-      # Sync base and 3rd-party images to GHCR
+      # Sync 3rd-party images to GHCR
       # sync-images: '${{ steps.get-sync-images.outputs.result }}'
       sync-images: '1'
 
@@ -170,6 +169,11 @@ jobs:
       # Security scan code image
       scan-code: '0'
 
+      scan-gitleaks: '0'
+      scan-grype: '1'
+      scan-snyk: '0'
+      scan-trivy: '0'
+
       # GitHub Advanced Security, free for open source, otherwise a paid feature
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
@@ -179,11 +183,24 @@ jobs:
       # Upload assets to S3
       upload-assets: '0'
 
-      # Create GitHub release for this build
-      create-release: '0'
+      # Create GitHub release, used to store build artifacts
+      create-release: '1'
+
+      # Deploy assets to AWS S3 bucket
+      deploy-assets-s3: '0'
 
       # Deploy using AWS CodeDeploy
       deploy-codedeploy: '0'
+      # Deploy to AWS ECS
+      deploy-ecs: '1'
+      # Push prod image to AWS ECR
+      deploy-ecr: '1'
+
+      # Create package for deployment, e.g., Erlang release
+      package: '1'
+      package-codedeploy: '1'
+      package-ansible: '1'
+      package-erlang-release: '1'
 
       # Send results to Datadog
       datadog: '0'
@@ -192,27 +209,13 @@ jobs:
       notify-appsignal: '1'
 
       # Notify Sentry of new app release
-      notify-sentry: '0'
+      notify-sentry: '1'
     steps:
       - name: Configure common-matrix
         id: common-matrix
         uses: actions/github-script@v8
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
-                # {
-                #   os: "alma",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "8",
-                #   prod_os_ver: "8"
-                # },
-                # {
-                #   os: "centos7",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "7.9.2009",
-                #   prod_os_ver: "7.9.2009"
-                # },
         with:
           script: |
             return {
@@ -458,6 +461,7 @@ jobs:
       contents: read
       packages: write
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ needs.config.outputs.environment }}
     strategy:
       fail-fast: false
@@ -465,7 +469,7 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      TEST_DATA: '0'
     steps:
       - name: Check out source
         uses: actions/checkout@v6
@@ -526,21 +530,21 @@ jobs:
       # - name: Display available platforms
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
-      # - name: Configure AWS credentials
-      #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/configure-aws-credentials@v6
-      #   # https://github.com/aws-actions/configure-aws-credentials
-      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-      #   with:
-      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      #     aws-region: ${{ vars.AWS_REGION }}
+      - name: Configure AWS credentials
+        if: env.TEST_DATA == '1'
+        uses: aws-actions/configure-aws-credentials@v6
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      # - name: Get test data files
-      #   if: env.AWS_ENABLED == '1'
-      #   run: |
-      #     mkdir -p test/bert
-      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
-      #     unzip -o test-data.zip -d test/data
+      - name: Get test data files
+        if: env.TEST_DATA == '1'
+        run: |
+          mkdir -p test/bert
+          aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
+          unzip -o test-data.zip -d test/data
 
       - name: Set up Docker buildx
         id: buildx
@@ -624,6 +628,8 @@ jobs:
         if: failure()
         run: |
           docker compose logs --timestamps postgres
+          # docker compose logs --timestamps kafka
+          # docker compose logs --timestamps zookeeper
           docker compose logs --timestamps test
           docker compose ps --format json | jq .
 
@@ -632,6 +638,10 @@ jobs:
         run: |
           echo postgres
           docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          # echo kafka
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q kafka)" | jq
+          # echo zookeeper
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q zookeeper)" | jq
 
       - name: Debug env
         if: failure()
@@ -648,8 +658,8 @@ jobs:
         # run: docker compose run test mix test
 
       - name: Run quality checks
-        # run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --mute-exit-status --all, hex.audit, deps.audit, sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
-        run: docker compose run test mix 'do' format --check-formatted, deps.unlock --check-unused, credo --all --mute-exit-status, hex.audit, deps.audit, sobelow
+        # run: docker compose run test mix 'do' format --check-formatted + deps.unlock --check-unused + credo --mute-exit-status --all + hex.audit + deps.audit + sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS
+        run: docker compose run test mix 'do' format --check-formatted + deps.unlock --check-unused + credo --all --mute-exit-status + hex.audit + deps.audit + sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -672,7 +682,7 @@ jobs:
 
   test-dialyzer:
     name: Run dialyzer
-    if: needs.config.outputs.test-dializer == '1'
+    if: needs.config.outputs.test-dialyzer == '1'
     needs: [build-test, config]
     environment: ${{ needs.config.outputs.environment }}
     permissions:
@@ -730,6 +740,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
+      GITLEAKS: ${{ needs.config.outputs.scan-gitleaks }}
+      GRYPE: ${{ needs.config.outputs.scan-grype }}
+      TRIVY: ${{ needs.config.outputs.scan-trivy }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -745,12 +758,14 @@ jobs:
         #   fetch-depth: 0
 
       - name: Manual Trivy Setup
+        if: env.TRIVY == '1'
         uses: aquasecurity/setup-trivy@v0.2.6
         with:
           cache: true
           version: v0.68.2
 
       - name: Scan code with trivy
+        if: env.TRIVY == '1'
         uses: aquasecurity/trivy-action@0.69.3
         # https://github.com/marketplace/actions/aqua-security-trivy
         with:
@@ -764,18 +779,19 @@ jobs:
           skip-setup-trivy: true
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat trivy-results.sarif | jq .
 
       - name: Upload trivy scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy
 
       - name: Scan code with Grype
-        uses: anchore/scan-action@v6
+        if: env.GRYPE == '1'
+        uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
@@ -787,40 +803,47 @@ jobs:
           # severity-cutoff: critical
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload grype scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      # - name: Scan with Gitleaks
-      #   uses: gitleaks/gitleaks-action@v2
-      #   env:
-      #     GITHUB_TOKEN: ${{ github.token }}
-      #     GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
-      #     # upload sarif artifact when secrets are detected
-      #     GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+      - name: Scan with Gitleaks
+        if: env.GITLEAKS == '1'
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+          # upload sarif artifact when secrets are detected
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
 
   build-prod:
     name: Build prod image
-    needs: [config]
+    needs: [config, create-release]
     permissions:
       id-token: write
-      contents: read
+      contents: write
       packages: write
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ needs.config.outputs.environment }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
     env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
+      DEPLOY_ASSETS_S3: ${{ needs.config.outputs.deploy-assets-s3 }}
+      DEPLOY_ECR: ${{ needs.config.outputs.deploy-ecr }}
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      PACKAGE_ANSIBLE: ${{ needs.config.outputs.package-ansible }}
+      PACKAGE_CODEDEPLOY: ${{ needs.config.outputs.package-codedeploy }}
+      PACKAGE_RELEASE: ${{ needs.config.outputs.package-erlang-release }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Debug environment
         run: |
@@ -850,18 +873,15 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: env.AWS_ENABLED == '1'
+        if: env.DEPLOY_ECR == '1'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
         # with:
         #   registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || vars.AWS_ACCOUNT }}
 
       - name: Set vars
-        if: env.AWS_ENABLED == '1'
+        if: env.DEPLOY_ECR == '1'
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
-
-      - name: Set vars
-        run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -873,6 +893,7 @@ jobs:
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
           echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
           echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Get app version
         run: |
@@ -892,7 +913,7 @@ jobs:
       # Doing it outside of the prod image speeds up the build, as we don't
       # have to copy big static files around.
       # We do it here instead of a separate task, as we need
-      # priv/static/cache_manifest.json in the build.
+      # priv/static/cache_manifest.json in the container.
 
       - uses: actions/setup-node@v6
         with:
@@ -987,16 +1008,18 @@ jobs:
         run: mix assets.deploy
 
       - name: Copy assets to S3
-        if: env.AWS_ENABLED == '1'
+        if: env.DEPLOY_ASSETS_S3 == '1'
         # Copying is faster than syncing. With digested files, multiple versions
         # can coexist on the server, and the app will choose the right ones.
         run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
 
       # - name: Sync assets to S3
+      #   if: env.DEPLOY_ASSETS_S3 == '1'
       #   working-directory: app
       #   run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }} --delete
 
       # We don't have to invalidate when using digested files.
+      #   if: env.DEPLOY_ASSETS_CLOUDFRONT == '1'
       # - name: Create CloudFront invalidation
       #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
@@ -1006,7 +1029,7 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build prod image and push
+      - name: Build image and push
         uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
@@ -1054,6 +1077,66 @@ jobs:
         #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
         #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
+      - name: Build package image
+        if: ${{ needs.config.outputs.package == '1' }}
+        uses: docker/build-push-action@v7
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: package
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+            BUILD_NUM=${{ github.run_number }}
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }}
+          cache-to: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
+          no-cache: ${{ github.run_attempt != '1' }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:package${{ env.VAR }}${{ env.IMAGE_VER }}
+
+      - name: Copy Erlang release
+        if: env.PACKAGE_RELEASE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+
+      - name: Copy CodeDeploy release
+        if: env.PACKAGE_CODEDEPLOY == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+
+      - name: Copy Ansible release
+        if: env.PACKAGE_ANSIBLE == '1'
+        run: |
+          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+          NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+                   --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
+          echo "$COMMAND"
+          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+
+
   test-prod:
     name: Run external API tests
     needs: [build-prod, config]
@@ -1070,11 +1153,10 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.config.outputs.prod-matrix) }}
     env:
-      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
-      CREATE_RELEASE: ${{ needs.config.outputs.create-release == '1' && '1' || '0' }}
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       # GH_TOKEN: ${{ github.token }}
       IMAGE_VER: ${{ github.sha }}
+      TEST_DATA: '0'
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
@@ -1093,21 +1175,27 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
-      # - name: Configure AWS credentials
-      #   if: env.AWS_ENABLED == '1'
-      #   uses: aws-actions/configure-aws-credentials@v6
-      #   # https://github.com/aws-actions/configure-aws-credentials
-      #   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-      #   with:
-      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      #     aws-region: ${{ vars.AWS_REGION }}
+      - name: Configure AWS credentials
+        if: env.TEST_DATA == '1'
+        uses: aws-actions/configure-aws-credentials@v6
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      # - name: Get test data files
-      #   if: env.AWS_ENABLED == '1'
+      - name: Get test data files
+        if: env.TEST_DATA == '1'
+        run: |
+          mkdir -p test-data
+          aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
+          unzip -o test-data.zip -d test-data
+
+      # Create dirs mounted into runtime container by docker compose
+      # - name: Create log dir
       #   run: |
-      #     mkdir -p test-data
-      #     aws s3 cp "s3://${{ vars.S3_BUCKET_CI }}/test-data.zip" test-data.zip
-      #     unzip -o test-data.zip -d test-data
+      #     mkdir -p log
+      #     chmod 775 log
 
       # Log into AWS to avoid rate limits on public ECR images
       # - name: Configure AWS credentials
@@ -1136,7 +1224,7 @@ jobs:
           LOG_LEVEL: debug
         run: |
           env | sort
-          docker compose up --wait prod
+          docker compose up --wait --wait-timeout 60 prod
 
       - name: Display logs
         if: failure()
@@ -1145,10 +1233,18 @@ jobs:
           docker compose ps --format json | jq .
           echo "postgres logs"
           docker compose logs --timestamps postgres
+          # echo "kafka logs"
+          # docker compose logs --timestamps kafka
+          # echo "zookeeper logs"
+          docker compose logs --timestamps zookeeper
           echo "prod logs"
           docker compose logs --timestamps prod
           echo "postgres health"
           docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          # echo "kafka health"
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q kafka)" | jq
+          # echo "zookeeper health"
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q zookeeper)" | jq
           echo "prod health"
           docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q prod)" | jq
 
@@ -1169,6 +1265,7 @@ jobs:
       # Basic smoke test to make sure service came up
       - name: Run health check
         run: for _i in 1 2 3 4 5 6 7 8 9 10; do curl -v "http://localhost:${APP_PORT}/healthz" && break || sleep 1; done
+        # run: for _i in 1 2 3 4 5 6 7 8 9 10; do curl -v "http://localhost:9111/metrics" && break || sleep 1; done
 
       - name: Display logs
         if: failure()
@@ -1177,6 +1274,14 @@ jobs:
           docker compose logs --timestamps postgres
           echo "postgres health"
           docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          # echo "kafka logs"
+          # docker compose logs --timestamps kafka
+          # echo "kafka health"
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q kafka)" | jq
+          # echo "zookeeper logs"
+          # docker compose logs --timestamps zookeeper
+          # echo "zookeeper health"
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q zookeeper)" | jq
           echo "prod logs"
           docker compose logs --timestamps prod
           echo "prod health"
@@ -1217,38 +1322,6 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
-      - name: Copy Erlang release files from container
-        if: env.CREATE_RELEASE == '1'
-        run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
-
-      - name: Copy CodeDeploy release files from container
-        if: env.CREATE_RELEASE == '1'
-        run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
-
-      - name: Copy Ansible release files from container
-        if: env.CREATE_RELEASE == '1'
-        run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh prod -c "$COMMAND"
 
   scan:
     name: Security scan prod image
@@ -1271,6 +1344,9 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
+      TRIVY: ${{ needs.config.outputs.scan-trivy }}
+      GRYPE: ${{ needs.config.outputs.scan-grype }}
+      SNYK: ${{ needs.config.outputs.scan-snyk }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -1283,7 +1359,8 @@ jobs:
         run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.35.0
+        if: env.TRIVY == '1'
+        uses: aquasecurity/trivy-action@0.69.3
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
@@ -1297,11 +1374,11 @@ jobs:
           # output: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'trivy-results.sarif' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat trivy-results.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -1312,6 +1389,7 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
+        if: env.GRYPE == '1'
         uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
@@ -1324,30 +1402,31 @@ jobs:
           # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      # - name: Scan image with Snyk
-      #   uses: snyk/actions/docker@master
-      #   continue-on-error: true
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   with:
-      #     command: test
-      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
+      - name: Scan image with Snyk
+        if: env.SNYK == '1'
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
 
   deploy-ecs:
     name: Deploy to AWS ECS
-    if: needs.config.outputs.deploy == '1'
+    if: needs.config.outputs.deploy-ecs == '1'
     # needs: [test, test-prod, test-dialyzer, upload-assets, config]
     needs: [test, test-prod, config]
     permissions:
@@ -1520,6 +1599,7 @@ jobs:
           dist: ${{ github.run_number }}
 
       - name: Create AppSignal revision
+        if: needs.config.outputs.notify-appsignal == '1'
         env:
           APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
           # APPSIGNAL_APP_ENV: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'stage') || 'stage' }}
@@ -1527,7 +1607,6 @@ jobs:
           APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
           REVISION: ${{ env.GITHUB_SHA_SHORT }}
           # REVISION: ${{ env.GITHUB_SHA }}
-        if: needs.config.outputs.notify-appsignal == '1'
         run: |
           printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
           APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
@@ -1538,7 +1617,7 @@ jobs:
 
 
   deploy-codedeploy:
-    name: Deploy to CodeDeploy
+    name: Deploy using CodeDeploy
     if: needs.config.outputs.deploy-codedeploy == '1'
     # needs: [test, test-prod, test-dialyzer, upload-assets, config]
     needs: [test, test-prod, create-release, config]
@@ -1572,7 +1651,7 @@ jobs:
       - name: Set vars for runtime info
         shell: bash
         run: |
-          echo "GIT_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> "$GITHUB_ENV"
+          echo "GIT_SHA_SHORT=$(echo "$GITHUB_SHA" | cut -c 1-7)" >> "$GITHUB_ENV"
           echo "GIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
           echo "GIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
 
@@ -1587,8 +1666,8 @@ jobs:
         # run: echo "REVISION_FILE=${{env.CODEDEPLOY_APPLICATION}}-${{github.event.head_commit.timestamp}}-${{env.GITHUB_SHA_SHORT}}.zip" >> $GITHUB_ENV
         # echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-$(date +'%Y%m%d%H%M%S')-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
         run: |
-          echo "RELEASE_TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
-          echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-${RELEASE_TAG}-${VAR}.zip" >> $GITHUB_ENV
+          echo "RELEASE_TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> "$GITHUB_ENV"
+          echo "REVISION_FILE=${CODEDEPLOY_APPLICATION}-${RELEASE_TAG}-${VAR}.zip" >> "$GITHUB_ENV"
           echo "GIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')" >> "$GITHUB_ENV"
 
       - name: Copy Erlang release file to S3
@@ -1620,7 +1699,36 @@ jobs:
           aws deploy create-deployment --application-name "${CODEDEPLOY_APPLICATION}" \
             --deployment-group-name "${CODEDEPLOY_DEPLOYMENT_GROUP}-${{ matrix.os }}" \
             --s3-location "bucket=${CODEDEPLOY_BUCKET},key=${REVISION_FILE},bundleType=zip" \
-            --description "Bounce ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
+            --description "App ${RELEASE_TAG} ${RELEASE_TIMESTAMP} ${GITHUB_SHA_SHORT}"
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        if: needs.config.outputs.notify-sentry == '1'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # SENTRY_URL: https://sentry.io/
+        with:
+          environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
+          dist: ${{ github.run_number }}
+
+      - name: Create AppSignal revision
+        if: needs.config.outputs.notify-appsignal == '1'
+        env:
+          APPSIGNAL_APP_ENV: ${{ (github.ref_name == 'main' && 'stage') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'prod') }}
+          # APPSIGNAL_APP_ENV: ${{ (github.ref == 'refs/tags/prod' && 'prod') || (github.ref_name == 'main' && 'stage') || 'stage' }}
+          APPSIGNAL_APP_NAME: ${{ env.ECS_SERVICE }}
+          APPSIGNAL_PUSH_API_KEY: ${{ secrets.APPSIGNAL_PUSH_API_KEY }}
+          REVISION: ${{ env.GITHUB_SHA_SHORT }}
+          # REVISION: ${{ env.GITHUB_SHA }}
+        run: |
+          printf '{"revision":"%s","user":"GitHub"}' "$REVISION" | tee revision.json
+          APPSIGNAL_URL=$(printf 'https://push.appsignal.com/1/markers?api_key=%s&name=%s&environment=%s' "$APPSIGNAL_PUSH_API_KEY" "$APPSIGNAL_APP_NAME" "$APPSIGNAL_APP_ENV")
+          export APPSIGNAL_URL
+          # CodeBuild has an insane conflict with YAML syntax and the URL, so put it in a file
+          echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
+          curl -g --config curl.txt -d @revision.json
 
 
   # tag:
