@@ -1,6 +1,6 @@
 # Build AWS Distro for OpenTelemetry Collector image with custom configuration.
 
-# Docker registry for internal images, e.g., 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# Docker registry for internal images
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public images such as debian, alpine, or postgres.
@@ -15,12 +15,13 @@ ARG AWS_REGION=us-east-1
 # ARG BASE_IMAGE_TAG=latest
 ARG BASE_IMAGE_TAG=v0.47.0
 
+ARG AWS_OTEL_COLLECTOR_REPO_ORG=amazon
+
 # FROM ${PUBLIC_REGISTRY}aws-observability/aws-otel-collector:${BASE_IMAGE_TAG}
 # https://hub.docker.com/r/amazon/aws-otel-collector/tags
-FROM ${PUBLIC_REGISTRY}${AWS_OTEL_COLLECTOR_REPO_ORG:-amazon}/aws-otel-collector:${BASE_IMAGE_TAG}
+FROM ${PUBLIC_REGISTRY}${AWS_OTEL_COLLECTOR_REPO_ORG}/aws-otel-collector:${BASE_IMAGE_TAG}
 
 ARG AWS_REGION
-
 ENV AWS_REGION=${AWS_REGION}
 
 COPY --link otel/aws-collector-config.yml /etc/otel-collector-config.yml

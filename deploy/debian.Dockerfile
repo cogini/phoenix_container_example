@@ -5,7 +5,8 @@
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.19.5
-ARG OTP_VER=28.4.1
+# ARG OTP_VER=26.2.5
+ARG OTP_VER=28.5
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
@@ -16,7 +17,7 @@ ARG PROD_OS_VER=trixie-20260316-slim
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
-ARG SNAPSHOT_NAME=bookworm
+ARG SNAPSHOT_NAME=trixie
 
 ARG NODE_VER=24.0.1
 ARG NODE_MAJOR=24
@@ -45,7 +46,7 @@ ARG MIX_ENV=prod
 ARG RELEASE=prod
 
 # Build number to embed into release for tracking
-# ARG BUILD_NUM=1
+ARG BUILD_NUM=1
 
 # Support injecting additional packages into build stages.
 # These variables must always have something defined, so default values are redundant.
@@ -54,7 +55,7 @@ ARG RUNTIME_PACKAGES="ca-certificates"
 ARG DEV_PACKAGES="inotify-tools"
 
 # Whether to build Dialyzer PLT files for deps.
-ARG DIALYZER="1"
+ARG DIALYZER="0"
 
 # Whether to package source code for Sentry
 ARG SENTRY="1"
@@ -118,7 +119,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # autoconf \
         # dpkg-dev \
         # gcc \
-        # gcc-9 \
         # g++ \
         # make \
         # libncurses-dev \
@@ -169,9 +169,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
     # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
     #
-    # Install Grype
-    # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
-    #
     # Install latest PostgreSQL client library from postgres.org repo
     # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
     # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
@@ -196,6 +193,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # rm -rf "${HOME}/.gnupg" ; \
     # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
     # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
+    #   
+    # Install packages from special repos
     apt-get update -qq ; \
     DEBIAN_FRONTEND=noninteractive \
     apt-get -y install -y -qq --no-install-recommends \
@@ -258,7 +257,7 @@ ENV HOME=/app
 
 WORKDIR /app
 
-RUN mix 'do' local.rebar --force, local.hex --force
+RUN mix 'do' local.rebar --force + local.hex --force
 
 # COPY --link .env.defaul[t] ./
 
@@ -355,7 +354,6 @@ ARG LANG
 
 WORKDIR /app
 
-# Build assets
 RUN mkdir -p ./assets
 
 # Install JavaScript deps
@@ -388,8 +386,6 @@ WORKDIR /app
 # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
 # because a single line of code changed causes a complete recompile.
 
-COPY --link .env.pro[d] ./
-
 ARG MIX_ENV
 # COPY --link config ./config
 COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
@@ -412,7 +408,7 @@ COPY --link includ[e] ./include
 COPY --link template[s] ./templates
 
 COPY --link priv ./priv
-COPY --link assets ./assets
+COPY --link asset[s] ./assets
 
 COPY --link bi[n] ./bin
 
@@ -426,11 +422,7 @@ RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
 COPY --from=prod-assets /app/assets /app/assets
 
 RUN mix assets.setup
-
 RUN mix assets.deploy
-
-# Build release
-# COPY --link config/runtime.exs ./config/
 
 COPY --link rel ./rel
 
@@ -449,8 +441,8 @@ ARG ELIXIR_VER
 ARG OTP_VER
 ARG BUILD_OS_VER
 
-ARG MIX_ENV
-ARG RELEASE
+# Generate systemd and deploy scripts
+RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
 
 RUN set -exu ; \
     export ARCH_LINUX=$(dpkg --print-architecture) ; \
@@ -460,7 +452,7 @@ RUN set -exu ; \
     echo "arch_machine: ${ARCH_MACHINE}" >> /app/build_meta.yml ; \
     echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
     echo "build_os: ${BUILD_OS}" >> /app/build_meta.yml ; \
-    echo "build: ${BUILD_NUM}" > /app/build_meta.yml ; \
+    echo "build: ${BUILD_NUM}" >> /app/build_meta.yml ; \
     echo "elixir_ver: ${ELIXIR_VER}" >> /app/build_meta.yml ; \
     echo "otp_ver: ${OTP_VER}" >> /app/build_meta.yml ; \
     echo "var: ${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> /app/build_meta.yml ;
@@ -468,19 +460,19 @@ RUN set -exu ; \
 RUN set -exu ; \
     echo "BUILD_NUM: ${BUILD_NUM}" > /app/build_meta.sh
 
-# Generate systemd and deploy scripts
-RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+ARG MIX_ENV
+ARG RELEASE
 
 # Create revision for CodeDeploy
 WORKDIR /revision
-COPY /app/ecs/appspec.yml ./
+COPY codedeploy/appspec.yml ./
 RUN set -exu ; \
     export BUILD_OS="debian" ; \
     mkdir -p etc bin lib systemd ; \
     chmod +x /app/bin/* ; \
     cp /app/bin/* ./bin/ ; \
     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
-    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    # cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
     echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
     echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> ./deploy.env ; \
@@ -648,22 +640,24 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # Libraries used by hexpm
         # Enable the app to make outbound SSL calls.
         ca-certificates \
-        libssl3 \
         # libodbc1 \
         # libsctp1 \
         netbase \
-        # Run health checks and get ECS metadata
+        # wget and jq are used to get ECS metadata
+        # We prefer wget over curl, as it is part of busybox
+        # curl is used to upload packages to GitHub, and is generally useful
         curl \
         jq \
-        # Prefer wget over curl, as it is part of busybox
         wget \
         # tini is a minimal init which will reap zombie processes
         # https://github.com/krallin/tini
         # tini \
         # bind-utils \
         # Minimal libs needed by Erlang VM
+        # libncursesw6 \
         libtinfo6 \
         # Additional libs
+        libssl3 \
         libstdc++6 \
         libgcc-s1 \
         $RUNTIME_PACKAGES \
@@ -715,17 +709,6 @@ RUN set -exu ; \
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
-
-# This could be put in a separate target, but it's faster to do it from prod test
-
-# Copy Erlang release prod image for publishing later
-# COPY --from=prod-release --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
-
-# Copy CodeDeploy revision into prod image for publishing later
-# COPY --from=prod-release --chown="nonroot:nonroot" /revision.zip /revision.zip
-
-# Copy Ansible release into prod image for publishing later
-# COPY --from=prod-release --chown="nonroot:nonroot" /ansible.zip /ansible.zip
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
@@ -781,26 +764,22 @@ ENTRYPOINT ["bin/start-docker"]
 # Run app in foreground
 # CMD ["start"]
 
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -sf http://localhost:9111/metrics || exit 1
+
+
+FROM prod AS package
+# Erlang release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
+
+# CodeDeploy revision
+COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revision.zip
+
+# Ansible release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
+
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-ARG LANG
-
-# Set environment vars used by the app
-ENV HOME=/app \
-    LANG=$LANG
-
-RUN set -exu ; \
-    # Create app dirs
-    mkdir -p "/run/app" ; \
-    # mkdir -p "/etc/foo" ; \
-    # mkdir -p "/var/lib/foo" ; \
-    # Make dirs writable by app
-    chown -R "nonroot:nonroot" \
-        # Needed for RELEASE_TMP
-        "/run/app"
-       # "/var/lib/foo"
-
 ARG DEV_PACKAGES
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -853,17 +832,17 @@ ENV HOME=/app \
 
 RUN chsh --shell /bin/bash nonroot
 
-
-# Copy build artifacts to host
-FROM scratch AS artifacts
-ARG MIX_ENV
-ARG RELEASE
-
-# COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
-# COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
-# COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
-COPY --from=prod-release /app/_build /_build
-COPY --from=prod-release /app/priv/static /static
+# Create directories needed by the app
+RUN set -exu ; \
+    # Create app dirs
+    mkdir -p "/run/app" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "nonroot:nonroot" \
+        # Needed for RELEASE_TMP
+        "/run/app"
+       # "/var/lib/foo"
 
 
 # Default target
