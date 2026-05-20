@@ -174,7 +174,6 @@ defmodule PhoenixContainerExample.MixProject do
         reboot_system_after_config: true,
         # validate_compile_env: false,
         include_executables_for: [:unix],
-        # Don't need to tar if we are just going to copy it
         steps: [:assemble, :tar],
         applications: [opentelemetry_exporter: :permanent, opentelemetry: :temporary]
       ]
