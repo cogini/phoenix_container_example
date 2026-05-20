@@ -6,8 +6,8 @@ name: CI
 # Run tests and quality checks on test image
 # Run security scans on code and prod images
 # Use matrix for multiple versions of Elixir, OTP, and OS
-# on: push
 
+# on: push
 on:
   push:
     # branches:
@@ -49,11 +49,12 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
   # PUBLIC_REGISTRY: ''
-  # Assume that base image has been synced to local registry
-  PUBLIC_REGISTRY: 'ghcr.io/'
+  # When base image has been synced to local registry
+  PUBLIC_REGISTRY: ghcr.io/
   AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
   POSTGRES_REPO_ORG: ${{ github.repository_owner }}
   RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
+  KAFKA_REPO_ORG: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
@@ -63,11 +64,13 @@ env:
   # AWS Account
   #   secrets.AWS_ACCOUNT_ID
   # AWS default region
-  #   vars.AWS_REGION: us-east-1
+  #   vars.AWS_REGION
   # AWS role allowing GitHub Actions to access resources and deploy
   #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action
   # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
   #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
+  # AWS CloudFront distribution ID to invalidate cache after deploy
+  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # S3 bucket with data for testing
   #   vars.S3_BUCKET_CI: cogini-prod-foo-ci
   # SSH key to access private repos during build
@@ -79,8 +82,6 @@ env:
   #   secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # AWS Systems Manager Parameter Store prefix for config keys
   #   vars.AWS_PS_PREFIX: cogini/foo/prod
-  # AWS CloudFront distribution ID to invalidate cache after deploy
-  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # AppSignal API key for error reporting
   #   secrets.APPSIGNAL_PUSH_API_KEY
   # DataDog API key for reporting test results
@@ -101,13 +102,9 @@ env:
   ELIXIR_MODULE: PhoenixContainerExample
   # Elixir module Erlang app name
   ELIXIR_APP: phoenix_container_example
-  # AWS SSM Parameter Store name prefix
-  # AWS_PS_PREFIX: cogini/foo/dev
-  # APPSIGNAL_APP_NAME: bounce
+  APPSIGNAL_APP_NAME: phoenix-container-example
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
-  # secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
-  # secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
