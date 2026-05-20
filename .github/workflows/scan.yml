@@ -1,7 +1,7 @@
 ---
 name: Security scan
-
 # Periodically scan production images for security vulnerabilities
+
 on:
   schedule:
     # Once a day at midnight
@@ -28,11 +28,12 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
   # PUBLIC_REGISTRY: ''
-  # Assume that base image has been synced to local registry
-  PUBLIC_REGISTRY: 'ghcr.io/'
+  # When base image has been synced to local registry
+  PUBLIC_REGISTRY: ghcr.io/
   AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
   POSTGRES_REPO_ORG: ${{ github.repository_owner }}
   RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
+  KAFKA_REPO_ORG: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
@@ -42,11 +43,13 @@ env:
   # AWS Account
   #   secrets.AWS_ACCOUNT_ID
   # AWS default region
-  #   vars.AWS_REGION: us-east-1
+  #   vars.AWS_REGION
   # AWS role allowing GitHub Actions to access resources and deploy
   #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action
   # S3 bucket where assets are deployed, e.g., for use with CloudFront CDN
   #   vars.S3_BUCKET_ASSETS: cogini-foo-app-dev-app-assets
+  # AWS CloudFront distribution ID to invalidate cache after deploy
+  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # S3 bucket with data for testing
   #   vars.S3_BUCKET_CI: cogini-prod-foo-ci
   # SSH key to access private repos during build
@@ -58,8 +61,6 @@ env:
   #   secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # AWS Systems Manager Parameter Store prefix for config keys
   #   vars.AWS_PS_PREFIX: cogini/foo/prod
-  # AWS CloudFront distribution ID to invalidate cache after deploy
-  #   secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID
   # AppSignal API key for error reporting
   #   secrets.APPSIGNAL_PUSH_API_KEY
   # DataDog API key for reporting test results
@@ -80,13 +81,9 @@ env:
   ELIXIR_MODULE: PhoenixContainerExample
   # Elixir module Erlang app name
   ELIXIR_APP: phoenix_container_example
-  # AWS SSM Parameter Store name prefix
-  # AWS_PS_PREFIX: cogini/foo/dev
-  # APPSIGNAL_APP_NAME: bounce
+  APPSIGNAL_APP_NAME: phoenix-container-example
   # Name of environment for resources created by Terraform
   # TERRAFORM_ENV: dev
-  # secrets.TASK_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-app"
-  # secrets.EXECUTION_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-ecs-task-execution-role
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
@@ -118,10 +115,9 @@ jobs:
       environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
 
       # Whether to deploy. Only standard tags/branches deploy, not other dev branches.
-      # deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
-      deploy: '1'
+      deploy: ${{ contains(fromJson('["main", "staging", "qa", "prod"]'), github.ref_name) }}
 
-      # Sync base and 3rd-party images to GHCR
+      # Sync 3rd-party images to GHCR
       # sync-images: '${{ steps.get-sync-images.outputs.result }}'
       sync-images: '1'
 
@@ -152,6 +148,11 @@ jobs:
       # Security scan code image
       scan-code: '0'
 
+      scan-gitleaks: '0'
+      scan-grype: '1'
+      scan-snyk: '0'
+      scan-trivy: '0'
+
       # GitHub Advanced Security, free for open source, otherwise a paid feature
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
@@ -161,11 +162,24 @@ jobs:
       # Upload assets to S3
       upload-assets: '0'
 
-      # Create GitHub release for this build
-      create-release: '0'
+      # Create GitHub release, used to store build artifacts
+      create-release: '1'
+
+      # Deploy assets to AWS S3 bucket
+      deploy-assets-s3: '0'
 
       # Deploy using AWS CodeDeploy
       deploy-codedeploy: '0'
+      # Deploy to AWS ECS
+      deploy-ecs: '1'
+      # Push prod image to AWS ECR
+      deploy-ecr: '1'
+
+      # Create package for deployment, e.g., Erlang release
+      package: '1'
+      package-codedeploy: '1'
+      package-ansible: '1'
+      package-erlang-release: '1'
 
       # Send results to Datadog
       datadog: '0'
@@ -174,7 +188,7 @@ jobs:
       notify-appsignal: '1'
 
       # Notify Sentry of new app release
-      notify-sentry: '0'
+      notify-sentry: '1'
     steps:
       - name: Configure common-matrix
         id: common-matrix
@@ -423,6 +437,9 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       GITHUB_ADVANCED_SECURITY: ${{ needs.config.outputs.github-advanced-security }}
+      TRIVY: ${{ needs.config.outputs.scan-trivy }}
+      GRYPE: ${{ needs.config.outputs.scan-grype }}
+      SNYK: ${{ needs.config.outputs.scan-snyk }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -435,7 +452,8 @@ jobs:
         run: docker pull "ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.35.0
+        if: env.TRIVY == '1'
+        uses: aquasecurity/trivy-action@0.69.3
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
@@ -449,11 +467,11 @@ jobs:
           # output: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'trivy-results.sarif' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat trivy-results.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -464,6 +482,7 @@ jobs:
           category: trivy
 
       - name: Scan image with Grype
+        if: env.GRYPE == '1'
         uses: anchore/scan-action@v7
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
@@ -476,22 +495,23 @@ jobs:
           # output-format: ${{ env.GITHUB_ADVANCED_SECURITY == '1' && 'sarif' || 'table' }}
 
       - name: Display scan results
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
-        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
+        if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
 
-      # - name: Scan image with Snyk
-      #   uses: snyk/actions/docker@master
-      #   continue-on-error: true
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   with:
-      #     command: test
-      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
+      - name: Scan image with Snyk
+        if: env.SNYK == '1'
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          args: --file=${{ env.DOCKER_FILE }} --project-name=api

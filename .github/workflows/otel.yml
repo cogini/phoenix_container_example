@@ -1,17 +1,19 @@
 ---
 name: OpenTelemetry
-
 # Build AWS OpenTelemetry Collector Docker image and push to Amazon ECR
 
 on:
   push:
+    branches:
+      - master
+      - qa
+    tags: [prod]
     paths:
       - .github/workflows/otel.yml
       - deploy/aws-otel-collector.Dockerfile
       - 'otel/*'
-  # pull_request:
-  #   # branches: [main]
-  #   types: [opened,synchronize,reopened,labeled,unlabeled]
+    paths-ignore:
+      - '**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-otel
   cancel-in-progress: true
@@ -25,15 +27,16 @@ env:
   ECR_IMAGE_OWNER: cogini/
   # ECR_IMAGE_OWNER: ''
   # Tag for release images, used to find the latest deployed image.
-  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Registry for internal images
+  # Give GitHub Actions access to AWS
+  AWS_ENABLED: '1'
+  # Registry to pull internal images from
   REGISTRY: ghcr.io/
   # Registry for public images, default (blank) is docker.io
   # PUBLIC_REGISTRY: ''
-  # Assume that base image has been synced to local registry
-  PUBLIC_REGISTRY: 'ghcr.io/'
+  # When base image has been synced to local registry
+  PUBLIC_REGISTRY: ghcr.io/
   AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
   POSTGRES_REPO_ORG: ${{ github.repository_owner }}
   RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
@@ -51,9 +54,10 @@ env:
   #   secrets.AWS_ROLE_TO_ASSUME: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/foo-${{ environment }}-github-action-role
   # Docker
   DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
   DOCKER_FILE: deploy/aws-otel-collector.Dockerfile
 jobs:
-  build-prod:
+  build-otel:
     name: Build otel image
     permissions:
       id-token: write
@@ -83,25 +87,19 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configure AWS credentials
-        if: env.AWS_ENABLED == '1'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: env.AWS_ENABLED == '1'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
         # with:
         #   registries: ${{ (needs.config.outputs.environment == 'qa') && env.AWS_ACCOUNT_STAGING || vars.AWS_ACCOUNT }}
 
       - name: Set vars
-        if: env.AWS_ENABLED == '1'
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
-
-      - name: Set vars
-        run: echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -113,6 +111,7 @@ jobs:
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
           echo "run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
           echo "run_num=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Set up Docker buildx
         id: buildx
@@ -120,9 +119,10 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build image and push
-        if: env.AWS_ENABLED == '1'
+      - name: Build image and push to AWS ECR
         uses: docker/build-push-action@v7
+        env:
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
           # https://hub.docker.com/r/amazon/aws-otel-collector/tags
@@ -132,8 +132,10 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }}
-          cache-to: type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }},mode=max
+          cache-from: |
+            type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }}
+          cache-to: |
+            type=gha,scope=${{ github.workflow }}-otel-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
           # ssh: default
           # https://github.com/opencontainers/image-spec/blob/main/annotations.md
