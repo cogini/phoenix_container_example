@@ -12,8 +12,6 @@ on:
       - .github/workflows/otel.yml
       - deploy/aws-otel-collector.Dockerfile
       - 'otel/*'
-    paths-ignore:
-      - '**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-otel
   cancel-in-progress: true
