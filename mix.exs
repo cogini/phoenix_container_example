@@ -92,7 +92,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:bandit, "~> 1.5"},
       {:castore, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:dns_cluster, "~> 0.2.0"},
       {:dotenvy, "~> 1.1.0"},
       {:ecto_sql, "~> 3.10"},
