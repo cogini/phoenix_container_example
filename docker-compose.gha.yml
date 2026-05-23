@@ -164,7 +164,7 @@ services:
   # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
   aws-otel-collector:
     # image: public.ecr.aws/aws-observability/aws-otel-collector:latest
-    image: "${PUBLIC_REGISTRY:-docker.io/}${AWS_OTEL_COLLECTOR_REPO_ORG:-amazon}/aws-otel-collector:${AWS_OTEL_COLLECTOR_TAG:-latest}"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_AMAZON:-amazon}/aws-otel-collector:${AWS_OTEL_COLLECTOR_TAG:-latest}"
     build:
       dockerfile: deploy/aws-otel-collector.Dockerfile
       args:
@@ -279,6 +279,7 @@ services:
       # - "14268:14268 " Jaeger/HTTP accept jaeger.thrift directly from clients
       # - "6831:6831/udp" # Accept Jaeger/Compact thrift protocol
 
+  # https://oneuptime.com/blog/post/2026-02-02-kafka-docker/view
   kafka:
     image: 'bitnami/kafka:2'
     ports:
@@ -360,9 +361,9 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   # https://hub.docker.com/_/postgres
   postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-_}/postgres:18.4-alpine"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_POSTGRES}/postgres:18.4-alpine"
     # image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
-    # image: "${PUBLIC_REGISTRY:-docker.io/}${POSTGRES_REPO_ORG:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
+    # image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_POSTGRES:-ankane}/pgvector:${PGVECTOR_TAG:-v0.5.1}"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
@@ -404,7 +405,7 @@ services:
 
   # https://hub.docker.com/_/rabbitmq
   rabbitmq:
-    image: "${PUBLIC_REGISTRY:-docker.io/}${RABBITMQ_REPO_ORG:-_}/rabbitmq:3-management"
+    image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_RABBITMQ:-_}/rabbitmq:3-management"
     restart: always
     ports:
       - '5671:5671' # AMQPS port (TLS)
