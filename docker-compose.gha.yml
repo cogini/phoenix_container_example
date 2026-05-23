@@ -92,11 +92,11 @@ services:
       # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_DEBUG=${OTEL_DEBUG:-false}
       # - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-foo}
-      # - OTEL_RESOURCE_ATTRIBUTES=service.namespace=ai,deployment.environment=local
+      # - OTEL_RESOURCE_ATTRIBUTES=service.namespace=foo,deployment.environment=local
     ports:
-      - '4000:4000'
-      - '9111:9111'   # Prometheus PromEx server port
-      - '9568:9568'   # Prometheus telemetry_metrics_prometheus default port
+      - "4000:4000" # Phoenix default
+      - "9111:9111" # Prometheus PromEx server
+      - "9568:9568" # Prometheus telemetry_metrics_prometheus default
     # healthcheck:
     #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:${PORT}/healthz"]
     #   start_period: 2s
@@ -147,7 +147,9 @@ services:
       - DATABASE_URL
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
     ports:
-      - '4000:4000'
+      - "4000:4000" # Phoenix default
+      - "9111:9111" # Prometheus PromEx server port
+      - "9568:9568" # Prometheus telemetry_metrics_prometheus default port
     stdin_open: true
     tty: true
     cap_add:
