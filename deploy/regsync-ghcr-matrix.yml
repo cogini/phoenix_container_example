@@ -1,5 +1,5 @@
 ---
-# This syncs base images controlled by build matrix
+# Sync base images controlled by build matrix
 sync:
   # Build base image
   - source: 'docker.io/hexpm/elixir:{{ env "ELIXIR_BASE_TAG" }}'

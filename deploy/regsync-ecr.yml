@@ -1,4 +1,5 @@
-# https://regclient.org/usage/regsync/
+---
+# Sync images from Docker Hub to Amazon ECR
 sync:
   - source: docker.io/zenika/alpine-chrome:119
     target: '{{ env "ECR_REGISTRY" }}/zenika/alpine-chrome:119'
