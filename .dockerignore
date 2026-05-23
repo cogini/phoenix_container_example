@@ -36,6 +36,7 @@ assets/node_modules/
 !.gitleaks.toml
 !trivy.yaml
 !brunch-config.js
+!codedeploy/appspec.yml
 
 !deploy/chisel/release
 
