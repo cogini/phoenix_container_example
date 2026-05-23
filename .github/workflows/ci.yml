@@ -1824,6 +1824,7 @@ jobs:
     env:
       ELIXIR_BASE_TAG: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
       MATRIX_OS: ${{ matrix.os }}
+      MATRIX_BUILD_OS_VER: ${{ matrix.build_os_ver }}
       MATRIX_PROD_OS_VER: ${{ matrix.prod_os_ver }}
     steps:
       - name: Log in to GHCR
