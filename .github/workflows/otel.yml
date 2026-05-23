@@ -35,9 +35,7 @@ env:
   # PUBLIC_REGISTRY: ''
   # When base image has been synced to local registry
   PUBLIC_REGISTRY: ghcr.io/
-  AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
-  POSTGRES_REPO_ORG: ${{ github.repository_owner }}
-  RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
+  REPO_ORG: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
