@@ -256,10 +256,12 @@ RUN set -exu ; \
 RUN set -ex ; corepack enable ; corepack enable npm ;
     # npm install -g yarn
 
+ENV HOME=/app \
+    LANG=$LANG
+
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
-ENV HOME=/app
 
 WORKDIR /app
 
