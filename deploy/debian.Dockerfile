@@ -1,5 +1,6 @@
 # Build app
 # Deploy using Debian
+ARG BASE_OS=debian
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
@@ -10,7 +11,6 @@ ARG OTP_VER=28.5
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG OS_NAME=debian
 ARG BUILD_OS_VER=trixie-20260518-slim
 ARG PROD_OS_VER=trixie-20260518-slim
 
@@ -31,6 +31,7 @@ ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=""
 # When public images are mirrored into the private registry
 # ARG PUBLIC_REGISTRY=$REGISTRY
+
 ARG REPO_ORG_ELIXIR=hexpm
 ARG REPO_ORG_PROD_OS=debian
 
