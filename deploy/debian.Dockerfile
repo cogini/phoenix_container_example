@@ -30,6 +30,8 @@ ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=""
 # When public images are mirrored into the private registry
 # ARG PUBLIC_REGISTRY=$REGISTRY
+ARG REPO_ORG_ELIXIR=hexpm
+ARG REPO_ORG_PROD_OS=debian
 
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
@@ -63,7 +65,7 @@ ARG SENTRY="1"
 ARG RUST="0"
 
 # Create build base image with OS dependencies
-FROM ${PUBLIC_REGISTRY}hexpm/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
@@ -617,7 +619,7 @@ RUN set -exu ; \
 
 
 # Create base image for prod with everything but the code release
-FROM ${PUBLIC_REGISTRY}debian:${PROD_OS_VER} AS prod-base
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}/debian:${PROD_OS_VER} AS prod-base
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
