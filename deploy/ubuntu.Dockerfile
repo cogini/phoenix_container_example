@@ -46,6 +46,7 @@ ARG RUNTIME_PACKAGES="ca-certificates"
 # Packages used for interactive development
 ARG DEV_PACKAGES="inotify-tools"
 
+ARG RUST="0"
 
 # Create build base image with OS dependencies
 FROM ${PUBLIC_REGISTRY}hexpm/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER} AS build-os-deps
@@ -202,8 +203,15 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     truncate -s 0 /var/log/dpkg.log
 
 # Install rust
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal -y
-# ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rust
+
+ARG RUST
+RUN if [ "$RUST" = "1" ]; then \
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y ; \
+    fi
+
+# ENV PATH="/usr/local/cargo/bin:${PATH}"
 
 ARG LANG
 RUN set -exu ; \
@@ -264,7 +272,9 @@ ARG LANG
 
 ENV MIX_ENV=test
 
-# RUN rustup default stable
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
 
 WORKDIR /app
 
@@ -338,6 +348,10 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
     # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     # node node_modules/brunch/bin/brunch build
     # node node_modules/webpack/bin/webpack.js --mode production
+
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
 
 WORKDIR /app
 

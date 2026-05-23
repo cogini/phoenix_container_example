@@ -60,6 +60,8 @@ ARG DIALYZER="0"
 # Whether to package source code for Sentry
 ARG SENTRY="1"
 
+ARG RUST="0"
+
 # Create build base image with OS dependencies
 FROM ${PUBLIC_REGISTRY}hexpm/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
 
@@ -233,10 +235,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     truncate -s 0 /var/log/dpkg.log
 
 # Install rust
-# ENV CARGO_HOME=/usr/local/cargo \
-#     RUSTUP_HOME=/usr/local/rust
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rust
 
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y
+ARG RUST
+RUN if [ "$RUST" = "1" ]; then \
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y ; \
+    fi
+
 # ENV PATH="/usr/local/cargo/bin:${PATH}"
 
 ARG LANG
@@ -297,6 +303,10 @@ FROM build-deps-get AS test-image
 ARG LANG
 
 ENV MIX_ENV=test
+
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
 
 WORKDIR /app
 
@@ -379,6 +389,10 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
 # Create Elixir release
 FROM build-deps-get AS prod-release
 ARG LANG
+
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
 
 WORKDIR /app
 
