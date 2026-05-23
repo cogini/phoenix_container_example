@@ -51,10 +51,11 @@ env:
   # PUBLIC_REGISTRY: ''
   # When base image has been synced to local registry
   PUBLIC_REGISTRY: ghcr.io/
-  AWS_OTEL_COLLECTOR_REPO_ORG: ${{ github.repository_owner }}
-  POSTGRES_REPO_ORG: ${{ github.repository_owner }}
-  RABBITMQ_REPO_ORG: ${{ github.repository_owner }}
-  KAFKA_REPO_ORG: ${{ github.repository_owner }}
+  REPO_ORG: ${{ github.repository_owner }}
+  REPO_ORG_AMAZON: ${{ github.repository_owner }}
+  REPO_ORG_ELIXIR: ${{ github.repository_owner }}
+  REPO_ORG_KAFKA: ${{ github.repository_owner }}
+  REPO_ORG_POSTGRES: ${{ github.repository_owner }}
   # Git "main" branch. This might be "master" for old repos
   MAIN_BRANCH: main
   # GitHub Environment secrets and variables
@@ -562,6 +563,9 @@ jobs:
             OTP_VER=${{ matrix.otp }}
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
+            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -1040,6 +1044,9 @@ jobs:
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
             BUILD_NUM=${{ github.run_number }}
+            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -1089,6 +1096,9 @@ jobs:
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
             BUILD_NUM=${{ github.run_number }}
+            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
