@@ -18,10 +18,10 @@ sync:
   #   type: image
   # https://hub.docker.com/_/postgres
   - source: docker.io/postgres:latest
-    target: ghcr.io/{{ env "IMAGE_OWNER" }}/pgvector:latest
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/postgres:latest
     type: image
-  - source: docker.io/postgres:18.3-alpine
-    target: ghcr.io/{{ env "IMAGE_OWNER" }}/postgres:18.3-alpine
+  - source: docker.io/postgres:18.4-alpine
+    target: ghcr.io/{{ env "IMAGE_OWNER" }}/postgres:18.4-alpine
     type: image
   # - source: docker.io/ankane/pgvector:latest
   #   target: ghcr.io/cogini/pgvector:latest
