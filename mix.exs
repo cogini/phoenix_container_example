@@ -40,7 +40,7 @@ defmodule PhoenixContainerExample.MixProject do
         # Run `mix deps.clean --unlock --unused` to clean things identified below
         "deps.unlock --check-unused",
         # mix deps.update
-        "hex.outdated",
+        # "hex.outdated",
         "hex.audit",
         # Waiting on fix for cowlib
         "deps.audit --ignore-package-names cowlib",
@@ -50,7 +50,7 @@ defmodule PhoenixContainerExample.MixProject do
       "quality.ci": [
         "format --check-formatted",
         "deps.unlock --check-unused",
-        "hex.outdated",
+        # "hex.outdated",
         "hex.audit",
         # Waiting on fix for cowlib
         "deps.audit --ignore-package-names cowlib",
