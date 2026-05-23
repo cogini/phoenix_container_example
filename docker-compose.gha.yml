@@ -281,25 +281,36 @@ services:
 
   # https://oneuptime.com/blog/post/2026-02-02-kafka-docker/view
   kafka:
-    image: 'bitnami/kafka:2'
+    image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_KAFKA:-confluentinc}/cp-kafka:7.5.0"
     ports:
-      - '9092'
+      # External port for client connections (PLAINTEXT listener)
+      - "9092:9092"
+      - "9093:9093"
     volumes:
-      - 'kafka_data:/bitnami'
+        # Persist Kafka data across container restarts
+      - kafka_data:/var/lib/kafka/data
     environment:
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes
+      # Unique identifier for this broker in the cluster
+      KAFKA_BROKER_ID: 1
+      # Connection string for Zookeeper
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Define listener addresses - internal for Docker, external for host
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      # Map listener names to security protocols
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # Listener used for inter-broker communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Replication factor for internal topics (1 for single-node)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Enable automatic topic creation when producing/consuming
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # How long to retain messages (7 days in hours)
+      KAFKA_LOG_RETENTION_HOURS: 168
     healthcheck:
-      test: ["CMD", "nc", "-vz", "localhost", "9092"]
-      start_period: 1s
-      interval: 2s
-      timeout: 2s
-      retries: 20
-    # healthcheck:
-    #   test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --topic <TOPIC_NAME> --describe"]
-    #   interval: 2s
-    #   timeout: 2s
-    #   retries: 15
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       - zookeeper
 
@@ -433,18 +444,24 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
   zookeeper:
-    image: 'bitnami/zookeeper:3'
+    image: "${PUBLIC_REGISTRY:-docker.io/}${REPO_ORG_KAFKA:-confluentinc}/cp-zookeeper:7.5.0"
     ports:
-      - '2181:2181'
+      - "2181:2181"
     volumes:
-      - 'zookeeper_data:/bitnami'
+        # Persist Zookeeper data across container restarts
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+        # Port for client connections
+      - ZOOKEEPER_CLIENT_PORT=2181
+        # Base time unit in milliseconds for heartbeats
+      - ZOOKEEPER_TICK_TIME=2000
     healthcheck:
-      test: ["CMD", "nc", "-vz", "localhost", "2181"]
-      interval: 2s
-      timeout: 2s
-      retries: 10
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   kafka_data:
