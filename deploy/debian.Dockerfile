@@ -351,9 +351,11 @@ COPY --link test ./test
 # COPY --link bi[n] ./bin
 
 # Load environment vars when compiling
-COPY --link .env.tes[t] ./
-RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
-    mix compile --warnings-as-errors
+COPY --link .env.defaul[t] .env.tes[t] ./
+
+# RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
+#     mix compile --warnings-as-errors
+RUN mix compile --warnings-as-errors
 
 # For umbrella, using `mix cmd` ensures each app is compiled in
 # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -410,8 +412,9 @@ COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 COPY --link .env.defaul[t] .env.pro[d] ./
 
 # Load environment vars when compiling
-RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-    mix deps.compile
+# RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+#     mix deps.compile
+RUN mix deps.compile
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -433,12 +436,16 @@ COPY --link bi[n] ./bin
 # isolation https://github.com/elixir-lang/elixir/issues/9407
 # RUN mix cmd mix compile --warnings-as-errors
 
-RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-    mix compile --warnings-as-errors
+# RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+#     mix compile --warnings-as-errors
+RUN set -exu ; \
+    # mix compile --warnings-as-errors
+    mix compile
 
 COPY --from=prod-assets /app/assets /app/assets
 
 RUN mix assets.setup
+
 RUN mix assets.deploy
 
 # Build release
