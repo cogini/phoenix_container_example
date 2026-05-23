@@ -404,7 +404,8 @@ WORKDIR /app
 
 ARG MIX_ENV
 # COPY --link config ./config
-COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
+# COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
+COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 COPY --link .env.defaul[t] .env.pro[d] ./
 
@@ -439,6 +440,9 @@ COPY --from=prod-assets /app/assets /app/assets
 
 RUN mix assets.setup
 RUN mix assets.deploy
+
+# Build release
+COPY --link config/runtime.exs ./config/
 
 COPY --link rel ./rel
 
