@@ -15,6 +15,7 @@ assets/node_modules/
 !rel
 !test
 !otel
+!codedeploy
 
 # Erlang dirs
 !src
@@ -36,7 +37,6 @@ assets/node_modules/
 !.gitleaks.toml
 !trivy.yaml
 !brunch-config.js
-!codedeploy/appspec.yml
 
 !deploy/chisel/release
 
