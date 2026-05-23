@@ -40,18 +40,20 @@ defmodule PhoenixContainerExample.MixProject do
         # Run `mix deps.clean --unlock --unused` to clean things identified below
         "deps.unlock --check-unused",
         # mix deps.update
-        # "hex.outdated",
-        # "hex.audit",
-        "deps.audit",
+        "hex.outdated",
+        "hex.audit",
+        # Waiting on fix for cowlib
+        "deps.audit --ignore-package-names cowlib",
         "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
         "dialyzer --quiet-with-result"
       ],
       "quality.ci": [
         "format --check-formatted",
         "deps.unlock --check-unused",
-        # "hex.outdated",
+        "hex.outdated",
         "hex.audit",
-        "deps.audit",
+        # Waiting on fix for cowlib
+        "deps.audit --ignore-package-names cowlib",
         "credo",
         "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
         "dialyzer --quiet-with-result"
@@ -91,6 +93,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:aws_rds_castore, "~> 1.1"},
       {:bandit, "~> 1.5"},
       {:castore, "~> 1.0"},
+      {:cowlib, "~> 2.16", override: true},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:decimal, "~> 3.0", override: true},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
