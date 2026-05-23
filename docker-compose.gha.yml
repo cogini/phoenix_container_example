@@ -476,6 +476,8 @@ volumes:
     driver: local
   zookeeper_data:
     driver: local
+  zookeeper_logs:
+    driver: local
 
 # secrets:
 #   oban_license_key:
