@@ -127,6 +127,8 @@ jobs:
           build-args: |
             AWS_REGION=${{ vars.AWS_REGION }}
             BASE_IMAGE_TAG='v0.47.0'
+            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+            REPO_ORG_AMAZON=${{ env.REPO_ORG }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
