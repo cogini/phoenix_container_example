@@ -225,8 +225,8 @@ jobs:
                   os: "debian",
                   elixir: "1.19.5",
                   otp: "28.5",
-                  build_os_ver: "trixie-20260421-slim",
-                  prod_os_ver: "trixie-20260421-slim"
+                  build_os_ver: "trixie-20260518-slim",
+                  prod_os_ver: "trixie-20260518-slim"
                 },
               ]
             }
@@ -241,8 +241,8 @@ jobs:
                 os: "debian",
                 elixir: "1.19.5",
                 otp: "28.5",
-                build_os_ver: "trixie-20260421-slim",
-                prod_os_ver: "trixie-20260421-slim"
+                build_os_ver: "trixie-20260518-slim",
+                prod_os_ver: "trixie-20260518-slim"
               },
             ]
             let ci_nodes = [1, 2]
@@ -282,8 +282,8 @@ jobs:
                   os: "debian",
                   elixir: "1.19.5",
                   otp: "28.5",
-                  build_os_ver: "trixie-20260421-slim",
-                  prod_os_ver: "trixie-20260421-slim"
+                  build_os_ver: "trixie-20260518-slim",
+                  prod_os_ver: "trixie-20260518-slim"
                 },
               ]
             }
@@ -299,8 +299,8 @@ jobs:
                   os: "debian",
                   elixir: "1.19.5",
                   otp: "28.5",
-                  build_os_ver: "trixie-20260421-slim",
-                  prod_os_ver: "trixie-20260421-slim"
+                  build_os_ver: "trixie-20260518-slim",
+                  prod_os_ver: "trixie-20260518-slim"
                 },
               ]
             }
@@ -316,8 +316,8 @@ jobs:
                   os: "debian",
                   elixir: "1.19.5",
                   otp: "28.5",
-                  build_os_ver: "trixie-20260421-slim",
-                  prod_os_ver: "trixie-20260421-slim"
+                  build_os_ver: "trixie-20260518-slim",
+                  prod_os_ver: "trixie-20260518-slim"
                 },
               ]
             }

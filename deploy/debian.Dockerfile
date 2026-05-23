@@ -10,8 +10,9 @@ ARG OTP_VER=28.5
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=trixie-20260316-slim
-ARG PROD_OS_VER=trixie-20260316-slim
+ARG OS_NAME=debian
+ARG BUILD_OS_VER=trixie-20260518-slim
+ARG PROD_OS_VER=trixie-20260518-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
