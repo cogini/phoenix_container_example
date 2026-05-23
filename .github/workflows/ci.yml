@@ -828,7 +828,7 @@ jobs:
 
   build-prod:
     name: Build prod image
-    needs: [config, create-release]
+    needs: [create-release, config]
     permissions:
       id-token: write
       contents: write
