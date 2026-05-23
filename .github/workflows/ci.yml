@@ -456,7 +456,7 @@ jobs:
 
   build-test:
     name: Build test image
-    needs: [config]
+    needs: [sync-images-matrix, config]
     permissions:
       id-token: write
       contents: read
@@ -828,7 +828,7 @@ jobs:
 
   build-prod:
     name: Build prod image
-    needs: [create-release, config]
+    needs: [sync-images-matrix, create-release, config]
     permissions:
       id-token: write
       contents: write
