@@ -37,14 +37,6 @@ ARG PUBLIC_REGISTRY=""
 ARG REPO_ORG_ELIXIR=hexpm
 ARG REPO_ORG_PROD_OS=debian
 
-# Base for final prod image
-# https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian13
-# ARG PROD_BASE_IMAGE_TAG=debug-nonroot
-# ARG PROD_BASE_IMAGE_TAG=latest
-# debug includes busybox, which we need to run Erlang startup scripts
-ARG PROD_BASE_IMAGE_TAG=debug
-
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
 # nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
@@ -540,7 +532,7 @@ RUN set -exu ; \
     rm -rf /ansible/*
 
 
-# Create base image for prod with everything but the code release
+# Staging image with files to be copied to final release image
 FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}/debian:${PROD_OS_VER} AS prod-install
 
 # Create OS user and group to run app under
@@ -611,7 +603,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         libssl3 \
         libstdc++6 \
         libgcc-s1 \
-        locales \
         $RUNTIME_PACKAGES \
     ; \
     # Remove packages installed temporarily. Removes everything related to
@@ -636,14 +627,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # Clear logs of installed packages
     truncate -s 0 /var/log/apt/* ; \
     truncate -s 0 /var/log/dpkg.log
-
-ARG LANG
-RUN set -exu ; \
-    # Generate locales specified in /etc/locale.gen
-    sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
-    grep -v '^#' /etc/locale.gen ; \
-    locale-gen ; \
-    localedef --list-archive ;
 
 # Stage files for copying into final image.
 RUN set -ex ; \
@@ -680,9 +663,15 @@ RUN set -ex ; \
 # libstdc++6
 # /usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28
 
+# Base for final prod image
+# https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
+# ARG PROD_BASE_IMAGE_TAG=debug-nonroot
+# ARG PROD_BASE_IMAGE_TAG=latest
+# debug includes busybox, which we need to run Erlang startup scripts
+# ARG PROD_BASE_IMAGE_TAG=debug
 
 # Create base image for prod with everything but the code release
-FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
+FROM gcr.io/distroless/cc-debian13:debug AS prod-base
 
 # User and group are created in the Google Distroless base image (nonroot:nonroot)
 

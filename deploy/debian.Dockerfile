@@ -199,7 +199,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # rm -rf "${HOME}/.gnupg" ; \
     # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
     # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
-    #   
+    #
     # Install packages from special repos
     apt-get update -qq ; \
     DEBIAN_FRONTEND=noninteractive \
@@ -764,8 +764,7 @@ ARG LANG
 RUN set -exu ; \
     # Generate locales specified in /etc/locale.gen
     sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
-    locale-gen ; \
-    localedef --list-archive
+    locale-gen
 
 # Set environment vars used by the app
 ENV HOME=/app \
