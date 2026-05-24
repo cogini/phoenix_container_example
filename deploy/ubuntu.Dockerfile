@@ -666,43 +666,15 @@ ENTRYPOINT ["bin/start-docker"]
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -sf http://localhost:9111/metrics || exit 1
 
 
-FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}${BASE_OS}:${BUILD_OS_VER} AS package
-# Install tools to publish packages
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu ; \
-    # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
-    # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list ; \
-    apt-get update -qq ; \
-    # apt-get -y build-dep python-pil -y ; \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get -y install -y -qq --no-install-recommends \
-        # Enable installation of packages over https
-        apt-transport-https \
-        ca-certificates \
-        curl \
-    ; \
-    # Delete info on installed packages. This saves some space, but it can
-    # be useful to have them as a record of what was installed, e.g. for auditing.
-    # rm -rf /var/lib/dpkg ; \
-    # Delete debconf data files to save some space
-    # rm -rf /var/cache/debconf ; \
-    # Delete index of available files from apt-get update
-    # Use this if not running --mount=type=cache.
-    # rm -rf /var/lib/apt/lists/*
-    # Clear logs of installed packages
-    truncate -s 0 /var/log/apt/* ; \
-    truncate -s 0 /var/log/dpkg.log
-
+FROM scratch AS package
 # Erlang release
-COPY --from=prod-release-package --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
+COPY --from=prod-release-package /erlang-release.tar.gz /erlang-release.tar.gz
 
 # CodeDeploy revision
-COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revision.zip
+COPY --from=prod-release-package /revision.zip /revision.zip
 
 # Ansible release
-COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
+COPY --from=prod-release-package /ansible.zip /ansible.zip
 
 
 # Dev image which mounts code from local filesystem
