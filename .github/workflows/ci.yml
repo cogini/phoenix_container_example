@@ -1139,7 +1139,6 @@ jobs:
         if: ${{ needs.config.outputs.package == '1' }}
         run: |
           ls -l out
-          cat out/provenance.json
 
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
@@ -1161,24 +1160,14 @@ jobs:
           mv -v "out/${SRC}" "out/${DST}"
           gh release upload "${RELEASE_TAG}" "out/${DST}"
 
-      - name: Copy CodeDeploy release
-        if: env.PACKAGE_CODEDEPLOY == '1'
+      - name: Copy Ansible release
+        if: env.PACKAGE_ANSIBLE == '1'
         env:
           GH_TOKEN: ${{ github.token }}
           SRC: ansible.zip
           DST: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
           gh release upload "${RELEASE_TAG}" "out/${DST}"
-
-      # - name: Copy Ansible release
-      #   if: env.PACKAGE_ANSIBLE == '1'
-      #   env:
-      #     NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
-      #   run: |
-      #     curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #       -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #       --data-binary @out/ansible.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
-
 
   test-prod:
     name: Run external API tests
