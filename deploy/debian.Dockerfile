@@ -779,6 +779,17 @@ COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revisi
 COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
 
 
+FROM scratch AS package-scratch
+# Erlang release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
+
+# CodeDeploy revision
+COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revision.zip
+
+# Ansible release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
+
+
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
 ARG DEV_PACKAGES

@@ -1091,67 +1091,95 @@ jobs:
         #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
         #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
+      # - name: Build package image
+      #   if: ${{ needs.config.outputs.package == '1' }}
+      #   uses: docker/build-push-action@v7
+      #   with:
+      #     file: ${{ env.DOCKER_FILE }}
+      #     target: package
+      #     build-args: |
+      #       ELIXIR_VER=${{ matrix.elixir }}
+      #       OTP_VER=${{ matrix.otp }}
+      #       BUILD_OS_VER=${{ matrix.build_os_ver }}
+      #       PROD_OS_VER=${{ matrix.prod_os_ver }}
+      #       BUILD_NUM=${{ github.run_number }}
+      #       PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+      #       REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
+      #       REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     cache-from: |
+      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }}
+      #     cache-to: |
+      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
+      #     no-cache: ${{ github.run_attempt != '1' }}
+      #     tags: |
+      #       ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:package${{ env.VAR }}${{ env.IMAGE_VER }}
+
       - name: Build package image
         if: ${{ needs.config.outputs.package == '1' }}
         uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: package
-          build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
-            BUILD_NUM=${{ github.run_number }}
-            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
-            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
-            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
+          target: package-scratch
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          push: true
+          push: false
+          outputs: type=local,dest=out
           cache-from: |
-            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ env.MAIN_BRANCH }}
-            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }}
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ env.MAIN_BRANCH }}
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }}
           cache-to: |
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
-          tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:package${{ env.VAR }}${{ env.IMAGE_VER }}
+
+      # - name: Export packages
+      #   run:
+      #     mkdir -p out
+      #     docker build --target package-scratch -t package-scratch . --output out
+      #     ls -l out
 
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+            --data-binary @/out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
 
-      - name: Copy CodeDeploy release
-        if: env.PACKAGE_CODEDEPLOY == '1'
-        run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+      # - name: Copy Erlang release
+      #   if: env.PACKAGE_RELEASE == '1'
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
 
-      - name: Copy Ansible release
-        if: env.PACKAGE_ANSIBLE == '1'
-        run: |
-          UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-          NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
-          COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-                   -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-                   --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
-          echo "$COMMAND"
-          docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+      # - name: Copy CodeDeploy release
+      #   if: env.PACKAGE_CODEDEPLOY == '1'
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
+
+      # - name: Copy Ansible release
+      #   if: env.PACKAGE_ANSIBLE == '1'
+      #   run: |
+      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
+      #     NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #              --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
+      #     echo "$COMMAND"
+      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
 
 
   test-prod:
