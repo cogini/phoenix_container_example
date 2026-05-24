@@ -940,6 +940,9 @@ jobs:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
 
+      - name: Install build tools
+        run: mix 'do' local.rebar --force + local.hex --force
+
       - name: Cache deps
         uses: actions/cache@v5
         env:
@@ -973,9 +976,6 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-
-      - name: Install build tools
-        run: mix 'do' local.rebar --force + local.hex --force
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
