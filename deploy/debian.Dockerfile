@@ -754,6 +754,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     apt-get -y install -y -qq --no-install-recommends \
         # Enable installation of packages over https
         apt-transport-https \
+        ca-certificates \
         curl \
     ; \
     # Delete info on installed packages. This saves some space, but it can
