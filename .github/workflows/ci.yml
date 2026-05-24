@@ -1137,37 +1137,36 @@ jobs:
 
       - name: List package output
         if: ${{ needs.config.outputs.package == '1' }}
-        run: ls -l out
+        run: |
+          ls -l out
+          cat out/provenance.json
 
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         env:
-          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
           NAME: "erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/erlang-release.tar.gz \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
-          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
           NAME: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/revision.zip \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/revision.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
 
       - name: Copy Ansible release
         if: env.PACKAGE_ANSIBLE == '1'
         env:
-          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
           NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/ansible.zip \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/ansible.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
 
 
   test-prod:
