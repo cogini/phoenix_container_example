@@ -1023,17 +1023,17 @@ jobs:
         if: env.DEPLOY_ASSETS_S3 == '1'
         # Copying is faster than syncing. With digested files, multiple versions
         # can coexist on the server, and the app will choose the right ones.
-        run: aws s3 cp --recursive priv/static s3://${{ vars.S3_BUCKET_ASSETS }}/
+        run: aws s3 cp --recursive priv/static "s3://${{ vars.S3_BUCKET_ASSETS }}/"
 
       # - name: Sync assets to S3
       #   if: env.DEPLOY_ASSETS_S3 == '1'
       #   working-directory: app
-      #   run: aws s3 sync priv/static s3://${{ vars.S3_BUCKET_ASSETS }} --delete
+      #   run: aws s3 sync priv/static "s3://${{ vars.S3_BUCKET_ASSETS }}" --delete
 
       # We don't have to invalidate when using digested files.
       #   if: env.DEPLOY_ASSETS_CLOUDFRONT == '1'
       # - name: Create CloudFront invalidation
-      #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
+      #   run: aws cloudfront create-invalidation --distribution-id "${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }}" --paths "/*"
 
       - name: Set up Docker buildx
         id: buildx
