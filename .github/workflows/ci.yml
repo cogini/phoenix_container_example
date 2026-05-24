@@ -1167,6 +1167,7 @@ jobs:
           SRC: ansible.zip
           DST: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
+          mv -v "out/${SRC}" "out/${DST}"
           gh release upload "${RELEASE_TAG}" "out/${DST}"
 
   test-prod:
