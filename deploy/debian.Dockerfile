@@ -33,7 +33,7 @@ ARG PUBLIC_REGISTRY=""
 # ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG REPO_ORG_ELIXIR=hexpm
-ARG REPO_ORG_PROD_OS=debian
+ARG REPO_ORG_PROD_OS=""
 
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
@@ -67,7 +67,7 @@ ARG SENTRY="1"
 ARG RUST="0"
 
 # Create build base image with OS dependencies
-FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER} AS build-os-deps
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
@@ -174,6 +174,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # Install Trivy
     # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
     # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
+    #
+    # Install Grype
+    # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
     #
     # Install latest PostgreSQL client library from postgres.org repo
     # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
@@ -471,6 +474,7 @@ ARG BUILD_NUM
 ARG ELIXIR_VER
 ARG OTP_VER
 ARG BUILD_OS_VER
+ARG BASE_OS
 
 # Generate systemd and deploy scripts
 RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
@@ -478,7 +482,7 @@ RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
 RUN set -exu ; \
     export ARCH_LINUX=$(dpkg --print-architecture) ; \
     export ARCH_MACHINE=$(uname -m) ; \
-    export BUILD_OS="debian" ; \
+    export BUILD_OS="${BASE_OS}" ; \
     echo "arch_linux: ${ARCH_LINUX}" >> /app/build_meta.yml ; \
     echo "arch_machine: ${ARCH_MACHINE}" >> /app/build_meta.yml ; \
     echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
@@ -498,7 +502,7 @@ ARG RELEASE
 WORKDIR /revision
 COPY codedeploy/appspec.yml ./
 RUN set -exu ; \
-    export BUILD_OS="debian" ; \
+    export BUILD_OS="${BASE_OS}" ; \
     mkdir -p etc bin lib systemd ; \
     chmod +x /app/bin/* ; \
     cp /app/bin/* ./bin/ ; \
@@ -531,7 +535,7 @@ RUN set -exu ; \
 
 
 # Create base image for prod with everything but the code release
-FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}/debian:${PROD_OS_VER} AS prod-base
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}${BASE_OS}:${PROD_OS_VER} AS prod-base
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
