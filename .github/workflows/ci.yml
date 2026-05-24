@@ -1144,29 +1144,33 @@ jobs:
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         env:
-          NAME: "erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
+          NAME: erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz
+          RELEASE_TAG: build-${{ github.run_number }}
         run: |
-          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/erlang-release.tar.gz \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
+          gh release upload "${RELEASE_TAG}" "out/erlang-release.tar.gz#${NAME}"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
           NAME: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
-          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/revision.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
+          gh release upload "${RELEASE_TAG}" "out/revision.zip#${NAME}"
 
-      - name: Copy Ansible release
-        if: env.PACKAGE_ANSIBLE == '1'
+      - name: Copy CodeDeploy release
+        if: env.PACKAGE_CODEDEPLOY == '1'
         env:
           NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
-          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @out/ansible.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
+          gh release upload "${RELEASE_TAG}" "out/ansible.zipz#${NAME}"
+
+      # - name: Copy Ansible release
+      #   if: env.PACKAGE_ANSIBLE == '1'
+      #   env:
+      #     NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+      #   run: |
+      #     curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+      #       -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+      #       --data-binary @out/ansible.zip \"${{ needs.create-release.outputs.upload-url }}?name=${NAME}\"
 
 
   test-prod:
