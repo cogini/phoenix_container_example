@@ -120,6 +120,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:logger_formatter_json, "~> 0.8.0"},
       # {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
+      {:mix_deploy, "~> 0.7"},
       {:observer_cli, "~> 1.7"},
       # {:libcluster_ecs, "~> 0.2.0"},
       # {:libcluster_ecs, github: "microdose-ai-team/libcluster_ecs"},
