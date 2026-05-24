@@ -136,47 +136,6 @@ services:
         RELEASE: ${RELEASE:-prod}
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
-    environment:
-      # Use minio container for S3
-      # - AWS_S3_HOST=${AWS_S3_HOST:-minio}
-      # - AWS_S3_PORT=${AWS_S3_PORT:-9000}
-      # - AWS_S3_SCHEME=${AWS_S3_SCHEME:-http}
-      # Talk to postgres running in container
-      - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
-      # - DATABASE_HOST=${DATABASE_HOST:-postgres}
-      # Run database migrations on startup
-      - DB_MIGRATE=${DB_MIGRATE:-true}
-      - LOG_CONSOLE=${LOG_CONSOLE:-true}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      # - LOGGER_FORMAT=${LOGGER_FORMAT:-text} # default is json
-      # - LOGGER_LEVEL=${LOGGER_LEVEL:-info}
-      # Use rabbitmq running in container
-      # - MQ_CONN=${MQ_CONN:-amqp://guest:guest@rabbitmq:5672}
-      # - MQ_PASSWORD=${MQ_PASSWORD:-guest}
-      # - MQ_USERNAME=${MQ_USERNAME:-guest}
-      - POOL_SIZE=${POOL_SIZE:-50}
-      - PORT=4000
-      # mix phx.gen.secret
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
-      # https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/
-      # Send traces to the AWS OTEL collector container
-      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://aws-otel-collector:4317
-      # - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-      - OTEL_DEBUG=${OTEL_DEBUG:-false}
-      # - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-foo}
-      # - OTEL_RESOURCE_ATTRIBUTES=service.namespace=foo,deployment.environment=local
-    ports:
-      - "4000:4000" # Phoenix default
-      - "9111:9111" # Prometheus PromEx server
-      - "9568:9568" # Prometheus telemetry_metrics_prometheus default
-    healthcheck:
-      test: ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
-      start_period: 2s
-      interval: 1s
-      timeout: 3s
-      retries: 20
-    volumes:
-      - "./etc:/etc/foo:ro"
 
   # Development
   dev:
