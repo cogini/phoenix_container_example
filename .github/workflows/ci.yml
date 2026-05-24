@@ -1135,12 +1135,6 @@ jobs:
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
 
-      # - name: Export packages
-      #   run:
-      #     mkdir -p out
-      #     docker build --target package-scratch -t package-scratch . --output out
-      #     ls -l out
-
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         env:
@@ -1170,39 +1164,6 @@ jobs:
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
             --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\"
-
-      # - name: Copy Erlang release
-      #   if: env.PACKAGE_RELEASE == '1'
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
-
-      # - name: Copy CodeDeploy release
-      #   if: env.PACKAGE_CODEDEPLOY == '1'
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
-
-      # - name: Copy Ansible release
-      #   if: env.PACKAGE_ANSIBLE == '1'
-      #   run: |
-      #     UPLOAD_URL=${{ needs.create-release.outputs.upload-url }}
-      #     NAME="ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
-      #     COMMAND="curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
-      #              -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-      #              --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\" "
-      #     echo "$COMMAND"
-      #     docker compose run --entrypoint /bin/sh package -c "$COMMAND"
 
 
   test-prod:
