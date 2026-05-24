@@ -1,5 +1,6 @@
 defmodule PhoenixContainerExample.MixProject do
   use Mix.Project
+  @version "0.1.0"
 
   def project do
     [
@@ -18,9 +19,9 @@ defmodule PhoenixContainerExample.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       releases: releases(),
-      start_permanent: Mix.env() == :prod,
+      start_permanent: Mix.env() not in [:dev, :test],
       test_coverage: [tool: ExCoveralls],
-      version: "0.1.0"
+      version: @version
     ]
   end
 
