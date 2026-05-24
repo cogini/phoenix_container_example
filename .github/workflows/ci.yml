@@ -851,10 +851,10 @@ jobs:
       DEPLOY_ASSETS_S3: ${{ needs.config.outputs.deploy-assets-s3 }}
       DEPLOY_ECR: ${{ needs.config.outputs.deploy-ecr }}
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      GH_TOKEN: ${{ github.token }}
       PACKAGE_ANSIBLE: ${{ needs.config.outputs.package-ansible }}
       PACKAGE_CODEDEPLOY: ${{ needs.config.outputs.package-codedeploy }}
       PACKAGE_RELEASE: ${{ needs.config.outputs.package-erlang-release }}
+      RELEASE_TAG: ${{ needs.create-release.outputs.release-tag }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Debug environment
@@ -1145,14 +1145,15 @@ jobs:
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         env:
+          GH_TOKEN: ${{ github.token }}
           NAME: erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz
-          RELEASE_TAG: build-${{ github.run_number }}
         run: |
           gh release upload "${RELEASE_TAG}" "out/erlang-release.tar.gz#${NAME}"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
+          GH_TOKEN: ${{ github.token }}
           NAME: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
           gh release upload "${RELEASE_TAG}" "out/revision.zip#${NAME}"
@@ -1160,6 +1161,7 @@ jobs:
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
+          GH_TOKEN: ${{ github.token }}
           NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
           gh release upload "${RELEASE_TAG}" "out/ansible.zipz#${NAME}"
