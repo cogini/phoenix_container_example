@@ -976,7 +976,7 @@ jobs:
             ${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Install build tools
-        run: mix 'do' local.rebar --force, local.hex --force
+        run: mix 'do' local.rebar --force + local.hex --force
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
@@ -1135,6 +1135,10 @@ jobs:
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
           no-cache: ${{ github.run_attempt != '1' }}
 
+      - name: List package output
+        if: ${{ needs.config.outputs.package == '1' }}
+        run: ls -l out
+
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
         env:
@@ -1143,7 +1147,7 @@ jobs:
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @/out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
@@ -1153,7 +1157,7 @@ jobs:
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/revision.zip \"${UPLOAD_URL}?name=${NAME}\"
 
       - name: Copy Ansible release
         if: env.PACKAGE_ANSIBLE == '1'
@@ -1163,7 +1167,7 @@ jobs:
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\"
+            --data-binary @out/ansible.zip \"${UPLOAD_URL}?name=${NAME}\"
 
 
   test-prod:
