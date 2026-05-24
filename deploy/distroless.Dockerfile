@@ -7,63 +7,47 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.18.3
-ARG OTP_VER=27.3.4
+ARG ELIXIR_VER=1.19.5
+# ARG OTP_VER=26.2.5
+ARG OTP_VER=28.5
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG BUILD_OS_VER=bookworm-20250428-slim
-ARG PROD_OS_VER=bookworm
+ARG BUILD_OS_VER=trixie-20260518-slim
+ARG PROD_OS_VER=trixie-20260518-slim
 
 # Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
 # The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
 # ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
-ARG SNAPSHOT_NAME=bookworm
+ARG SNAPSHOT_NAME=trixie
 
 ARG NODE_VER=24.0.1
 ARG NODE_MAJOR=24
 ARG YARN_VER=1.22.22
 
-# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# Docker registry for internal images
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public images such as debian, alpine, or postgres.
 ARG PUBLIC_REGISTRY=""
-# Public images may be mirrored into the private registry, with e.g. Skopeo
+# When public images are mirrored into the private registry
 # ARG PUBLIC_REGISTRY=$REGISTRY
 
-# Base image for build and test
-ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER}
+ARG REPO_ORG_ELIXIR=hexpm
+ARG REPO_ORG_PROD_OS=debian
 
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian12
+ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian13
 # ARG PROD_BASE_IMAGE_TAG=debug-nonroot
 # ARG PROD_BASE_IMAGE_TAG=latest
 # debug includes busybox, which we need to run Erlang startup scripts
 ARG PROD_BASE_IMAGE_TAG=debug
 
-# Intermediate image for files copied to prod
-ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}${BASE_OS}
-ARG INSTALL_BASE_IMAGE_TAG=${PROD_OS_VER}
-
-# App name, used to name directories
-ARG APP_NAME=app
-
-# Dir where app is installed
-ARG APP_DIR=/app
-
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
 # nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-ARG APP_USER=nonroot
-# OS group that app runs under
-ARG APP_GROUP=$APP_USER
-# OS numeric user and group id
-ARG APP_USER_ID=65532
-ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 # ARG LANG=en_US.UTF-8
@@ -75,28 +59,31 @@ ARG MIX_ENV=prod
 # This should match mix.exs releases()
 ARG RELEASE=prod
 
-# App listen port
-ARG APP_PORT=4000
+# Build number to embed into release for tracking
+ARG BUILD_NUM=1
 
-# Allow additional packages to be injected into builds
-# These variables must always have something defined
+# Support injecting additional packages into build stages.
+# These variables must always have something defined, so default values are redundant.
 ARG RUNTIME_PACKAGES="ca-certificates"
+# Packages used for interactive development
 ARG DEV_PACKAGES="inotify-tools"
 
+# Whether to build Dialyzer PLT files for deps.
+ARG DIALYZER="0"
+
+# Whether to package source code for Sentry
+ARG SENTRY="1"
+
+ARG RUST="0"
 
 # Create build base image with OS dependencies
-FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
-ARG APP_DIR
-ARG APP_GROUP
-ARG APP_GROUP_ID
-ARG APP_USER
-ARG APP_USER_ID
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-debian-${BUILD_OS_VER} AS build-os-deps
 
 # Create OS user and group to run app under
-RUN if ! grep -q "$APP_USER" /etc/passwd; \
-    then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-    useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" -s /usr/sbin/nologin "$APP_USER" && \
-    rm -f /var/log/lastlog && rm -f /var/log/faillog; fi
+RUN if ! grep -q nonroot /etc/passwd; then \
+    groupadd -g 65532 nonroot ; \
+    useradd -l -u 65532 -g nonroot -d /app -s /usr/sbin/nologin nonroot ; \
+    rm -f /var/log/lastlog ; rm -f /var/log/faillog ; fi
 
 # Configure apt caching for use with BuildKit.
 # The default Debian Docker image has special apt config to clear caches,
@@ -148,7 +135,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # autoconf \
         # dpkg-dev \
         # gcc \
-        # gcc-9 \
         # g++ \
         # make \
         # libncurses-dev \
@@ -199,9 +185,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc ; \
     # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list ; \
     #
-    # Install Grype
-    # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin ; \
-    #
     # Install latest PostgreSQL client library from postgres.org repo
     # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc ; \
     # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list ; \
@@ -226,6 +209,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # rm -rf "${HOME}/.gnupg" ; \
     # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
     # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
+    #
+    # Install packages from special repos
     apt-get update -qq ; \
     DEBIAN_FRONTEND=noninteractive \
     apt-get -y install -y -qq --no-install-recommends \
@@ -263,6 +248,17 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     truncate -s 0 /var/log/apt/* ; \
     truncate -s 0 /var/log/dpkg.log
 
+# Install rust
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rust
+
+ARG RUST
+RUN if [ "$RUST" = "1" ]; then \
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile minimal --no-modify-path -y ; \
+    fi
+
+# ENV PATH="/usr/local/cargo/bin:${PATH}"
+
 ARG LANG
 RUN set -exu ; \
     # Generate locales specified in /etc/locale.gen
@@ -274,15 +270,16 @@ RUN set -exu ; \
 RUN set -ex ; corepack enable ; corepack enable npm ;
     # npm install -g yarn
 
+ENV HOME=/app \
+    LANG=$LANG
+
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
-ARG APP_DIR
-ENV HOME=$APP_DIR
 
-WORKDIR $APP_DIR
+WORKDIR /app
 
-RUN mix 'do' local.rebar --force, local.hex --force
+RUN mix 'do' local.rebar --force + local.hex --force
 
 # COPY --link .env.defaul[t] ./
 
@@ -320,11 +317,14 @@ RUN --mount=type=ssh --mount=type=secret,id=access_token \
 # Create base image for tests
 FROM build-deps-get AS test-image
 ARG LANG
-ARG APP_DIR
 
 ENV MIX_ENV=test
 
-WORKDIR $APP_DIR
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
+
+WORKDIR /app
 
 # Postman tests
 # RUN npm install -g newman
@@ -332,17 +332,22 @@ WORKDIR $APP_DIR
 COPY --link Postma[n] ./Postman
 
 # COPY --link config ./config
+# Copy minimum config files needed
 COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
 # Compile deps separately from app, improving Docker caching
 RUN mix deps.compile
 
 # Use glob pattern to deal with files which may not exist
-# Must have at least one existing file
+# At least one file must exist
 COPY --link .formatter.ex[s] coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
 # Generate Dialyzer files for deps
-RUN mix dialyzer --plt
+# This only changes when deps change
+ARG DIALYZER
+RUN if [ "$DIALYZER" = "1" ]; then \
+      mix dialyzer --plt ; \
+    fi
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -360,29 +365,31 @@ COPY --link test ./test
 # COPY --link bi[n] ./bin
 
 # Load environment vars when compiling
-COPY --link .env.tes[t] ./
-RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
-    mix compile --warnings-as-errors
+COPY --link .env.defaul[t] .env.tes[t] ./
+
+# RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
+#     mix compile --warnings-as-errors
+RUN mix compile --warnings-as-errors
 
 # For umbrella, using `mix cmd` ensures each app is compiled in
 # isolation https://github.com/elixir-lang/elixir/issues/9407
 # RUN mix cmd mix compile --warnings-as-errors
 
 
-# Create Elixir release
-FROM build-deps-get AS prod-release
+# Install JavaScript dependencies
+FROM build-deps-get AS prod-assets
 ARG LANG
-ARG APP_DIR
 
-WORKDIR $APP_DIR
+WORKDIR /app
 
-# Build assets
 RUN mkdir -p ./assets
 
 # Install JavaScript deps
+# COPY --link assets ./assets
+# Copy only the minimum requirements for JavaScript deps, improving caching
 COPY --link assets/package.jso[n] assets/package-lock.jso[n] assets/yarn.loc[k] assets/brunch-config.j[s] ./assets/
 
-WORKDIR ${APP_DIR}/assets
+WORKDIR /app/assets
 
 # Install JavaScript dependencies
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
@@ -396,21 +403,32 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
     # node node_modules/brunch/bin/brunch build
     # node node_modules/webpack/bin/webpack.js --mode production
 
-WORKDIR $APP_DIR
+
+# Create Elixir release
+FROM build-deps-get AS prod-release
+ARG LANG
+
+RUN if [ "$RUST" = "1" ]; then \
+      rustup default stable ; \
+    fi
+
+WORKDIR /app
 
 # Compile deps separately from the application for better Docker caching.
 # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
 # because a single line of code changed causes a complete recompile.
 
-COPY --link .env.pro[d] ./
-
 ARG MIX_ENV
 # COPY --link config ./config
+# COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
 COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
+COPY --link .env.defaul[t] .env.pro[d] ./
+
 # Load environment vars when compiling
-RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-    mix deps.compile
+# RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+#     mix deps.compile
+RUN mix deps.compile
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -424,7 +442,7 @@ COPY --link includ[e] ./include
 COPY --link template[s] ./templates
 
 COPY --link priv ./priv
-COPY --link assets ./assets
+COPY --link asset[s] ./assets
 
 COPY --link bi[n] ./bin
 
@@ -432,8 +450,13 @@ COPY --link bi[n] ./bin
 # isolation https://github.com/elixir-lang/elixir/issues/9407
 # RUN mix cmd mix compile --warnings-as-errors
 
-RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-    mix compile --warnings-as-errors
+# RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
+#     mix compile --warnings-as-errors
+RUN set -exu ; \
+    # mix compile --warnings-as-errors
+    mix compile
+
+COPY --from=prod-assets /app/assets /app/assets
 
 RUN mix assets.setup
 
@@ -444,42 +467,88 @@ COPY --link config/runtime.exs ./config/
 
 COPY --link rel ./rel
 
-# Generate systemd and deploy scripts
-# RUN mix do systemd.init, systemd.generate, deploy.init, deploy.generate
+ARG SENTRY
+RUN if [ "$SENTRY" = "1" ]; then \
+      mix sentry.package_source_code ; \
+    fi
 
 ARG RELEASE
 RUN mix release "$RELEASE"
 
+
+FROM prod-release AS prod-release-package
+ARG BUILD_NUM
+ARG ELIXIR_VER
+ARG OTP_VER
+ARG BUILD_OS_VER
+
+# Generate systemd and deploy scripts
+RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
+
+RUN set -exu ; \
+    export ARCH_LINUX=$(dpkg --print-architecture) ; \
+    export ARCH_MACHINE=$(uname -m) ; \
+    export BUILD_OS="debian" ; \
+    echo "arch_linux: ${ARCH_LINUX}" >> /app/build_meta.yml ; \
+    echo "arch_machine: ${ARCH_MACHINE}" >> /app/build_meta.yml ; \
+    echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
+    echo "build_os: ${BUILD_OS}" >> /app/build_meta.yml ; \
+    echo "build: ${BUILD_NUM}" >> /app/build_meta.yml ; \
+    echo "elixir_ver: ${ELIXIR_VER}" >> /app/build_meta.yml ; \
+    echo "otp_ver: ${OTP_VER}" >> /app/build_meta.yml ; \
+    echo "var: ${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> /app/build_meta.yml ;
+
+RUN set -exu ; \
+    echo "BUILD_NUM: ${BUILD_NUM}" > /app/build_meta.sh
+
+ARG MIX_ENV
+ARG RELEASE
+
 # Create revision for CodeDeploy
-# WORKDIR /revision
-# COPY appspec.yml ./
-# RUN set -exu ; \
-#     mkdir -p etc bin systemd ; \
-#     chmod +x /app/bin/* ; \
-#     cp /app/bin/* ./bin/ ; \
-#     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
-#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
-#     zip -r /revision.zip . ; \
-#     rm -rf /revision/*
+WORKDIR /revision
+COPY codedeploy/appspec.yml ./
+RUN set -exu ; \
+    export BUILD_OS="debian" ; \
+    mkdir -p etc bin lib systemd ; \
+    chmod +x /app/bin/* ; \
+    cp /app/bin/* ./bin/ ; \
+    cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
+    # cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
+    echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
+    echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> ./deploy.env ; \
+    cp /app/build_meta.yml ./ ; \
+    cp /app/build_meta.sh ./ ; \
+    zip -r /revision.zip . ; \
+    rm -rf /revision/*
 
 # Create release package for Ansible
-# WORKDIR /ansible
-# RUN set -exu ; \
-#     mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
-#     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
-#     # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
-#     # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
-#     # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
-#     mkdir -p bin ; \
-#     cp /app/bin/* ./bin/ ; \
-#     chmod +x ./bin/* ; \
-#     cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
-#     zip -r /ansible.zip . ; \
-#     rm -rf /ansible/*
+WORKDIR /ansible
+RUN set -exu ; \
+    mkdir -p _build/${MIX_ENV}/systemd/lib/systemd/system ; \
+    cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* _build/${MIX_ENV}/systemd/lib/systemd/system/ ; \
+    # mkdir -p _build/${MIX_ENV}/deploy/bin ; \
+    # cp /app/_build/${MIX_ENV}/deploy/bin/* _build/${MIX_ENV}/deploy/bin/ ; \
+    # chmod +x /app/_build/${MIX_ENV}/deploy/bin/* ; \
+    mkdir -p bin lib ; \
+    cp /app/bin/* ./bin/ ; \
+    chmod +x ./bin/* ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz _build/${MIX_ENV}/ ; \
+    cp /app/build_meta.yml ./ ; \
+    cp /app/build_meta.sh ./ ; \
+    zip -r /ansible.zip . ; \
+    rm -rf /ansible/*
 
 
-# Create staging image for files which are copied into final prod image
-FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
+# Create base image for prod with everything but the code release
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}/debian:${PROD_OS_VER} AS prod-install
+
+# Create OS user and group to run app under
+RUN if ! grep -q nonroot /etc/passwd; then \
+    groupadd -g 65532 nonroot ; \
+    useradd -l -u 65532 -g nonroot -d /app -s /usr/sbin/nologin nonroot ; \
+    rm -f /var/log/lastlog ; rm -f /var/log/faillog ; fi
+
 # Configure apt caching for use with BuildKit.
 # The default Debian Docker image has special config to clear caches.
 # If we are using --mount=type=cache, then we want it to preserve cached files.
@@ -519,18 +588,27 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     apt-get -y install -y -qq --no-install-recommends \
         # Enable installation of packages over https
         # apt-transport-https \
+        # Libraries used by hexpm
+        # Enable the app to make outbound SSL calls.
         ca-certificates \
+        # libodbc1 \
+        # libsctp1 \
+        netbase \
+        # wget and jq are used to get ECS metadata
+        # We prefer wget over curl, as it is part of busybox
+        # curl is used to upload packages to GitHub, and is generally useful
         curl \
-        gnupg-agent \
-        # software-properties-common \
-        gnupg \
-        unzip \
-        # jq \
-        lsb-release \
-        # Needed by Erlang VM
-        libncursesw6 \
+        jq \
+        wget \
+        # tini is a minimal init which will reap zombie processes
+        # https://github.com/krallin/tini
+        # tini \
+        # bind-utils \
+        # Minimal libs needed by Erlang VM
+        # libncursesw6 \
         libtinfo6 \
         # Additional libs
+        libssl3 \
         libstdc++6 \
         libgcc-s1 \
         locales \
@@ -548,7 +626,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # Use this if not running --mount=type=cache.
     # apt-get clean ; \
     # Delete info on installed packages. This saves some space, but it can
-    # be useful to have them as a record of what was installed, e.g. for auditing.
+    # be useful to have them as a record of what was installed, e.g., for auditing.
     # rm -rf /var/lib/dpkg ; \
     # Delete debconf data files to save some space
     # rm -rf /var/cache/debconf ; \
@@ -605,12 +683,6 @@ RUN set -ex ; \
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
-ARG APP_NAME
-ARG APP_DIR
-ARG APP_GROUP
-ARG APP_GROUP_ID
-ARG APP_USER
-ARG APP_USER_ID
 
 # User and group are created in the Google Distroless base image (nonroot:nonroot)
 
@@ -635,47 +707,31 @@ COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
 
 # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
 # environment-specific config such as DATABASE_URL are set at runtime.
-ENV HOME=$APP_DIR \
+ENV HOME=/app \
     LANG=$LANG \
     # Writable tmp directory for releases
-    RELEASE_TMP="/run/${APP_NAME}"
+    RELEASE_TMP="/run/app"
 
 RUN set -exu ; \
     # Create app dirs
-    mkdir -p "/run/${APP_NAME}" ; \
+    mkdir -p "/run/app" ; \
     # mkdir -p "/etc/foo" ; \
     # mkdir -p "/var/lib/foo" ; \
     # Make dirs writable by app
-    chown -R "${APP_USER}:${APP_GROUP}" \
+    chown -R "nonroot:nonroot" \
         # Needed for RELEASE_TMP
-        "/run/${APP_NAME}"
+        "/run/app"
         # "/var/lib/foo"
 
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
-ARG APP_DIR
-ARG APP_USER
-ARG APP_GROUP
-
-# This could be put in a separate target, but it's faster to do it from prod test
-
-# Copy CodeDeploy revision into prod image for publishing later
-# COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /revision.zip /revision.zip
-
-# Copy Ansible release into prod image for publishing later
-# COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" /ansible.zip /ansible.zip
-
-# USER $APP_USER:$APP_GROUP
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
-WORKDIR $APP_DIR
+WORKDIR /app
 
-# When using a startup script, copy to /app/bin
-# COPY --link bi[n] ./bin
-
-USER $APP_USER:$APP_GROUP
+USER nonroot:nonroot
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference if the
@@ -685,21 +741,28 @@ USER $APP_USER:$APP_GROUP
 # permissions while leaving them owned by root
 
 # When using a startup script, unpack release under "/app/current" dir
-# WORKDIR $APP_DIR/current
+# WORKDIR /app/current
 
 ARG MIX_ENV
 ARG RELEASE
 
-COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
-ARG APP_PORT
-EXPOSE $APP_PORT
+# App listen ports
+EXPOSE 4000
+EXPOSE 4001
+
+# Prometheus metrics
+# PromEx server port
+EXPOSE 9111
+# telemetry_metrics_prometheus default port
+EXPOSE 9568
 
 # Erlang EPMD port
 EXPOSE 4369
 
 # Intra-Erlang communication ports
-EXPOSE 9000-9010
+EXPOSE 9001-9003
 
 # :erpc default port
 EXPOSE 9090
@@ -712,37 +775,28 @@ EXPOSE 9090
 # https://github.com/krallin/tini
 # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-# Wrapper script which runs e.g. migrations before starting
+# Wrapper script which runs, e.g., migrations before starting
 ENTRYPOINT ["bin/start-docker"]
 
 # Run app in foreground
 # CMD ["start"]
 
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -sf http://localhost:9111/metrics || exit 1
+
+
+FROM prod AS package
+# Erlang release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
+
+# CodeDeploy revision
+COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revision.zip
+
+# Ansible release
+COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
+
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-ARG LANG
-
-ARG APP_DIR
-ARG APP_GROUP
-ARG APP_NAME
-ARG APP_USER
-
-# Set environment vars used by the app
-ENV HOME=$APP_DIR \
-    LANG=$LANG
-
-RUN set -exu ; \
-    # Create app dirs
-    mkdir -p "/run/${APP_NAME}" ; \
-    # mkdir -p "/etc/foo" ; \
-    # mkdir -p "/var/lib/foo" ; \
-    # Make dirs writable by app
-    chown -R "${APP_USER}:${APP_GROUP}" \
-        # Needed for RELEASE_TMP
-        "/run/${APP_NAME}"
-       # "/var/lib/foo"
-
 ARG DEV_PACKAGES
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -786,26 +840,25 @@ ARG LANG
 RUN set -exu ; \
     # Generate locales specified in /etc/locale.gen
     sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
-    locale-gen ; \
-    localedef --list-archive ; \
-    ls -l /usr/lib/locale/
+    locale-gen
 
 # Set environment vars used by the app
-ENV HOME=$APP_DIR \
+ENV HOME=/app \
     LANG=$LANG
 
-RUN chsh --shell /bin/bash "$APP_USER"
+RUN chsh --shell /bin/bash nonroot
 
-
-# Copy build artifacts to host
-FROM scratch AS artifacts
-ARG MIX_ENV
-ARG RELEASE
-
-# COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
-# COPY --from=prod-release /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz /release
-# COPY --from=prod-release "/app/_build/${MIX_ENV}/systemd/lib/systemd/system" /systemd
-COPY --from=prod-release /app/priv/static /static
+# Create directories needed by the app
+RUN set -exu ; \
+    # Create app dirs
+    mkdir -p "/run/app" ; \
+    # mkdir -p "/etc/foo" ; \
+    # mkdir -p "/var/lib/foo" ; \
+    # Make dirs writable by app
+    chown -R "nonroot:nonroot" \
+        # Needed for RELEASE_TMP
+        "/run/app"
+       # "/var/lib/foo"
 
 
 # Default target
