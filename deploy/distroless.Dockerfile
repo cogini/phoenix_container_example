@@ -663,15 +663,18 @@ RUN set -ex ; \
     find /stage -type f -print
 
 
+# Create base image for prod with everything but the code release
+FROM gcr.io/distroless/${PROD_OS_VER}:debug AS prod-base
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-# ARG PROD_BASE_IMAGE_TAG=debug-nonroot
-# ARG PROD_BASE_IMAGE_TAG=latest
 # debug includes busybox, which we need to run Erlang startup scripts
-# ARG PROD_BASE_IMAGE_TAG=debug
+# debug-nonroot
 
-# Create base image for prod with everything but the code release
-FROM gcr.io/distroless/cc-debian13:debug AS prod-base
+# These packages are part of the Google distroless/cc image
+# libgcc-s1
+# /lib/$(uname -m)-linux-gnu/libgcc_s.so.1
+# libstdc++6
+# /usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28
 
 # User and group are created in the Google Distroless base image (nonroot:nonroot)
 
