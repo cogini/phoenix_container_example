@@ -1123,7 +1123,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: package-scratch
+          target: package
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: false
@@ -1143,10 +1143,33 @@ jobs:
 
       - name: Copy Erlang release
         if: env.PACKAGE_RELEASE == '1'
+        env:
+          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
+          NAME: "erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz"
         run: |
           curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
             -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
-            --data-binary @/out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\" "
+            --data-binary @/out/erlang-release.tar.gz \"${UPLOAD_URL}?name=${NAME}\"
+
+      - name: Copy CodeDeploy release
+        if: env.PACKAGE_CODEDEPLOY == '1'
+        env:
+          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
+          NAME: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+        run: |
+          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+            --data-binary @/revision.zip \"${UPLOAD_URL}?name=${NAME}\"
+
+      - name: Copy Ansible release
+        if: env.PACKAGE_ANSIBLE == '1'
+        env:
+          UPLOAD_URL: ${{ needs.create-release.outputs.upload-url }}
+          NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+        run: |
+          curl -S -X POST -H 'authorization: Bearer ${{ github.token }}' \
+            -H 'content-type: application/octet-stream' -H 'accept: application/vnd.github+json' \
+            --data-binary @/ansible.zip \"${UPLOAD_URL}?name=${NAME}\"
 
       # - name: Copy Erlang release
       #   if: env.PACKAGE_RELEASE == '1'
