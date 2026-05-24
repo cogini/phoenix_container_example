@@ -93,8 +93,8 @@ env:
   #   secrets.OBAN_LICENSE_KEY
   # Sentry.io
   #   secrets.SENTRY_AUTH_TOKEN
-  #   secrets.SENTRY_ORG: cogini
-  #   secrets.SENTRY_PROJECT: phoenix-container-example
+  #   vars.SENTRY_ORG: cogini
+  #   vars.SENTRY_PROJECT: phoenix-container-example
   # secrets.GITLEAKS_LICENSE
   # secrets.SNYK_TOKEN
   # Target port for prod image tests
@@ -1624,8 +1624,8 @@ jobs:
         if: needs.config.outputs.notify-sentry == '1'
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           # SENTRY_URL: https://sentry.io/
         with:
           environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
