@@ -572,7 +572,7 @@ jobs:
             PROD_OS_VER=${{ matrix.prod_os_ver }}
             PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
             REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
-            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG_ELIXIR }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -1052,7 +1052,7 @@ jobs:
             PROD_OS_VER=${{ matrix.prod_os_ver }}
             BUILD_NUM=${{ github.run_number }}
             PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
-            REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG_ELIXIR }}
             REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -1097,11 +1097,22 @@ jobs:
         with:
           file: ${{ env.DOCKER_FILE }}
           target: package
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
+            BUILD_NUM=${{ github.run_number }}
+            PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
+            REPO_ORG_ELIXIR=${{ env.REPO_ORG_ELIXIR }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: false
           outputs: type=local,dest=out
           cache-from: |
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ env.MAIN_BRANCH }}
+            type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-prod${{ env.VAR }}-${{ github.ref_name }}
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ env.MAIN_BRANCH }}
             type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }}
           cache-to: |
