@@ -571,7 +571,7 @@ jobs:
             BUILD_OS_VER=${{ matrix.build_os_ver }}
             PROD_OS_VER=${{ matrix.prod_os_ver }}
             PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
-            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
             REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -1053,7 +1053,7 @@ jobs:
             BUILD_NUM=${{ github.run_number }}
             PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
             REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
-            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -1105,7 +1105,7 @@ jobs:
             BUILD_NUM=${{ github.run_number }}
             PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
             REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
-            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}
+            REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
