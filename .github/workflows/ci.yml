@@ -851,6 +851,7 @@ jobs:
       DEPLOY_ASSETS_S3: ${{ needs.config.outputs.deploy-assets-s3 }}
       DEPLOY_ECR: ${{ needs.config.outputs.deploy-ecr }}
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      GH_TOKEN: ${{ github.token }}
       PACKAGE_ANSIBLE: ${{ needs.config.outputs.package-ansible }}
       PACKAGE_CODEDEPLOY: ${{ needs.config.outputs.package-codedeploy }}
       PACKAGE_RELEASE: ${{ needs.config.outputs.package-erlang-release }}
