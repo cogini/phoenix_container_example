@@ -1470,6 +1470,8 @@ jobs:
 
       - name: Check out source
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set vars for runtime info
         shell: bash
@@ -1614,6 +1616,7 @@ jobs:
         with:
           environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'prod' && 'production') }}
           dist: ${{ github.run_number }}
+          # ignore_missing: true
 
       - name: Create AppSignal revision
         if: needs.config.outputs.notify-appsignal == '1'
