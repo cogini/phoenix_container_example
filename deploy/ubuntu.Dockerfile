@@ -1,5 +1,6 @@
 # Build app
 # Deploy using Ubuntu
+ARG BASE_OS=ubuntu
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
@@ -23,8 +24,9 @@ ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=""
 # When public images are mirrored into the private registry
 # ARG PUBLIC_REGISTRY=$REGISTRY
+
 ARG REPO_ORG_ELIXIR=hexpm
-ARG REPO_ORG_PROD_OS=ubuntu
+ARG REPO_ORG_PROD_OS=""
 
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
@@ -58,7 +60,7 @@ ARG SENTRY="1"
 ARG RUST="0"
 
 # Create build base image with OS dependencies
-FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-ubuntu-${BUILD_OS_VER} AS build-os-deps
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER} AS build-os-deps
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
@@ -174,7 +176,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # rm -rf "${HOME}/.gnupg" ; \
     # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list ; \
     # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref ; \
-    #   
+    #
     # Install packages from special repos
     apt-get update -qq ; \
     DEBIAN_FRONTEND=noninteractive \
@@ -446,6 +448,7 @@ ARG BUILD_NUM
 ARG ELIXIR_VER
 ARG OTP_VER
 ARG BUILD_OS_VER
+ARG BASE_OS
 
 # Generate systemd and deploy scripts
 RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
@@ -453,7 +456,7 @@ RUN mix do systemd.init + systemd.generate + deploy.init + deploy.generate
 RUN set -exu ; \
     export ARCH_LINUX=$(dpkg --print-architecture) ; \
     export ARCH_MACHINE=$(uname -m) ; \
-    export BUILD_OS="ubuntu" ; \
+    export BUILD_OS="${BASE_OS}" ; \
     echo "arch_linux: ${ARCH_LINUX}" >> /app/build_meta.yml ; \
     echo "arch_machine: ${ARCH_MACHINE}" >> /app/build_meta.yml ; \
     echo "build_os_ver: ${BUILD_OS_VER}" >> /app/build_meta.yml ; \
@@ -473,7 +476,7 @@ ARG RELEASE
 WORKDIR /revision
 COPY codedeploy/appspec.yml ./
 RUN set -exu ; \
-    export BUILD_OS="ubuntu" ; \
+    export BUILD_OS="${BASE_OS}" ; \
     mkdir -p etc bin lib systemd ; \
     chmod +x /app/bin/* ; \
     cp /app/bin/* ./bin/ ; \
@@ -506,7 +509,7 @@ RUN set -exu ; \
 
 
 # Create base image for prod with everything but the code release
-FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}/ubuntu:${PROD_OS_VER} AS prod-base
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}${BASE_OS}:${PROD_OS_VER} AS prod-base
 
 # Create OS user and group to run app under
 RUN if ! grep -q nonroot /etc/passwd; then \
@@ -719,8 +722,7 @@ ARG LANG
 RUN set -exu ; \
     # Generate locales specified in /etc/locale.gen
     sed -i "/# ${LANG}/s/^# //g" /etc/locale.gen ; \
-    locale-gen ; \
-    localedef --list-archive
+    locale-gen
 
 # Set environment vars used by the app
 ENV HOME=/app \
