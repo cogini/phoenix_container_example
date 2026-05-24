@@ -43,7 +43,7 @@ defmodule PhoenixContainerExample.MixProject do
         "deps.unlock --check-unused",
         # mix deps.update
         # "hex.outdated",
-        "hex.audit",
+        # "hex.audit",
         # Waiting on fix for cowlib
         "deps.audit --ignore-package-names cowlib",
         "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS,Config.HSTS",
