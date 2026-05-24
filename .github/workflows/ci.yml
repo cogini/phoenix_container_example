@@ -1091,33 +1091,6 @@ jobs:
         #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
         #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      # - name: Build package image
-      #   if: ${{ needs.config.outputs.package == '1' }}
-      #   uses: docker/build-push-action@v7
-      #   with:
-      #     file: ${{ env.DOCKER_FILE }}
-      #     target: package
-      #     build-args: |
-      #       ELIXIR_VER=${{ matrix.elixir }}
-      #       OTP_VER=${{ matrix.otp }}
-      #       BUILD_OS_VER=${{ matrix.build_os_ver }}
-      #       PROD_OS_VER=${{ matrix.prod_os_ver }}
-      #       BUILD_NUM=${{ github.run_number }}
-      #       PUBLIC_REGISTRY=${{ env.PUBLIC_REGISTRY }}
-      #       REPO_ORG_ELIXIR=${{ env.REPO_ORG }}
-      #       REPO_ORG_PROD_OS=${{ env.REPO_ORG }}/
-      #     context: .
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     push: true
-      #     cache-from: |
-      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ env.MAIN_BRANCH }}
-      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }}
-      #     cache-to: |
-      #       type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:buildcache-package${{ env.VAR }}-${{ github.ref_name }},mode=max
-      #     no-cache: ${{ github.run_attempt != '1' }}
-      #     tags: |
-      #       ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:package${{ env.VAR }}${{ env.IMAGE_VER }}
-
       - name: Build package image
         if: ${{ needs.config.outputs.package == '1' }}
         uses: docker/build-push-action@v7
