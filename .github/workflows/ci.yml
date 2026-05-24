@@ -988,12 +988,12 @@ jobs:
       - name: Get Elixir deps
         run: mix deps.get
 
-      - name: Compile deps
-        run: mix deps.compile
+      # - name: Compile deps
+      #   run: mix deps.compile
 
-      - name: Compile
-        # run: mix compile --warnings-as-errors
-        run: mix compile
+      # - name: Compile
+      #   # run: mix compile --warnings-as-errors
+      #   run: mix compile
 
       - name: Setup
         run: |
