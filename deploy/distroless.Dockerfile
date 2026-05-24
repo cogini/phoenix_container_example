@@ -633,10 +633,11 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     truncate -s 0 /var/log/dpkg.log
 
 # Stage files for copying into final image.
+# This is not as complete as what dpkg does, but for libraries it's pretty efective.
 RUN set -ex ; \
     mkdir -p /stage/var/lib/dpkg/status.d ; \
-    mkdir -p /stage/bin ; \
-    touch /stage/bin/make-symlinks.sh ; \
+    mkdir -p /stage/tmp ; \
+    touch /stage/tmp/make-symlinks.sh ; \
     # Minimal files needed for Erlang VM
     # https://packages.debian.org/bookworm/arm64/libncursesw6
     # https://packages.debian.org/bookworm/arm64/libtinfo6
@@ -650,7 +651,7 @@ RUN set -ex ; \
                 mkdir -p "/stage${dir}" ; \
                 if [ -L "$file" ] ; then \
                     target=$(readlink "$file") ; \
-                    echo "ln -v -s ${dir}/${target} ${file}" >> /stage/bin/make-symlinks.sh ; \
+                    echo "ln -v -s ${dir}/${target} ${file}" >> /stage/tmp/make-symlinks.sh ; \
                 else \
                     cp -v "$file" "/stage${file}" ; \
                 fi ; \
@@ -658,14 +659,9 @@ RUN set -ex ; \
             fi ; \
         done ; \
     done ; \
-    cat /stage/bin/make-symlinks.sh ; \
+    cat /stage/tmp/make-symlinks.sh ; \
     find /stage -type f -print
 
-# These packages are part of the Google distroless/cc image
-# libgcc-s1
-# /lib/$(uname -m)-linux-gnu/libgcc_s.so.1
-# libstdc++6
-# /usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28
 
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
@@ -691,8 +687,8 @@ RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 COPY --from=prod-install ["/stage", "/"]
 
 # Make symlinks for files copied from prod-install stage
-RUN if test -s /bin/make-symlinks.sh ; then \
-        /bin/sh /bin/make-symlinks.sh ; \
+RUN if test -s /tmp/make-symlinks.sh ; then \
+        /bin/sh /tmp/make-symlinks.sh ; \
     fi
 
 ARG LANG
