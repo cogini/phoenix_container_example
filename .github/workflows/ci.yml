@@ -1145,25 +1145,30 @@ jobs:
         if: env.PACKAGE_RELEASE == '1'
         env:
           GH_TOKEN: ${{ github.token }}
-          NAME: erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz
+          SRC: erlang-release.tar.gz
+          DST: erlang-release-${{ github.run_number }}-${{ env.VAR }}.tar.gz
         run: |
-          gh release upload "${RELEASE_TAG}" "out/erlang-release.tar.gz#${NAME}"
+          mv -v "out/${SRC}" "out/${DST}"
+          gh release upload "${RELEASE_TAG}" "out/${DST}"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
           GH_TOKEN: ${{ github.token }}
-          NAME: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
+          SRC: revision.zip
+          DST: "codedeploy-revision-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
-          gh release upload "${RELEASE_TAG}" "out/revision.zip#${NAME}"
+          mv -v "out/${SRC}" "out/${DST}"
+          gh release upload "${RELEASE_TAG}" "out/${DST}"
 
       - name: Copy CodeDeploy release
         if: env.PACKAGE_CODEDEPLOY == '1'
         env:
           GH_TOKEN: ${{ github.token }}
-          NAME: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
+          SRC: ansible.zip
+          DST: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
-          gh release upload "${RELEASE_TAG}" "out/ansible.zipz#${NAME}"
+          gh release upload "${RELEASE_TAG}" "out/${DST}"
 
       # - name: Copy Ansible release
       #   if: env.PACKAGE_ANSIBLE == '1'
