@@ -1770,7 +1770,6 @@ jobs:
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
-      AWS_ENABLED: ${{ needs.config.outputs.aws-enabled }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -1779,36 +1778,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure AWS credentials
-        if: env.AWS_ENABLED == '1'
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        if: env.AWS_ENABLED == '1'
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set vars
-        if: env.AWS_ENABLED == '1'
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
-
-      - name: Get branch name
-        shell: bash
-        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
-
       - name: Set vars
         env:
           IMAGE_TAG_GHCR: ${{ needs.config.outputs.image-tag-ghcr }}
-          IMAGE_TAG_ECR: ${{ needs.config.outputs.image-tag-ecr }}
         run: |
           echo "IMAGE_TAG_GHCR=${IMAGE_TAG}" >> "$GITHUB_ENV"
-          echo "IMAGE_TAG_ECR=${IMAGE_TAG_ECR}" >> "$GITHUB_ENV"
-
-      # - name: Check out source
-      #   uses: actions/checkout@v6
 
       - name: Tag GHCR release as latest
         run: |
@@ -1817,8 +1791,40 @@ jobs:
             "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
             "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG_GHCR}"
 
+
+  tag-ecr:
+    name: Tag images as latest in ECR
+    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' && needs.config.outputs.deploy-ecr == '1' }}
+    needs: [deploy-ecs, config]
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    environment: ${{ needs.config.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      IMAGE_TAG_ECR: ${{ needs.config.outputs.image-tag-ecr }}
+      IMAGE_VER: ${{ github.sha }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
+
       - name: Tag ECR release as latest
-        if: env.AWS_ENABLED == '1'
         run: |
           MANIFEST=$(aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
             --image-ids imageTag="${VAR}${IMAGE_VER}" \
