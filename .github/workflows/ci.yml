@@ -147,8 +147,11 @@ jobs:
       # sync-images-ecr: '${{ steps.get-sync-images.outputs.result }}'
       sync-images-ecr: '0'
 
+      # Whether to tag released images
+      tag-images: '1'
+
       # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
-      image-tag: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
+      image-tag-ghcr: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
 
       # Tag for ECR images. Repos are separate between environments, so each gets "latest" tag
       image-tag-ecr: ${{ contains(fromJson('["main", "staging", "prod"]'), github.ref_name) && 'latest' || github.ref_name }}
@@ -1756,7 +1759,7 @@ jobs:
 
   tag:
     name: Tag prod images as latest
-    if: needs.config.outputs.deploy == '1'
+    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' }}
     needs: [deploy-ecs, config]
     permissions:
       id-token: write
@@ -1801,10 +1804,10 @@ jobs:
 
       - name: Set vars
         env:
-          IMAGE_TAG: ${{ needs.config.outputs.image-tag }}
+          IMAGE_TAG_GHCR: ${{ needs.config.outputs.image-tag-ghcr }}
           IMAGE_TAG_ECR: ${{ needs.config.outputs.image-tag-ecr }}
         run: |
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_GHCR=${IMAGE_TAG}" >> "$GITHUB_ENV"
           echo "IMAGE_TAG_ECR=${IMAGE_TAG_ECR}" >> "$GITHUB_ENV"
 
       # - name: Check out source
@@ -1815,7 +1818,7 @@ jobs:
           # skopeo copy --multi-arch=index-only \
           skopeo copy \
             "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
-            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG}"
+            "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG_GHCR}"
 
       - name: Tag ECR release as latest
         if: env.AWS_ENABLED == '1'
@@ -1828,6 +1831,7 @@ jobs:
             --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
           # Requires higher permissions
           # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
+
 
   # Copy Elixir and OS base images to GHCR
   # Avoids Docker Hub rate limits and speeds up pull performance
