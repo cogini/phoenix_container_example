@@ -1756,7 +1756,7 @@ jobs:
 
   tag:
     name: Tag images as latest in GHCR
-    # if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' }}
+    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy }}
     needs: [deploy-ecs, config]
     permissions:
       id-token: write
@@ -1772,11 +1772,6 @@ jobs:
       IMAGE_TAG_GHCR: ${{ needs.config.outputs.image-tag-ghcr }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
-      - name: Debug environment
-        run: |
-          echo "tag-images: ${{ needs.config.outputs.tag-images }}"
-          echo "deploy: ${{ needs.config.outputs.deploy }}"
-
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -1794,7 +1789,7 @@ jobs:
 
   tag-ecr:
     name: Tag images as latest in ECR
-    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' && needs.config.outputs.deploy-ecr == '1' }}
+    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy && needs.config.outputs.deploy-ecr == '1' }}
     needs: [deploy-ecs, config]
     permissions:
       id-token: write
