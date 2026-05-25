@@ -1755,8 +1755,8 @@ jobs:
 
 
   tag:
-    name: Tag prod images as latest
-    if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' }}
+    name: Tag images as latest in GHCR
+    # if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy == '1' }}
     needs: [deploy-ecs, config]
     permissions:
       id-token: write
@@ -1769,20 +1769,20 @@ jobs:
       matrix: ${{ fromJson(needs.config.outputs.deploy-matrix) }}
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      IMAGE_TAG_GHCR: ${{ needs.config.outputs.image-tag-ghcr }}
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
+      - name: Debug environment
+        run: |
+          echo "tag-images: ${{ needs.config.outputs.tag-images }}"
+          echo "deploy: ${{ needs.config.outputs.deploy }}"
+
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set vars
-        env:
-          IMAGE_TAG_GHCR: ${{ needs.config.outputs.image-tag-ghcr }}
-        run: |
-          echo "IMAGE_TAG_GHCR=${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Tag GHCR release as latest
         run: |
