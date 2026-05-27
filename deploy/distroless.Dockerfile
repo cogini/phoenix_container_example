@@ -371,6 +371,13 @@ RUN mix compile --warnings-as-errors
 # RUN mix cmd mix compile --warnings-as-errors
 
 
+# Create slim test image with only test dependencies and files needed to run tests
+FROM test-image AS test
+
+WORKDIR /app
+COPY --from=test-image /app .
+
+
 # Install JavaScript dependencies
 FROM build-deps-get AS prod-assets
 ARG LANG
@@ -774,73 +781,6 @@ ENTRYPOINT ["bin/start-docker"]
 # CMD ["start"]
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -sf http://localhost:9111/metrics || exit 1
-
-
-# FROM ${PUBLIC_REGISTRY}${REPO_ORG_PROD_OS}${BASE_OS}:${BUILD_OS_VER} AS package
-# # Configure apt caching for use with BuildKit.
-# # The default Debian Docker image has special apt config to clear caches,
-# # but if we are using --mount=type=cache, then we want to keep the files.
-# # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
-# RUN set -exu ; \
-#     rm -f /etc/apt/apt.conf.d/docker-clean ; \
-#     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
-#     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
-
-# ARG SNAPSHOT_VER
-# ARG SNAPSHOT_NAME
-# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-#     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-#     if test -n "$SNAPSHOT_VER" ; then \
-#         set -exu ; \
-#         apt-get update -qq ; \
-#         DEBIAN_FRONTEND=noninteractive \
-#         apt-get -y install -y -qq --no-install-recommends \
-#             ca-certificates \
-#         ; \
-#         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME} main" > /etc/apt/sources.list ; \
-#         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-security main" >> /etc/apt/sources.list ; \
-#         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} ${SNAPSHOT_NAME}-updates main" >> /etc/apt/sources.list ; \
-#     fi ; \
-#     truncate -s 0 /var/log/apt/* ; \
-#     truncate -s 0 /var/log/dpkg.log
-
-# # Install tools to publish packages
-# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-#     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-#     set -exu ; \
-#     # https://wbk.one/%2Farticle%2F42a272c3%2Fapt-get-build-dep-to-install-build-deps
-#     # sed -i.bak 's/^# *deb-src/deb-src/g' /etc/apt/sources.list ; \
-#     apt-get update -qq ; \
-#     # apt-get -y build-dep python-pil -y ; \
-#     DEBIAN_FRONTEND=noninteractive \
-#     apt-get -y install -y -qq --no-install-recommends \
-#         # Enable installation of packages over https
-#         apt-transport-https \
-#         ca-certificates \
-#         curl \
-#     ; \
-#     # Delete info on installed packages. This saves some space, but it can
-#     # be useful to have them as a record of what was installed, e.g. for auditing.
-#     # rm -rf /var/lib/dpkg ; \
-#     # Delete debconf data files to save some space
-#     # rm -rf /var/cache/debconf ; \
-#     # Delete index of available files from apt-get update
-#     # Use this if not running --mount=type=cache.
-#     # rm -rf /var/lib/apt/lists/*
-#     # Clear logs of installed packages
-#     truncate -s 0 /var/log/apt/* ; \
-#     truncate -s 0 /var/log/dpkg.log
-
-# # Erlang release
-# COPY --from=prod-release-package --chown="nonroot:nonroot" /erlang-release.tar.gz /erlang-release.tar.gz
-
-# # CodeDeploy revision
-# COPY --from=prod-release-package --chown="nonroot:nonroot" /revision.zip /revision.zip
-
-# # Ansible release
-# COPY --from=prod-release-package --chown="nonroot:nonroot" /ansible.zip /ansible.zip
 
 
 FROM scratch AS package

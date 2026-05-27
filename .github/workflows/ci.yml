@@ -565,7 +565,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: test-image
+          target: test
           build-args: |
             ELIXIR_VER=${{ matrix.elixir }}
             OTP_VER=${{ matrix.otp }}

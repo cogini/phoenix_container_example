@@ -343,6 +343,13 @@ RUN mix compile --warnings-as-errors
 # RUN mix cmd mix compile --warnings-as-errors
 
 
+# Create slim test image with only test dependencies and files needed to run tests
+FROM test-image AS test
+
+WORKDIR /app
+COPY --from=test-image /app .
+
+
 # Install JavaScript dependencies
 FROM build-deps-get AS prod-assets
 ARG LANG

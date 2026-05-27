@@ -5,7 +5,7 @@ services:
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${VAR}${IMAGE_VER:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
-      target: test-image
+      target: test
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
