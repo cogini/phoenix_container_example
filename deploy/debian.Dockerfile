@@ -290,7 +290,7 @@ RUN --mount=type=secret,id=oban_license_key --mount=type=secret,id=oban_key_fing
 
 # Run deps.get with optional authentication to access private repos
 RUN --mount=type=ssh --mount=type=secret,id=access_token \
-    --mount=type=cache,id=hex,target=/apt/.hex,sharing=locked \
+    --mount=type=cache,id=hex-cache,target=/app/.hex,sharing=locked \
     # Access private repos using ssh identity
     # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
     # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
