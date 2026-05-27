@@ -1815,6 +1815,7 @@ jobs:
 
       - name: Tag ECR release as latest
         run: |
+          aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" --image-ids imageTag="${VAR}${IMAGE_VER}" --output json
           MANIFEST=$(aws ecr batch-get-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
             --image-ids imageTag="${VAR}${IMAGE_VER}" \
             --output json | jq --raw-output --join-output '.images[0].imageManifest')
