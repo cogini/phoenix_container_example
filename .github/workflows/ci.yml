@@ -1819,6 +1819,7 @@ jobs:
             --image-ids imageTag="${VAR}${IMAGE_VER}" \
             --output json | jq --raw-output --join-output '.images[0].imageManifest')
           export MANIFEST
+          echo "MANIFEST=$MANIFEST"
           aws ecr put-image --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}" \
             --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
           # Requires higher permissions
