@@ -1338,7 +1338,6 @@ jobs:
       #     junit_files: ./junit-reports/*.xml
       #     check_name: "External API Tests"
 
-
   scan:
     name: Security scan prod image
     if: needs.config.outputs.scan-prod-image == '1'
@@ -1438,7 +1437,6 @@ jobs:
           command: test
           image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
           args: --file=${{ env.DOCKER_FILE }} --project-name=api
-
 
   deploy-ecs:
     name: Deploy to AWS ECS
@@ -1634,7 +1632,6 @@ jobs:
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
 
-
   deploy-codedeploy:
     name: Deploy using CodeDeploy
     if: needs.config.outputs.deploy-codedeploy == '1'
@@ -1752,7 +1749,6 @@ jobs:
           echo "url = \"$APPSIGNAL_URL\"" | tee curl.txt
           curl -g --config curl.txt -d @revision.json
 
-
   tag:
     name: Tag images as latest in GHCR
     if: ${{ needs.config.outputs.tag-images == '1' && needs.config.outputs.deploy }}
@@ -1784,7 +1780,6 @@ jobs:
           skopeo copy \
             "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER}" \
             "docker://ghcr.io/${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG_GHCR}"
-
 
   tag-ecr:
     name: Tag images as latest in ECR
@@ -1828,7 +1823,6 @@ jobs:
             --image-tag "$IMAGE_TAG_ECR" --image-manifest "$MANIFEST"
           # Requires higher permissions
           # aws ecr describe-images --repository-name "${ECR_IMAGE_OWNER}${IMAGE_NAME}"
-
 
   # Copy Elixir and OS base images to GHCR
   # Avoids Docker Hub rate limits and speeds up pull performance
@@ -1876,7 +1870,6 @@ jobs:
       - name: Sync matrix images to GHCR
         run: regsync once -c deploy/regsync-ghcr-matrix.yml
 
-
   # Copy 3rd-party images to GHCR
   # Avoids Docker Hub rate limits and improves performance
   sync-images-ghcr:
@@ -1915,7 +1908,6 @@ jobs:
 
       - name: Sync images to GHCR
         run: regsync once -c deploy/regsync-ghcr.yml
-
 
   # Copy 3rd-party images to ECR
   # Avoids Docker Hub rate limits and speeds up pull performance
