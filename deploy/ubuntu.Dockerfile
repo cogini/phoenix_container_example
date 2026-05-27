@@ -344,7 +344,7 @@ RUN mix compile --warnings-as-errors
 
 
 # Create slim test image with only test dependencies and files needed to run tests
-FROM test-image AS test
+FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER} AS test
 
 WORKDIR /app
 COPY --from=test-image /app .
