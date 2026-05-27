@@ -346,8 +346,21 @@ RUN mix compile --warnings-as-errors
 # Create slim test image with only test dependencies and files needed to run tests
 FROM ${PUBLIC_REGISTRY}${REPO_ORG_ELIXIR}/elixir:${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER} AS test
 
-WORKDIR /app
-COPY --from=test-image /app .
+# Create OS user and group to run app under
+RUN if ! grep -q nonroot /etc/passwd; then \
+    groupadd -g 65532 nonroot ; \
+    useradd -l -u 65532 -g nonroot -d /app -s /usr/sbin/nologin nonroot ; \
+    rm -f /var/log/lastlog ; rm -f /var/log/faillog ; fi
+
+COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
+
+ARG LANG
+
+ENV HOME=/app \
+    LANG=$LANG \
+    MIX_ENV=test
+
+COPY --from=test-image /app /app
 
 
 # Install JavaScript dependencies
