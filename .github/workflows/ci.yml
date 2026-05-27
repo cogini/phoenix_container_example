@@ -144,17 +144,6 @@ jobs:
       # sync-images-ecr: '${{ steps.get-sync-images.outputs.result }}'
       sync-images-ecr: '0'
 
-      # Whether to tag released images
-      tag-images: '1'
-
-      # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
-      image-tag-ghcr: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
-
-      # Tag for ECR images. Repos are separate between environments, so each gets "latest" tag
-      image-tag-ecr: ${{ contains(fromJson('["main", "staging", "prod"]'), github.ref_name) && 'latest' || github.ref_name }}
-
-      image-tag-deploy: ${{ steps.get-image-tag-deploy.outputs.result }}
-
       # Enable AWS interactions in the build, including deploys.
       aws-enabled: '1'
 
@@ -170,21 +159,31 @@ jobs:
       # Security scan code image
       scan-code: '0'
 
+      # Use specific scanning tools
       scan-gitleaks: '0'
       scan-grype: '1'
       scan-snyk: '0'
       scan-trivy: '0'
 
-      # GitHub Advanced Security, free for open source, otherwise a paid feature
+      # Use GitHub Advanced Security, free for open source, otherwise a paid feature
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       github-advanced-security: '0'
 
+      # Upload test results to Datadog
+      test-datadog: '0'
+
       # Upload assets to S3
       upload-assets: '0'
 
-      # Create GitHub release, used to store build artifacts
+      # Create package for deployment, e.g., Erlang release
+      package: '1'
+      package-ansible: '1'
+      package-codedeploy: '1'
+      package-erlang-release: '1'
+
+      # Create GitHub release to store build artifacts, required for packaging
       create-release: '1'
 
       # Deploy assets to AWS S3 bucket
@@ -197,16 +196,18 @@ jobs:
       # Push prod image to AWS ECR
       deploy-ecr: '1'
 
-      # Create package for deployment, e.g., Erlang release
-      package: '1'
-      package-codedeploy: '1'
-      package-ansible: '1'
-      package-erlang-release: '1'
+      # Whether to tag released images
+      tag-images: '1'
 
-      # Send results to Datadog
-      datadog: '0'
+      # Tag for GHCR images. The repo is shared between all environments, so use tags to distinguish.
+      image-tag-ghcr: ${{ (github.ref_name == 'main' && 'test') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'latest') || github.ref_name }}
 
-      # Notify AppSignal of new app revision
+      # Tag for ECR images. Repos are separate between environments, so each gets "latest" tag
+      image-tag-ecr: ${{ contains(fromJson('["main", "staging", "prod"]'), github.ref_name) && 'latest' || github.ref_name }}
+
+      image-tag-deploy: ${{ steps.get-image-tag-deploy.outputs.result }}
+
+      # Notify AppSignal of new app release
       notify-appsignal: '1'
 
       # Notify Sentry of new app release
@@ -681,7 +682,7 @@ jobs:
           files: junit-reports/*.xml
 
       - name: Upload test results to Datadog
-        if: (needs.config.outputs.datadog == '1' && !cancelled())
+        if: (needs.config.outputs.test-datadog == '1' && !cancelled())
         continue-on-error: true
         env:
           DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
