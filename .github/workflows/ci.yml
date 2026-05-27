@@ -656,9 +656,10 @@ jobs:
           # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q zookeeper)" | jq
 
       - name: Debug env
-        if: failure()
+        # if: failure()
         run: |
           docker compose run test env
+          docker compose run test pwd
 
       - name: Initialize test database
         run: docker compose run test mix 'do' ecto.setup
