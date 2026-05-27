@@ -388,6 +388,7 @@ ENV HOME=/app \
     LANG=$LANG \
     MIX_ENV=test
 
+WORKDIR /app
 COPY --from=test-image /app /app
 
 
