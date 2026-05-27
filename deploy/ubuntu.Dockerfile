@@ -264,6 +264,7 @@ RUN --mount=type=secret,id=oban_license_key --mount=type=secret,id=oban_key_fing
 
 # Run deps.get with optional authentication to access private repos
 RUN --mount=type=ssh --mount=type=secret,id=access_token \
+    --mount=type=cache,id=hex-cache,target=/app/.hex,sharing=locked \
     # Access private repos using ssh identity
     # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
     # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
@@ -351,6 +352,74 @@ RUN if ! grep -q nonroot /etc/passwd; then \
     groupadd -g 65532 nonroot ; \
     useradd -l -u 65532 -g nonroot -d /app -s /usr/sbin/nologin nonroot ; \
     rm -f /var/log/lastlog ; rm -f /var/log/faillog ; fi
+
+RUN set -exu ; \
+    rm -f /etc/apt/apt.conf.d/docker-clean ; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
+    echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+ARG RUNTIME_PACKAGES
+
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -exu ; \
+    apt-get update -qq ; \
+    DEBIAN_FRONTEND=noninteractive \
+    # Tools needed to run tests
+    apt-get -y install -y -qq --no-install-recommends \
+        git \
+    ; \
+    # Runtime dependencies for the app
+    apt-get -y install -y -qq --no-install-recommends \
+        # Enable installation of packages over https
+        # apt-transport-https \
+        # Libraries used by hexpm
+        # Enable the app to make outbound SSL calls.
+        ca-certificates \
+        # libodbc1 \
+        # libsctp1 \
+        netbase \
+        # wget and jq are used to get ECS metadata
+        # We prefer wget over curl, as it is part of busybox
+        # curl is used to upload packages to GitHub, and is generally useful
+        # curl \
+        # jq \
+        # wget \
+        # tini is a minimal init which will reap zombie processes
+        # https://github.com/krallin/tini
+        # tini \
+        # bind-utils \
+        # Minimal libs needed by Erlang VM
+        # libncursesw6 \
+        libtinfo6 \
+        # Additional libs
+        libssl3 \
+        libstdc++6 \
+        libgcc-s1 \
+        $RUNTIME_PACKAGES \
+    ; \
+    # Remove packages installed temporarily. Removes everything related to
+    # packages, including the configuration files, and packages
+    # automatically installed because a package required them but, with the
+    # other packages removed, are no longer needed.
+    # apt-get purge -y --auto-remove curl ; \
+    # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+    # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
+    # Delete local repository of retrieved package files in /var/cache/apt/archives
+    # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+    # Use this if not running --mount=type=cache.
+    # apt-get clean ; \
+    # Delete info on installed packages. This saves some space, but it can
+    # be useful to have them as a record of what was installed, e.g., for auditing.
+    # rm -rf /var/lib/dpkg ; \
+    # Delete debconf data files to save some space
+    # rm -rf /var/cache/debconf ; \
+    # Delete index of available files from apt-get update
+    # Use this if not running --mount=type=cache.
+    # rm -rf /var/lib/apt/lists/*
+    # Clear logs of installed packages
+    truncate -s 0 /var/log/apt/* ; \
+    truncate -s 0 /var/log/dpkg.log
 
 COPY --link --from=build-os-deps /usr/lib/locale/locale-archive /usr/lib/locale/
 

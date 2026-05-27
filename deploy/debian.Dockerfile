@@ -428,9 +428,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # wget and jq are used to get ECS metadata
         # We prefer wget over curl, as it is part of busybox
         # curl is used to upload packages to GitHub, and is generally useful
-        curl \
-        jq \
-        wget \
+        # curl \
+        # jq \
+        # wget \
         # tini is a minimal init which will reap zombie processes
         # https://github.com/krallin/tini
         # tini \
