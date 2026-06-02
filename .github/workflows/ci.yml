@@ -650,6 +650,8 @@ jobs:
         run: |
           echo postgres
           docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q postgres)" | jq
+          # echo redis
+          # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q redis)" | jq
           # echo kafka
           # docker inspect --format "{{json .State.Health }}" "$(docker compose ps -q kafka)" | jq
           # echo zookeeper
@@ -1253,7 +1255,7 @@ jobs:
           # echo "kafka logs"
           # docker compose logs --timestamps kafka
           # echo "zookeeper logs"
-          docker compose logs --timestamps zookeeper
+          # docker compose logs --timestamps zookeeper
           echo "prod logs"
           docker compose logs --timestamps prod
           echo "postgres health"
@@ -1699,7 +1701,7 @@ jobs:
       - name: Copy Ansible release file to S3
         env:
           # Convert matrix os/version name to name in Ansible inventory
-          ANSIBLE_OS: ${{(matrix.os == 'alma' && 'AlmaLinux') || (matrix.os == 'centos7' && 'CentOS') || (matrix.os == 'rocky' && 'Rocky') || (matrix.os == 'ubuntu' && 'Ubuntu') }}
+          ANSIBLE_OS: ${{(matrix.os == 'alma' && 'AlmaLinux') || (matrix.os == 'centos' && 'CentOS') || (matrix.os == 'rocky' && 'Rocky') || (matrix.os == 'ubuntu' && 'Ubuntu') }}
           ANSIBLE_OS_VER: ${{ (matrix.os == 'ubuntu' && matrix.prod_os_ver == 'jammy' && '22') || (matrix.os == 'ubuntu' && matrix.prod_os_ver == 'noble' && '24') || (matrix.os != 'ubuntu' && matrix.build_os_ver) || (matrix.os == 'centos7' && '7') }}
           ANSIBLE_RELEASE_FILE: "ansible-release-${{ github.run_number }}-${{ env.VAR }}.zip"
         run: |
