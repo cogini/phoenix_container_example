@@ -499,9 +499,9 @@ WORKDIR /app/assets
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
     # corepack enable ; corepack enable npm ; \
     # yarn --cwd ./assets install --prod
-    # yarn install --prod
+    yarn install --prod
     # pnpm install --prod
-    npm install
+    # npm install
     # npm run deploy
     # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     # node node_modules/brunch/bin/brunch build
