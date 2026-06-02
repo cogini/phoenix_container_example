@@ -1,5 +1,6 @@
 # Build app
 # Deploy using Ubuntu
+
 ARG BASE_OS=ubuntu
 
 # Specify versions of Erlang, Elixir, and base OS.
@@ -357,6 +358,7 @@ RUN set -exu ; \
     rm -f /etc/apt/apt.conf.d/docker-clean ; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache ; \
     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
 ARG RUNTIME_PACKAGES
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -452,9 +454,9 @@ WORKDIR /app/assets
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
     # corepack enable ; corepack enable npm ; \
     # yarn --cwd ./assets install --prod
-    yarn install --prod
+    # yarn install --prod
     # pnpm install --prod
-    # npm install
+    npm install
     # npm run deploy
     # npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     # node node_modules/brunch/bin/brunch build
@@ -472,7 +474,7 @@ RUN if [ "$RUST" = "1" ]; then \
 WORKDIR /app
 
 # Compile deps separately from the application for better Docker caching.
-# Doing "mix 'do' compile, assets.deploy" in a single stage is worse
+# Doing "mix 'do' compile + assets.deploy" in a single stage is worse
 # because a single line of code changed causes a complete recompile.
 
 ARG MIX_ENV
