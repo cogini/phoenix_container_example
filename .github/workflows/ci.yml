@@ -769,7 +769,7 @@ jobs:
 
       - name: Manual Trivy Setup
         if: env.TRIVY == '1'
-        uses: aquasecurity/setup-trivy@v0.2.6
+        uses: aquasecurity/setup-trivy@v0.3.0
         with:
           cache: true
           version: v0.68.2
