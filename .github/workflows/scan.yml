@@ -189,7 +189,7 @@ jobs:
     steps:
       - name: Configure common-matrix
         id: common-matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         # Specify versions of Erlang, Elixir, and base OS
         # in a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
                 # {
@@ -222,7 +222,7 @@ jobs:
 
       - name: Configure test-matrix-parallel
         id: test-matrix-parallel
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             let platforms = [
@@ -248,7 +248,7 @@ jobs:
 
       - name: Configure prod-matrix
         id: prod-matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
                 # {
                 #   os: "alma",
                 #   elixir: "1.18.4",
@@ -279,7 +279,7 @@ jobs:
 
       - name: Configure deploy-matrix
         id: deploy-matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             return {
@@ -295,7 +295,7 @@ jobs:
             }
 
       - name: Configure assets-matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: assets-matrix
         with:
           script: |
@@ -319,7 +319,7 @@ jobs:
       # * `prod` tag deploys to prod and dr
       - name: Configure environment
         id: get-environment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
@@ -357,7 +357,7 @@ jobs:
       # In dr, deploy is based on prod ECR repo in DR region
       - name: Configure image-tag-deploy
         id: get-image-tag-deploy
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
@@ -374,7 +374,7 @@ jobs:
       # Determine whether to deploy to AWS based on branch or tag name
       - name: Configure deploy
         id: get-deploy
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
@@ -394,7 +394,7 @@ jobs:
 
       - name: Configure sync-images
         id: get-sync-images
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
