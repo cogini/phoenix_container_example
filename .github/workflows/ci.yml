@@ -10,9 +10,8 @@ name: CI
 # on: push
 on:
   push:
-    # branches:
-    #   - main
-    #   - qa
+    branches:
+      - main
     # tags: [prod]
     paths-ignore:
       - README.md
@@ -124,9 +123,6 @@ jobs:
       # Combinations to deploy (to prod or another environment)
       # Usually only a single variant
       deploy-matrix: ${{ steps.deploy-matrix.outputs.result }}
-      # Combinations used to build assets
-      # Usually only a single variant
-      assets-matrix: ${{ steps.assets-matrix.outputs.result }}
       # Combinations to sync images to GHCR for
       sync-matrix: ${{ steps.common-matrix.outputs.result }}
 
@@ -232,6 +228,8 @@ jobs:
               ]
             }
 
+      # Combinations of Elixir/Erlang/OS to run internal tests on
+      # Generally this will match prod
       - name: Configure test-matrix-parallel
         id: test-matrix-parallel
         uses: actions/github-script@v9
@@ -258,23 +256,11 @@ jobs:
 
             return { include: matrix }
 
+      # Combinations for prod images
+      # Used for the final deploy image as well as external tests
       - name: Configure prod-matrix
         id: prod-matrix
         uses: actions/github-script@v9
-                # {
-                #   os: "alma",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "8",
-                #   prod_os_ver: "8"
-                # },
-                # {
-                #   os: "centos7",
-                #   elixir: "1.18.4",
-                #   otp: "28.1",
-                #   build_os_ver: "7",
-                #   prod_os_ver: "7"
-                # },
         with:
           script: |
             return {
@@ -296,26 +282,11 @@ jobs:
               ]
             }
 
+      # Combinations to deploy (to prod or another environment)
+      # Usually only a single variant
       - name: Configure deploy-matrix
         id: deploy-matrix
         uses: actions/github-script@v9
-        with:
-          script: |
-            return {
-              include: [
-                {
-                  os: "debian",
-                  elixir: "1.19.5",
-                  otp: "28.5",
-                  build_os_ver: "trixie-20260518-slim",
-                  prod_os_ver: "trixie-20260518-slim"
-                },
-              ]
-            }
-
-      - name: Configure assets-matrix
-        uses: actions/github-script@v9
-        id: assets-matrix
         with:
           script: |
             return {
@@ -941,31 +912,31 @@ jobs:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
 
-      - name: Install build tools
+      - name: Install tools
         run: mix 'do' local.rebar --force + local.hex --force
 
       - name: Cache deps
         uses: actions/cache@v5
         env:
-          cache-name: elixir-deps-${{ github.ref_name }}
+          cache-name: cache-elixir-deps-${{ github.ref_name }}
         with:
           path: deps
           key: |
-            mix-${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-
+            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       - name: Cache compiled build
         uses: actions/cache@v5
         env:
-          cache-name: compiled-build-${{ github.ref_name }}
+          cache-name: cache-compiled-build-${{ github.ref_name }}
         with:
           path: _build
+            # ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{hashFiles('**/mix.lock')}}-${{hashFiles( '**/lib/**/*.{ex,eex}', '**/config/*.exs', '**/mix.exs')}}
           key: |
-            mix-${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles( '**/lib/**/*.{ex,eex}', '**/config/*.exs', '**/mix.exs' ) }}
+            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{hashFiles('**/mix.lock')}}
           restore-keys: |
-            mix-${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}-
-            mix-${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-
+            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       - name: Cache node-modules
         uses: actions/cache@v5
@@ -980,17 +951,16 @@ jobs:
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
-        if: ${{ github.run_attempt != '1' }}
+        if: github.run_attempt != '1'
         run: |
           mix deps.clean --all
           mix clean
-        shell: sh
 
       - name: Get Elixir deps
         run: mix deps.get
 
-      # - name: Compile deps
-      #   run: mix deps.compile
+      - name: Compile deps
+        run: mix deps.compile
 
       # - name: Compile
       #   # run: mix compile --warnings-as-errors
