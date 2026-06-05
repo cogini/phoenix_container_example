@@ -573,8 +573,7 @@ RUN set -exu ; \
     chmod +x /app/bin/* ; \
     cp /app/bin/* ./bin/ ; \
     cp /app/_build/${MIX_ENV}/systemd/lib/systemd/system/* ./systemd/ ; \
-    # cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
-    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "./${RELEASE}.tar.gz" ; \
     echo "BUILD_NUM=${BUILD_NUM}" > ./deploy.env ; \
     echo "VAR=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS}-${BUILD_OS_VER}" >> ./deploy.env ; \
     cp /app/build_meta.yml ./ ; \
@@ -598,6 +597,10 @@ RUN set -exu ; \
     cp /app/build_meta.sh ./ ; \
     zip -r /ansible.zip . ; \
     rm -rf /ansible/*
+
+# Copy erlang release
+RUN set -exu ; \
+    cp /app/_build/${MIX_ENV}/${RELEASE}-*.tar.gz "/erlang-release.tar.gz" ;
 
 
 # Create base image for prod with everything but the code release
