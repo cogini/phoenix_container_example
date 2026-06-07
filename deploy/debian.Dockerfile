@@ -798,8 +798,8 @@ ARG RELEASE
 COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
 # App listen ports
-EXPOSE 4000 # HTTP port
-EXPOSE 4001 # HTTPS port
+EXPOSE 4000
+EXPOSE 4001
 
 # Prometheus metrics
 # PromEx server port
