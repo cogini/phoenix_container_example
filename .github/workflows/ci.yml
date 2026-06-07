@@ -918,7 +918,7 @@ jobs:
       - name: Cache deps
         uses: actions/cache@v5
         env:
-          cache-name: cache-elixir-deps-${{ github.ref_name }}
+          cache-name: cache-deps-${{ github.ref_name }}
         with:
           path: deps
           key: |
@@ -984,7 +984,7 @@ jobs:
       #   run: yarn install --prod
 
       # - name: Build digested assets
-      #   run: mix phx.digest --no-vsn
+      #   run: mix phx.digest
 
       - name: Build and deploy assets
         run: mix assets.deploy
