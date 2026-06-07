@@ -304,8 +304,13 @@ COPY --link Postma[n] ./Postman
 # Copy minimum config files needed
 COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
-# Compile deps separately from app, improving Docker caching
-RUN mix deps.compile
+RUN set -ex ; \
+    # https://github.com/elixir-lang/elixir/blob/v1.19/CHANGELOG.md#parallel-compilation-of-dependencies
+    export MIX_OS_DEPS_COMPILE_PARTITION_COUNT=$((($(getconf _NPROCESSORS_ONLN) + 1) / 2)) ; \
+    # `mix loadpaths` is better than `mix deps.compile` when dependencies are already fully compiled
+    # https://elixirforum.com/t/github-action-cache-elixir-always-recompiles-dependencies-elixir-1-13-3/45994/12
+    # mix deps.compile
+    mix loadpaths
 
 # Use glob pattern to deal with files which may not exist
 # At least one file must exist
@@ -337,7 +342,6 @@ COPY --link test ./test
 COPY --link .env.defaul[t] .env.tes[t] ./
 
 # RUN if test -f .env.test ; then set -a ; . ./.env.test ; set +a ; env ; fi ; \
-#     mix compile --warnings-as-errors
 RUN mix compile --warnings-as-errors
 
 # For umbrella, using `mix cmd` ensures each app is compiled in
@@ -467,11 +471,13 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
 FROM build-deps-get AS prod-release
 ARG LANG
 
+WORKDIR /app
+
 RUN if [ "$RUST" = "1" ]; then \
       rustup default stable ; \
     fi
 
-WORKDIR /app
+COPY --link .env.defaul[t] .env.pro[d] ./
 
 # Compile deps separately from the application for better Docker caching.
 # Doing "mix 'do' compile + assets.deploy" in a single stage is worse
@@ -482,12 +488,16 @@ ARG MIX_ENV
 # COPY --link config/config.exs "config/${MIX_ENV}.exs" config/runtime.exs ./config/
 COPY --link config/config.exs "config/${MIX_ENV}.exs" ./config/
 
-COPY --link .env.defaul[t] .env.pro[d] ./
-
 # Load environment vars when compiling
 # RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-#     mix deps.compile
-RUN mix deps.compile
+
+RUN set -ex ; \
+    # https://github.com/elixir-lang/elixir/blob/v1.19/CHANGELOG.md#parallel-compilation-of-dependencies
+    export MIX_OS_DEPS_COMPILE_PARTITION_COUNT=$((($(getconf _NPROCESSORS_ONLN) + 1) / 2)) ; \
+    # `mix loadpaths` is better than `mix deps.compile` when dependencies are already fully compiled
+    # https://elixirforum.com/t/github-action-cache-elixir-always-recompiles-dependencies-elixir-1-13-3/45994/12
+    # mix deps.compile
+    mix loadpaths
 
 COPY --link li[b] ./lib
 COPY --link app[s] ./apps
@@ -505,13 +515,10 @@ COPY --link asset[s] ./assets
 
 COPY --link bi[n] ./bin
 
-# For umbrella, using `mix cmd` ensures each app is compiled in
-# isolation https://github.com/elixir-lang/elixir/issues/9407
-# RUN mix cmd mix compile --warnings-as-errors
-
-# RUN if test -f .env.prod ; then set -a ; . ./.env.prod ; set +a ; env ; fi ; \
-#     mix compile --warnings-as-errors
-RUN set -exu ; \
+RUN set -ex ; \
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # mix cmd mix compile --warnings-as-errors
     # mix compile --warnings-as-errors
     mix compile
 
@@ -726,8 +733,8 @@ ARG RELEASE
 COPY --from=prod-release --chown="nonroot:nonroot" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
 # App listen ports
-EXPOSE 4000
-EXPOSE 4001
+EXPOSE 4000 # HTTP port
+EXPOSE 4001 # HTTPS port
 
 # Prometheus metrics
 # PromEx server port

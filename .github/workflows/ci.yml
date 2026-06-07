@@ -922,21 +922,32 @@ jobs:
         with:
           path: deps
           key: |
-            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-
+
+      - name: Cache hex
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-deps-${{ github.ref_name }}
+        with:
+          path: ~/.hex
+          key: |
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       - name: Cache compiled build
         uses: actions/cache@v5
         env:
-          cache-name: cache-compiled-build-${{ github.ref_name }}
+          cache-name: cache-build-${{ github.ref_name }}
         with:
           path: _build
             # ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{hashFiles('**/mix.lock')}}-${{hashFiles( '**/lib/**/*.{ex,eex}', '**/config/*.exs', '**/mix.exs')}}
           key: |
-            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{hashFiles('**/mix.lock')}}
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-${{hashFiles('**/mix.lock')}}
           restore-keys: |
-            ${{runner.os}}-mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
+            ${{env.cache-name}}-${{runner.os}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       - name: Cache node-modules
         uses: actions/cache@v5
@@ -945,9 +956,9 @@ jobs:
         with:
           path: assets/node_modules
           key: |
-            ${{matrix.otp}}-${{matrix.elixir}}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+            ${{env.cache-name}}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+            ${{env.cache-name}}-
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
@@ -960,8 +971,18 @@ jobs:
         run: mix deps.get
 
       - name: Compile deps
-        run: mix deps.compile
+        run: |
+          # Deal with broken build process for ego
+          test -f deps/ego/erlang.mk || wget --prefer-family=IPv4 https://erlang.mk/erlang.mk --output-document=deps/ego/erlang.mk
+          make -C deps/ego -f erlang.mk
+          # https://github.com/elixir-lang/elixir/blob/v1.19/CHANGELOG.md#parallel-compilation-of-dependencies
+          export MIX_OS_DEPS_COMPILE_PARTITION_COUNT=$((($(getconf _NPROCESSORS_ONLN) + 1) / 2)) ; \
+          # `mix loadpaths` is better than `mix deps.compile` when dependencies are already fully compiled
+          # https://elixirforum.com/t/github-action-cache-elixir-always-recompiles-dependencies-elixir-1-13-3/45994/12
+          # mix deps.compile
+          mix loadpaths
 
+      # Asset building doesn't require compiling the app
       # - name: Compile
       #   # run: mix compile --warnings-as-errors
       #   run: mix compile
