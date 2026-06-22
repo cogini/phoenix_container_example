@@ -98,7 +98,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_ENV"
 
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set variables
         id: vars
