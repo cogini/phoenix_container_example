@@ -767,7 +767,7 @@ jobs:
 
       - name: Upload trivy scan results to GitHub Security tab
         if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy
@@ -791,7 +791,7 @@ jobs:
 
       - name: Upload grype scan results to GitHub Security tab
         if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
@@ -1385,7 +1385,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ env.TRIVY == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
@@ -1413,7 +1413,7 @@ jobs:
 
       - name: Upload Grype scan results to GitHub Security tab
         if: ${{ env.GRYPE == '1' && always() && env.GITHUB_ADVANCED_SECURITY == '1' }}
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
